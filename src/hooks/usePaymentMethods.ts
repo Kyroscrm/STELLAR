@@ -3,6 +3,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import type { Database } from '@/integrations/supabase/types';
+
+type PaymentMethodsRow = Database['public']['Tables']['payment_methods']['Row'];
 
 export interface PaymentMethod {
   id: string;
@@ -32,7 +35,15 @@ export const usePaymentMethods = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPaymentMethods(data || []);
+      
+      // Transform the data to match our interface
+      const transformedData: PaymentMethod[] = (data || []).map((item: PaymentMethodsRow) => ({
+        ...item,
+        type: item.type as 'stripe' | 'paypal' | 'ach' | 'credit_card',
+        metadata: (item.metadata as Record<string, any>) || {}
+      }));
+      
+      setPaymentMethods(transformedData);
     } catch (error: any) {
       console.error('Error fetching payment methods:', error);
       toast.error('Failed to fetch payment methods');
@@ -53,9 +64,15 @@ export const usePaymentMethods = () => {
 
       if (error) throw error;
       
-      setPaymentMethods(prev => [data, ...prev]);
+      const transformedData: PaymentMethod = {
+        ...data,
+        type: data.type as 'stripe' | 'paypal' | 'ach' | 'credit_card',
+        metadata: (data.metadata as Record<string, any>) || {}
+      };
+      
+      setPaymentMethods(prev => [transformedData, ...prev]);
       toast.success('Payment method added successfully');
-      return data;
+      return transformedData;
     } catch (error: any) {
       console.error('Error creating payment method:', error);
       toast.error('Failed to add payment method');
@@ -74,9 +91,15 @@ export const usePaymentMethods = () => {
 
       if (error) throw error;
       
-      setPaymentMethods(prev => prev.map(method => method.id === id ? data : method));
+      const transformedData: PaymentMethod = {
+        ...data,
+        type: data.type as 'stripe' | 'paypal' | 'ach' | 'credit_card',
+        metadata: (data.metadata as Record<string, any>) || {}
+      };
+      
+      setPaymentMethods(prev => prev.map(method => method.id === id ? transformedData : method));
       toast.success('Payment method updated successfully');
-      return data;
+      return transformedData;
     } catch (error: any) {
       console.error('Error updating payment method:', error);
       toast.error('Failed to update payment method');
