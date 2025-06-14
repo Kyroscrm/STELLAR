@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
@@ -13,6 +12,7 @@ import {
 } from 'lucide-react';
 import ConversionMetrics from '@/components/ConversionMetrics';
 import AdvancedAnalyticsDashboard from '@/components/AdvancedAnalyticsDashboard';
+import FollowUpReminders from '@/components/FollowUpReminders';
 
 interface MetricCardProps {
   title: string;
@@ -101,6 +101,9 @@ const DashboardMetrics: React.FC = () => {
 
       {/* Conversion Analytics Section */}
       <ConversionMetrics />
+
+      {/* Follow-up Reminders */}
+      <FollowUpReminders />
 
       {/* Additional Insights */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

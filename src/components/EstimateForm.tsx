@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
@@ -9,8 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useJobs } from '@/hooks/useJobs';
+import { useJobNumberGenerator } from '@/hooks/useJobNumberGenerator';
 import { EstimateWithLineItems } from '@/hooks/useEstimates';
 import { estimateSchema, EstimateFormData } from '@/lib/validation';
+import { RefreshCw } from 'lucide-react';
 
 interface EstimateFormProps {
   onSubmit: (data: EstimateFormData) => Promise<void>;
@@ -27,13 +28,14 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
 }) => {
   const { customers } = useCustomers();
   const { jobs } = useJobs();
+  const { generateEstimateNumber, loading: generatingNumber } = useJobNumberGenerator();
 
   const form = useForm<EstimateFormData>({
     resolver: zodResolver(estimateSchema),
     defaultValues: {
       title: initialData?.title || '',
       description: initialData?.description || '',
-      estimate_number: initialData?.estimate_number || `EST-${Date.now()}`,
+      estimate_number: initialData?.estimate_number || '',
       customer_id: initialData?.customer_id || '',
       job_id: initialData?.job_id || '',
       valid_until: initialData?.valid_until || '',
@@ -43,6 +45,18 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
       terms: initialData?.terms || '',
     },
   });
+
+  const handleGenerateEstimateNumber = async () => {
+    const estimateNumber = await generateEstimateNumber();
+    form.setValue('estimate_number', estimateNumber);
+  };
+
+  // Auto-generate estimate number on mount if not provided
+  useEffect(() => {
+    if (!initialData?.estimate_number) {
+      handleGenerateEstimateNumber();
+    }
+  }, []);
 
   const handleSubmit = async (data: EstimateFormData) => {
     try {
@@ -76,9 +90,24 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Estimate Number *</FormLabel>
-                <FormControl>
-                  <Input placeholder="EST-001" {...field} />
-                </FormControl>
+                <div className="flex gap-2">
+                  <FormControl>
+                    <Input placeholder="EST-001" {...field} />
+                  </FormControl>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGenerateEstimateNumber}
+                    disabled={generatingNumber}
+                  >
+                    {generatingNumber ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'Generate'
+                    )}
+                  </Button>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
