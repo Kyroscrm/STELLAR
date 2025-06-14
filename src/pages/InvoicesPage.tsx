@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useInvoices } from '@/hooks/useInvoices';
 import { useCustomers } from '@/hooks/useCustomers';
@@ -83,10 +82,8 @@ const InvoicesPage = () => {
   const handleCreateInvoice = async (data: any) => {
     setIsSubmitting(true);
     try {
-      const result = await addInvoice(data);
-      if (result) {
-        setIsCreateModalOpen(false);
-      }
+      await addInvoice(data);
+      setIsCreateModalOpen(false);
     } finally {
       setIsSubmitting(false);
     }

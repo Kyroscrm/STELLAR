@@ -2,14 +2,16 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/components/ui/use-toast'; // Corrected import path
+import { toast } from '@/components/ui/use-toast';
 import { Database } from '@/integrations/supabase/types';
+import { Customer } from '@/hooks/useCustomers';
 
 export type Invoice = Database['public']['Tables']['invoices']['Row'];
 export type InvoiceLineItem = Database['public']['Tables']['invoice_line_items']['Row'];
 
 export interface InvoiceWithLineItems extends Invoice {
   invoice_line_items: InvoiceLineItem[];
+  customers?: Customer | null;
 }
 
 export const useInvoices = () => {
@@ -32,6 +34,13 @@ export const useInvoices = () => {
           .from('invoices')
           .select(`
             *,
+            customers (
+              id,
+              first_name,
+              last_name,
+              email,
+              phone
+            ),
             invoice_line_items ( * )
           `)
           .eq('user_id', user.id)
@@ -40,7 +49,7 @@ export const useInvoices = () => {
         if (supabaseError) {
           throw supabaseError;
         }
-        
+
         setInvoices(data as InvoiceWithLineItems[] || []);
       } catch (err: any) {
         console.error('Error fetching invoices:', err);
@@ -62,6 +71,7 @@ export const useInvoices = () => {
   const addInvoice = async (newInvoiceData: Omit<Invoice, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     console.log('Adding invoice:', newInvoiceData);
     toast({ title: "Invoice added (mock)" });
+    // Update: No return value needed
   };
 
   const updateInvoice = async (invoiceId: string, updatedInvoiceData: Partial<Invoice>) => {
