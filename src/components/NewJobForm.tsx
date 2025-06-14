@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -64,10 +63,16 @@ const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel }) => {
     setIsSubmitting(true);
     try {
       const jobData = {
-        ...data,
+        title: data.title, // Ensure title is included
+        description: data.description || '',
+        customer_id: data.customer_id || null,
+        address: data.address || '',
+        start_date: data.start_date || '',
+        end_date: data.end_date || '',
         budget: data.budget || null,
         estimated_hours: data.estimated_hours || null,
-        customer_id: data.customer_id || null,
+        status: data.status,
+        notes: data.notes || '',
       };
 
       await createJob(jobData);

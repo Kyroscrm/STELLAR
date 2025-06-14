@@ -612,6 +612,45 @@ export type Database = {
           },
         ]
       }
+      estimate_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          line_items: Json
+          name: string
+          notes: string | null
+          tax_rate: number
+          terms: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          line_items?: Json
+          name: string
+          notes?: string | null
+          tax_rate?: number
+          terms?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          line_items?: Json
+          name?: string
+          notes?: string | null
+          tax_rate?: number
+          terms?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       estimates: {
         Row: {
           created_at: string | null
@@ -759,6 +798,39 @@ export type Database = {
           page_type?: string
           updated_at?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      follow_up_reminders: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          message: string
+          reminder_date: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          message: string
+          reminder_date: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          message?: string
+          reminder_date?: string
+          status?: string
+          user_id?: string
         }
         Relationships: []
       }

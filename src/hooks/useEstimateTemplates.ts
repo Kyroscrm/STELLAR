@@ -36,7 +36,19 @@ export const useEstimateTemplates = () => {
         .order('name');
 
       if (error) throw error;
-      setTemplates(data || []);
+      
+      const typedTemplates = (data || []).map(template => ({
+        id: template.id,
+        name: template.name,
+        description: template.description,
+        line_items: template.line_items || [],
+        tax_rate: template.tax_rate || 0,
+        terms: template.terms,
+        notes: template.notes,
+        created_at: template.created_at
+      })) as EstimateTemplate[];
+      
+      setTemplates(typedTemplates);
     } catch (error: any) {
       console.error('Error fetching estimate templates:', error);
       toast.error('Failed to fetch estimate templates');
@@ -57,9 +69,20 @@ export const useEstimateTemplates = () => {
 
       if (error) throw error;
 
-      setTemplates(prev => [...prev, data]);
+      const newTemplate: EstimateTemplate = {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        line_items: data.line_items || [],
+        tax_rate: data.tax_rate || 0,
+        terms: data.terms,
+        notes: data.notes,
+        created_at: data.created_at
+      };
+
+      setTemplates(prev => [...prev, newTemplate]);
       toast.success('Estimate template created successfully');
-      return data;
+      return newTemplate;
     } catch (error: any) {
       console.error('Error creating estimate template:', error);
       toast.error('Failed to create estimate template');

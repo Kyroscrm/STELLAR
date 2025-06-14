@@ -38,7 +38,19 @@ export const useFollowUpReminders = () => {
         .order('reminder_date');
 
       if (error) throw error;
-      setReminders(data || []);
+      
+      const typedReminders = (data || []).map(reminder => ({
+        id: reminder.id,
+        entity_type: reminder.entity_type as 'lead' | 'estimate' | 'invoice',
+        entity_id: reminder.entity_id,
+        reminder_date: reminder.reminder_date,
+        message: reminder.message,
+        status: reminder.status as 'pending' | 'sent' | 'dismissed',
+        created_at: reminder.created_at,
+        entity_data: reminder.leads || reminder.estimates || reminder.invoices
+      })) as FollowUpReminder[];
+      
+      setReminders(typedReminders);
     } catch (error: any) {
       console.error('Error fetching reminders:', error);
     } finally {
@@ -63,9 +75,19 @@ export const useFollowUpReminders = () => {
 
       if (error) throw error;
 
-      setReminders(prev => [...prev, data]);
+      const newReminder: FollowUpReminder = {
+        id: data.id,
+        entity_type: data.entity_type as 'lead' | 'estimate' | 'invoice',
+        entity_id: data.entity_id,
+        reminder_date: data.reminder_date,
+        message: data.message,
+        status: data.status as 'pending' | 'sent' | 'dismissed',
+        created_at: data.created_at
+      };
+
+      setReminders(prev => [...prev, newReminder]);
       toast.success('Follow-up reminder created');
-      return data;
+      return newReminder;
     } catch (error: any) {
       console.error('Error creating reminder:', error);
       toast.error('Failed to create reminder');
