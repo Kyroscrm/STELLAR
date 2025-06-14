@@ -38,6 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session:', session?.user?.email);
       setSession(session);
       if (session?.user) {
         loadUserProfile(session.user);
@@ -52,7 +53,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         
         if (session?.user) {
-          loadUserProfile(session.user);
+          setTimeout(() => {
+            loadUserProfile(session.user);
+          }, 0);
         } else {
           setUser(null);
         }
@@ -65,6 +68,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadUserProfile = async (authUser: User) => {
     try {
+      console.log('Loading profile for user:', authUser.email);
+      
       // First check if profile exists
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -74,10 +79,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error loading profile:', error);
+        
+        // If profile doesn't exist, create a basic user object without inserting to DB
+        if (error.code === 'PGRST116') {
+          setUser({
+            id: authUser.id,
+            email: authUser.email || '',
+            name: authUser.email?.split('@')[0] || 'User',
+            role: authUser.email === 'nayib@finalroofingcompany.com' ? 'admin' : 'client'
+          });
+        }
         return;
       }
 
       if (profile) {
+        console.log('Profile found:', profile);
         setUser({
           id: authUser.id,
           email: profile.email,
@@ -85,36 +101,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: profile.role as 'client' | 'admin' | 'staff'
         });
       } else {
-        // Create profile if it doesn't exist
-        const { error: createError } = await supabase
-          .from('profiles')
-          .insert({
-            id: authUser.id,
-            email: authUser.email || '',
-            first_name: authUser.user_metadata?.first_name || '',
-            last_name: authUser.user_metadata?.last_name || '',
-            role: authUser.email === 'nayib@finalroofingcompany.com' ? 'admin' : 'client'
-          });
-
-        if (createError) {
-          console.error('Error creating profile:', createError);
-        } else {
-          setUser({
-            id: authUser.id,
-            email: authUser.email || '',
-            name: `${authUser.user_metadata?.first_name || ''} ${authUser.user_metadata?.last_name || ''}`.trim() || authUser.email || '',
-            role: authUser.email === 'nayib@finalroofingcompany.com' ? 'admin' : 'client'
-          });
-        }
+        console.log('No profile found, creating basic user object');
+        // Create basic user object without DB insertion for now
+        setUser({
+          id: authUser.id,
+          email: authUser.email || '',
+          name: authUser.email?.split('@')[0] || 'User',
+          role: authUser.email === 'nayib@finalroofingcompany.com' ? 'admin' : 'client'
+        });
       }
     } catch (error) {
       console.error('Error in loadUserProfile:', error);
+      // Fallback: create basic user object
+      setUser({
+        id: authUser.id,
+        email: authUser.email || '',
+        name: authUser.email?.split('@')[0] || 'User',
+        role: authUser.email === 'nayib@finalroofingcompany.com' ? 'admin' : 'client'
+      });
     }
   };
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
+      console.log('Attempting login for:', email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -127,6 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
+        console.log('Login successful for:', data.user.email);
         toast.success('Login successful!');
         return true;
       }
