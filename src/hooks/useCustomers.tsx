@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-type Customer = Tables<'customers'>;
+export type Customer = Tables<'customers'>;
 type CustomerInsert = TablesInsert<'customers'>;
 type CustomerUpdate = TablesUpdate<'customers'>;
 
