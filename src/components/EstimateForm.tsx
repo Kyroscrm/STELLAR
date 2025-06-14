@@ -2,7 +2,6 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,21 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useCustomers } from '@/hooks/useCustomers';
 import { useJobs } from '@/hooks/useJobs';
 import { EstimateWithLineItems } from '@/hooks/useEstimates';
-
-const estimateSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().optional(),
-  estimate_number: z.string().min(1, 'Estimate number is required'),
-  customer_id: z.string().optional(),
-  job_id: z.string().optional(),
-  valid_until: z.string().optional(),
-  tax_rate: z.number().min(0).max(1).default(0),
-  status: z.enum(['draft', 'sent', 'approved', 'rejected', 'expired']).default('draft'),
-  notes: z.string().optional(),
-  terms: z.string().optional(),
-});
-
-type EstimateFormData = z.infer<typeof estimateSchema>;
+import { estimateSchema, EstimateFormData } from '@/lib/validation';
 
 interface EstimateFormProps {
   onSubmit: (data: EstimateFormData) => Promise<void>;
@@ -76,7 +61,7 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
             name="title"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Title</FormLabel>
+                <FormLabel>Title *</FormLabel>
                 <FormControl>
                   <Input placeholder="Enter estimate title" {...field} />
                 </FormControl>
@@ -90,7 +75,7 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
             name="estimate_number"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Estimate Number</FormLabel>
+                <FormLabel>Estimate Number *</FormLabel>
                 <FormControl>
                   <Input placeholder="EST-001" {...field} />
                 </FormControl>
