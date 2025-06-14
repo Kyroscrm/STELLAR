@@ -5,16 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { User, Mail, Lock, ArrowLeft, UserPlus } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, ArrowLeft } from 'lucide-react';
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    name: '',
+    role: 'client' as 'client' | 'admin'
   });
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
@@ -45,22 +47,16 @@ const Register = () => {
     setIsLoading(true);
 
     try {
-      const success = await register(formData.email, formData.password, formData.name);
+      const success = await register(formData.email, formData.password, formData.name, formData.role);
       if (success) {
         toast({
-          title: "Account Created",
-          description: "Welcome to ProBuild! Your account has been created successfully."
+          title: "Registration Successful",
+          description: "Please check your email to confirm your account."
         });
         
         setTimeout(() => {
-          navigate('/client');
-        }, 1000);
-      } else {
-        toast({
-          title: "Registration Failed",
-          description: "An error occurred during registration. Please try again.",
-          variant: "destructive"
-        });
+          navigate('/login');
+        }, 2000);
       }
     } catch (error) {
       toast({
@@ -82,9 +78,9 @@ const Register = () => {
             Back to Home
           </Link>
           <h1 className="text-3xl font-heading font-bold text-primary">
-            ProBuild<span className="text-secondary">Contractors</span>
+            Final Roofing<span className="text-secondary"> & Retro-Fit</span>
           </h1>
-          <p className="text-gray-600 mt-2">Create your client account</p>
+          <p className="text-gray-600 mt-2">Create your account</p>
         </div>
 
         <Card className="shadow-xl">
@@ -103,7 +99,7 @@ const Register = () => {
                   <Input
                     id="name"
                     type="text"
-                    placeholder="Your full name"
+                    placeholder="John Doe"
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                     className="pl-10"
@@ -129,17 +125,31 @@ const Register = () => {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="role">Account Type</Label>
+                <Select value={formData.role} onValueChange={(value: 'client' | 'admin') => setFormData(prev => ({ ...prev, role: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select account type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="client">Client</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="password"
                     type="password"
-                    placeholder="Create a password"
+                    placeholder="At least 6 characters"
                     value={formData.password}
                     onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                     className="pl-10"
                     required
+                    minLength={6}
                   />
                 </div>
               </div>
@@ -173,7 +183,7 @@ const Register = () => {
               <p className="text-sm text-gray-600">
                 Already have an account? 
                 <Link to="/login" className="text-primary hover:text-primary/80 font-medium ml-1">
-                  Sign In
+                  Sign in here
                 </Link>
               </p>
             </div>

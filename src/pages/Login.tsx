@@ -31,16 +31,10 @@ const Login = () => {
           description: "Welcome back! Redirecting to your dashboard..."
         });
         
-        // Redirect based on user role (handled in AuthContext)
+        // Redirect based on user role
         setTimeout(() => {
-          navigate('/');
+          navigate('/admin');
         }, 1000);
-      } else {
-        toast({
-          title: "Login Failed",
-          description: "Invalid email or password. Please try again.",
-          variant: "destructive"
-        });
       }
     } catch (error) {
       toast({
@@ -51,6 +45,13 @@ const Login = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const fillAdminCredentials = () => {
+    setFormData({
+      email: 'nayib@finalroofingcompany.com',
+      password: 'Final1234@'
+    });
   };
 
   return (
@@ -71,7 +72,7 @@ const Login = () => {
           <CardHeader>
             <CardTitle className="text-center flex items-center justify-center gap-2">
               <User className="h-5 w-5" />
-              Client & Staff Login
+              CRM Login
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -123,34 +124,33 @@ const Login = () => {
                   <div className="w-full border-t border-gray-300"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="bg-white px-2 text-gray-500">Demo Accounts</span>
+                  <span className="bg-white px-2 text-gray-500">Quick Login</span>
                 </div>
               </div>
 
+              <Button 
+                variant="outline" 
+                onClick={fillAdminCredentials}
+                className="w-full"
+                type="button"
+              >
+                Fill Admin Credentials
+              </Button>
+
               <div className="space-y-2 text-sm">
                 <div className="bg-gray-50 p-3 rounded-lg">
-                  <p className="font-medium text-primary">Admin/CRM Access:</p>
-                  <p>Email: admin@finalroofing.com</p>
-                  <p>Password: admin123</p>
-                </div>
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <p className="font-medium text-primary">Client Portal:</p>
-                  <p>Email: client@example.com</p>
-                  <p>Password: client123</p>
-                </div>
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <p className="font-medium text-primary">Staff Access:</p>
-                  <p>Email: staff@finalroofing.com</p>
-                  <p>Password: staff123</p>
+                  <p className="font-medium text-primary">Admin Access:</p>
+                  <p>Email: nayib@finalroofingcompany.com</p>
+                  <p>Password: Final1234@</p>
                 </div>
               </div>
             </div>
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
-                New client? 
+                Need to create an account? 
                 <Link to="/register" className="text-primary hover:text-primary/80 font-medium ml-1">
-                  Create Account
+                  Register here
                 </Link>
               </p>
             </div>
