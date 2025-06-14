@@ -1,0 +1,129 @@
+
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+
+export interface SignedDocument {
+  id: string;
+  user_id: string;
+  document_name: string;
+  document_url: string;
+  signer_email: string;
+  signer_name: string | null;
+  signature_data: string | null;
+  signed_at: string | null;
+  expires_at: string | null;
+  status: 'pending' | 'signed' | 'expired' | 'cancelled';
+  metadata: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+export const useDocumentSignature = () => {
+  const [documents, setDocuments] = useState<SignedDocument[]>([]);
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+
+  const fetchDocuments = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('signed_documents')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setDocuments(data || []);
+    } catch (error: any) {
+      console.error('Error fetching documents:', error);
+      toast.error('Failed to fetch documents');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createDocument = async (documentData: Omit<SignedDocument, 'id' | 'user_id' | 'signature_data' | 'signed_at' | 'created_at' | 'updated_at'>) => {
+    if (!user) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('signed_documents')
+        .insert({ ...documentData, user_id: user.id })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setDocuments(prev => [data, ...prev]);
+      toast.success('Document created successfully');
+      return data;
+    } catch (error: any) {
+      console.error('Error creating document:', error);
+      toast.error('Failed to create document');
+      return null;
+    }
+  };
+
+  const signDocument = async (id: string, signatureData: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('signed_documents')
+        .update({ 
+          signature_data: signatureData, 
+          signed_at: new Date().toISOString(),
+          status: 'signed'
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setDocuments(prev => prev.map(doc => doc.id === id ? data : doc));
+      toast.success('Document signed successfully');
+      return data;
+    } catch (error: any) {
+      console.error('Error signing document:', error);
+      toast.error('Failed to sign document');
+      return null;
+    }
+  };
+
+  const updateDocumentStatus = async (id: string, status: SignedDocument['status']) => {
+    try {
+      const { data, error } = await supabase
+        .from('signed_documents')
+        .update({ status })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setDocuments(prev => prev.map(doc => doc.id === id ? data : doc));
+      toast.success('Document status updated');
+      return data;
+    } catch (error: any) {
+      console.error('Error updating document status:', error);
+      toast.error('Failed to update document status');
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [user]);
+
+  return {
+    documents,
+    loading,
+    fetchDocuments,
+    createDocument,
+    signDocument,
+    updateDocumentStatus
+  };
+};

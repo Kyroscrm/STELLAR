@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,7 +27,8 @@ import {
   Search,
   Bell,
   ChevronDown,
-  LogOut
+  LogOut,
+  Zap
 } from 'lucide-react';
 
 const Navigation = () => {
@@ -35,7 +37,6 @@ const Navigation = () => {
   const [searchOpen, setSearchOpen] = useState(false);
 
   const isActive = (path: string) => location.pathname.startsWith(path) && (path !== '/admin' || location.pathname === '/admin');
-
 
   const navigationItems = [
     {
@@ -124,6 +125,13 @@ const Navigation = () => {
         { title: 'Lead Conversion', href: '/admin/reports/leads', description: 'Lead analytics' },
         { title: 'Custom Reports', href: '/admin/reports/custom', description: 'Build custom reports' }
       ]
+    },
+    {
+      title: 'Integrations',
+      href: '/admin/integrations',
+      icon: Zap,
+      description: 'Advanced features & integrations',
+      basePath: '/admin/integrations',
     }
   ];
 
@@ -154,10 +162,10 @@ const Navigation = () => {
                             {item.title}
                           </NavigationMenuTrigger>
                           <NavigationMenuContent>
-                            <div className="w-[400px] p-4"> {/* Adjusted width */}
-                              <ul className="grid gap-3"> {/* Changed to ul for semantic list */}
+                            <div className="w-[400px] p-4">
+                              <ul className="grid gap-3">
                                 {item.children.map((child) => (
-                                  <li key={child.href}> {/* Added li for list items */}
+                                  <li key={child.href}>
                                     <NavigationMenuLink asChild>
                                       <Link
                                         to={child.href}
@@ -187,6 +195,11 @@ const Navigation = () => {
                           >
                             <item.icon className="h-4 w-4 mr-2" />
                             {item.title}
+                            {item.title === 'Integrations' && (
+                              <Badge variant="secondary" className="ml-2 text-xs">
+                                16
+                              </Badge>
+                            )}
                           </Link>
                         </NavigationMenuLink>
                       )}
@@ -251,7 +264,6 @@ const Navigation = () => {
                 {item.title}
               </Link>
             ) : (
-              // Basic dropdown for mobile, can be enhanced
               <details key={item.title} className="group">
                 <summary className={`flex items-center justify-between px-3 py-2 rounded-md text-base font-medium cursor-pointer ${
                   isActive(item.basePath || '')
