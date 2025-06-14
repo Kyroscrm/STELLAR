@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useEstimates } from '@/hooks/useEstimates';
 import { useCustomers } from '@/hooks/useCustomers';
@@ -386,6 +385,18 @@ const EstimatesPage = () => {
                     >
                       <Send className="h-4 w-4 mr-2" />
                       Send to Customer
+                    </Button>
+                  )}
+                  {selectedEstimate.status === 'approved' && (
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        // Navigate to create invoice from estimate
+                        console.log('Create invoice from estimate:', selectedEstimate.id);
+                      }}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Create Invoice
                     </Button>
                   )}
                 </div>

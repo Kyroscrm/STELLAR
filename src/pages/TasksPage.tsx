@@ -1,10 +1,11 @@
-
 import React, { useState } from 'react';
 import { useTasks } from '@/hooks/useTasks';
+import TaskKanbanBoard from '@/components/TaskKanbanBoard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Plus, 
   Search, 
@@ -16,7 +17,9 @@ import {
   AlertTriangle,
   Clock,
   CheckCircle2,
-  Zap
+  Zap,
+  Kanban,
+  List as ListIcon
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -36,6 +39,7 @@ import {
 const TasksPage = () => {
   const { tasks, loading, error } = useTasks();
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
 
   const filteredTasks = tasks.filter(task => 
     task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -112,10 +116,26 @@ const TasksPage = () => {
               />
             </div>
           </div>
-          <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white">
-            <Filter className="h-4 w-4 mr-2" />
-            Advanced Filters
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant={viewMode === 'kanban' ? 'default' : 'outline'}
+              onClick={() => setViewMode('kanban')}
+            >
+              <Kanban className="h-4 w-4 mr-2" />
+              Kanban
+            </Button>
+            <Button 
+              variant={viewMode === 'list' ? 'default' : 'outline'}
+              onClick={() => setViewMode('list')}
+            >
+              <ListIcon className="h-4 w-4 mr-2" />
+              List
+            </Button>
+            <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white">
+              <Filter className="h-4 w-4 mr-2" />
+              Advanced Filters
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -169,102 +189,39 @@ const TasksPage = () => {
           </Card>
         </div>
 
-        {/* Tasks Table */}
-        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-          <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 border-b">
-            <CardTitle className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-              <ClipboardList className="h-5 w-5" />
-              Task List
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {filteredTasks.length === 0 ? (
-              <div className="text-center py-16">
-                <img 
-                  src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=200&fit=crop"
-                  alt="Empty state"
-                  className="mx-auto w-48 h-32 object-cover rounded-lg mb-6 opacity-60"
-                />
-                <p className="text-gray-500 text-lg mb-4">No tasks found.</p>
-                <Button className="bg-gradient-to-r from-blue-500 to-indigo-600">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Your First Task
-                </Button>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-gray-50/50">
-                    <TableHead className="font-semibold">Title</TableHead>
-                    <TableHead className="font-semibold">Status</TableHead>
-                    <TableHead className="font-semibold">Priority</TableHead>
-                    <TableHead className="font-semibold">Due Date</TableHead>
-                    <TableHead className="font-semibold">Assigned To</TableHead>
-                    <TableHead className="text-right font-semibold">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTasks.map((task) => (
-                    <TableRow key={task.id} className="hover:bg-blue-50/50 transition-colors">
-                      <TableCell className="font-medium text-gray-800">{task.title}</TableCell>
-                      <TableCell>
-                        <Badge variant={
-                          task.status === 'completed' ? 'default' :
-                          task.status === 'in_progress' ? 'secondary' :
-                          'outline'
-                        } className={
-                          task.status === 'completed' ? 'bg-green-100 text-green-800 border-green-200' :
-                          task.status === 'in_progress' ? 'bg-orange-100 text-orange-800 border-orange-200' :
-                          'bg-gray-100 text-gray-800 border-gray-200'
-                        }>
-                          {task.status.replace('_', ' ')}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={
-                          task.priority === 'high' || task.priority === 'urgent' ? 'destructive' :
-                          task.priority === 'medium' ? 'secondary' :
-                          'outline'
-                        } className="capitalize">
-                          {task.priority}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-gray-400" />
-                          {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No due date'}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-gray-400" />
-                          {task.assigned_to || 'Unassigned'}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="hover:bg-blue-100">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                            <DropdownMenuItem>Edit Task</DropdownMenuItem>
-                            <DropdownMenuItem>Assign to User</DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">
-                              Delete Task
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+        {/* Main Content */}
+        {viewMode === 'kanban' ? (
+          <TaskKanbanBoard />
+        ) : (
+          <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+            <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 border-b">
+              <CardTitle className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                <ClipboardList className="h-5 w-5" />
+                Task List
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {filteredTasks.length === 0 ? (
+                <div className="text-center py-16">
+                  <img 
+                    src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=200&fit=crop"
+                    alt="Empty state"
+                    className="mx-auto w-48 h-32 object-cover rounded-lg mb-6 opacity-60"
+                  />
+                  <p className="text-gray-500 text-lg mb-4">No tasks found.</p>
+                  <Button className="bg-gradient-to-r from-blue-500 to-indigo-600">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Your First Task
+                  </Button>
+                </div>
+              ) : (
+                <div className="p-4">
+                  <p className="text-gray-500">List view content will be implemented here...</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
