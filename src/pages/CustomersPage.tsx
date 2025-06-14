@@ -16,7 +16,8 @@ import {
   Building,
   Users,
   Calendar,
-  Briefcase
+  Briefcase,
+  Star
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -24,10 +25,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import NewCustomerForm from '@/components/NewCustomerForm';
 
 const CustomersPage = () => {
   const { customers, loading, updateCustomer, deleteCustomer } = useCustomers();
   const [searchTerm, setSearchTerm] = useState('');
+  const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
 
   const filteredCustomers = customers.filter(customer => {
     return !searchTerm || 
@@ -39,7 +42,7 @@ const CustomersPage = () => {
 
   const customerStats = {
     total: customers.length,
-    withJobs: customers.filter(c => c.company_name).length, // Approximation
+    withJobs: customers.filter(c => c.company_name).length,
     thisMonth: customers.filter(c => {
       const createdAt = new Date(c.created_at || '');
       const now = new Date();
@@ -63,7 +66,7 @@ const CustomersPage = () => {
           <h1 className="text-3xl font-bold">Customers</h1>
           <p className="text-gray-600">Manage your customer relationships</p>
         </div>
-        <Button>
+        <Button onClick={() => setShowNewCustomerForm(true)}>
           <Plus className="h-4 w-4 mr-2" />
           New Customer
         </Button>
@@ -131,9 +134,10 @@ const CustomersPage = () => {
           <Card key={customer.id} className="hover:shadow-lg transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-lg">
+                <div className="flex-1">
+                  <CardTitle className="text-lg flex items-center gap-2">
                     {customer.first_name} {customer.last_name}
+                    <Star className="h-4 w-4 text-yellow-500 fill-current" />
                   </CardTitle>
                   {customer.company_name && (
                     <Badge variant="outline" className="mt-1">
@@ -150,6 +154,7 @@ const CustomersPage = () => {
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem>View Details</DropdownMenuItem>
                     <DropdownMenuItem>Create Job</DropdownMenuItem>
+                    <DropdownMenuItem>Create Estimate</DropdownMenuItem>
                     <DropdownMenuItem>Send Message</DropdownMenuItem>
                     <DropdownMenuItem>Edit Customer</DropdownMenuItem>
                     <DropdownMenuItem 
@@ -217,11 +222,19 @@ const CustomersPage = () => {
       {filteredCustomers.length === 0 && (
         <div className="text-center py-12">
           <p className="text-gray-500">No customers found matching your search.</p>
-          <Button className="mt-4">
+          <Button className="mt-4" onClick={() => setShowNewCustomerForm(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add Your First Customer
           </Button>
         </div>
+      )}
+
+      {/* New Customer Form Modal */}
+      {showNewCustomerForm && (
+        <NewCustomerForm 
+          onClose={() => setShowNewCustomerForm(false)}
+          onSuccess={() => window.location.reload()}
+        />
       )}
     </div>
   );

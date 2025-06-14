@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import AdminLayout from "@/components/AdminLayout";
 import Index from "./pages/Index";
 import ServicesPage from "./pages/ServicesPage";
 import GalleryPage from "./pages/GalleryPage";
@@ -60,70 +62,24 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 
-                {/* Admin Routes */}
+                {/* Admin Routes with Layout */}
                 <Route path="/admin" element={
                   <ErrorBoundary>
                     <ProtectedRoute allowedRoles={['admin', 'staff']}>
-                      <AdminDashboard />
+                      <AdminLayout />
                     </ProtectedRoute>
                   </ErrorBoundary>
-                } />
-                <Route path="/admin/leads" element={
-                  <ErrorBoundary>
-                    <ProtectedRoute allowedRoles={['admin', 'staff']}>
-                      <LeadsPage />
-                    </ProtectedRoute>
-                  </ErrorBoundary>
-                } />
-                <Route path="/admin/customers" element={
-                  <ErrorBoundary>
-                    <ProtectedRoute allowedRoles={['admin', 'staff']}>
-                      <CustomersPage />
-                    </ProtectedRoute>
-                  </ErrorBoundary>
-                } />
-                <Route path="/admin/jobs" element={
-                  <ErrorBoundary>
-                    <ProtectedRoute allowedRoles={['admin', 'staff']}>
-                      <JobsPage />
-                    </ProtectedRoute>
-                  </ErrorBoundary>
-                } />
-                <Route path="/admin/tasks" element={
-                  <ErrorBoundary>
-                    <ProtectedRoute allowedRoles={['admin', 'staff']}>
-                      <TasksPage />
-                    </ProtectedRoute>
-                  </ErrorBoundary>
-                } />
-                <Route path="/admin/estimates" element={
-                  <ErrorBoundary>
-                    <ProtectedRoute allowedRoles={['admin', 'staff']}>
-                      <EstimatesPage />
-                    </ProtectedRoute>
-                  </ErrorBoundary>
-                } />
-                <Route path="/admin/invoices" element={
-                  <ErrorBoundary>
-                    <ProtectedRoute allowedRoles={['admin', 'staff']}>
-                      <InvoicesPage />
-                    </ProtectedRoute>
-                  </ErrorBoundary>
-                } />
-                <Route path="/admin/integrations" element={
-                  <ErrorBoundary>
-                    <ProtectedRoute allowedRoles={['admin', 'staff']}>
-                      <IntegrationsPage />
-                    </ProtectedRoute>
-                  </ErrorBoundary>
-                } />
-                <Route path="/admin/settings" element={
-                  <ErrorBoundary>
-                    <ProtectedRoute allowedRoles={['admin', 'staff']}>
-                      <SettingsPage />
-                    </ProtectedRoute>
-                  </ErrorBoundary>
-                } />
+                }>
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="leads" element={<LeadsPage />} />
+                  <Route path="customers" element={<CustomersPage />} />
+                  <Route path="jobs" element={<JobsPage />} />
+                  <Route path="tasks" element={<TasksPage />} />
+                  <Route path="estimates" element={<EstimatesPage />} />
+                  <Route path="invoices" element={<InvoicesPage />} />
+                  <Route path="integrations" element={<IntegrationsPage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                </Route>
                 
                 {/* Client Routes */}
                 <Route path="/client" element={
