@@ -1,10 +1,12 @@
-
 import React, { useState } from 'react';
 import { useJobs } from '@/hooks/useJobs';
+import JobKanbanBoard from '@/components/JobKanbanBoard';
+import FileWorkflowManager from '@/components/FileWorkflowManager';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Plus, 
   Search, 
@@ -18,7 +20,10 @@ import {
   Briefcase,
   TrendingUp,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Kanban,
+  List,
+  Settings
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -31,6 +36,7 @@ const JobsPage = () => {
   const { jobs, loading, updateJob, deleteJob } = useJobs();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'files'>('kanban');
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -91,10 +97,21 @@ const JobsPage = () => {
           <h1 className="text-3xl font-bold">Jobs Management</h1>
           <p className="text-gray-600">Track and manage all your projects</p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          New Job
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setViewMode('list')} className={viewMode === 'list' ? 'bg-primary text-white' : ''}>
+            <List className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setViewMode('kanban')} className={viewMode === 'kanban' ? 'bg-primary text-white' : ''}>
+            <Kanban className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setViewMode('files')} className={viewMode === 'files' ? 'bg-primary text-white' : ''}>
+            <Settings className="h-4 w-4" />
+          </Button>
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            New Job
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -160,144 +177,153 @@ const JobsPage = () => {
         </Card>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input 
-            placeholder="Search jobs..." 
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <select 
-          className="px-3 py-2 border border-gray-300 rounded-md"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="all">All Status</option>
-          <option value="quoted">Quoted</option>
-          <option value="scheduled">Scheduled</option>
-          <option value="in_progress">In Progress</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
-        <Button variant="outline">
-          <Filter className="h-4 w-4 mr-2" />
-          More Filters
-        </Button>
-      </div>
+      {/* View Content */}
+      {viewMode === 'kanban' && <JobKanbanBoard />}
+      
+      {viewMode === 'files' && <FileWorkflowManager />}
+      
+      {viewMode === 'list' && (
+        <>
+          {/* Filters */}
+          <div className="flex gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input 
+                placeholder="Search jobs..." 
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <select 
+              className="px-3 py-2 border border-gray-300 rounded-md"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="all">All Status</option>
+              <option value="quoted">Quoted</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            <Button variant="outline">
+              <Filter className="h-4 w-4 mr-2" />
+              More Filters
+            </Button>
+          </div>
 
-      {/* Jobs Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredJobs.map((job) => (
-          <Card key={job.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <CardTitle className="text-lg line-clamp-2">
-                    {job.title}
-                  </CardTitle>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Badge className={getStatusColor(job.status || 'quoted')}>
-                      <span className="flex items-center gap-1">
-                        {getStatusIcon(job.status || 'quoted')}
-                        {job.status}
-                      </span>
-                    </Badge>
-                  </div>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>View Details</DropdownMenuItem>
-                    <DropdownMenuItem>Create Estimate</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleStatusChange(job.id, 'in_progress')}>
-                      Start Job
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleStatusChange(job.id, 'completed')}>
-                      Mark Complete
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      className="text-red-600"
-                      onClick={() => deleteJob(job.id)}
-                    >
-                      Delete Job
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {job.customers && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <User className="h-4 w-4 mr-2" />
-                    {job.customers.first_name} {job.customers.last_name}
-                  </div>
-                )}
-                {job.address && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <MapPin className="h-4 w-4 mr-2" />
-                    {job.address}
-                  </div>
-                )}
-                {job.budget && (
-                  <div className="flex items-center text-sm font-medium text-green-600">
-                    <DollarSign className="h-4 w-4 mr-2" />
-                    Budget: ${job.budget.toLocaleString()}
-                  </div>
-                )}
-                <div className="flex items-center justify-between text-sm text-gray-600">
-                  {job.start_date && (
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      Start: {new Date(job.start_date).toLocaleDateString()}
+          {/* Jobs Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredJobs.map((job) => (
+              <Card key={job.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-lg line-clamp-2">
+                        {job.title}
+                      </CardTitle>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge className={getStatusColor(job.status || 'quoted')}>
+                          <span className="flex items-center gap-1">
+                            {getStatusIcon(job.status || 'quoted')}
+                            {job.status}
+                          </span>
+                        </Badge>
+                      </div>
                     </div>
-                  )}
-                  {job.end_date && (
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      End: {new Date(job.end_date).toLocaleDateString()}
-                    </div>
-                  )}
-                </div>
-                {job.estimated_hours && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Clock className="h-4 w-4 mr-2" />
-                    Est. {job.estimated_hours}h
-                    {job.actual_hours && ` / Actual ${job.actual_hours}h`}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>View Details</DropdownMenuItem>
+                        <DropdownMenuItem>Create Estimate</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange(job.id, 'in_progress')}>
+                          Start Job
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange(job.id, 'completed')}>
+                          Mark Complete
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="text-red-600"
+                          onClick={() => deleteJob(job.id)}
+                        >
+                          Delete Job
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                )}
-                {job.description && (
-                  <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded line-clamp-3">
-                    {job.description}
-                  </p>
-                )}
-                {job.notes && (
-                  <p className="text-xs text-gray-500 bg-yellow-50 p-2 rounded">
-                    Notes: {job.notes}
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {job.customers && (
+                      <div className="flex items-center text-sm text-gray-600">
+                        <User className="h-4 w-4 mr-2" />
+                        {job.customers.first_name} {job.customers.last_name}
+                      </div>
+                    )}
+                    {job.address && (
+                      <div className="flex items-center text-sm text-gray-600">
+                        <MapPin className="h-4 w-4 mr-2" />
+                        {job.address}
+                      </div>
+                    )}
+                    {job.budget && (
+                      <div className="flex items-center text-sm font-medium text-green-600">
+                        <DollarSign className="h-4 w-4 mr-2" />
+                        Budget: ${job.budget.toLocaleString()}
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between text-sm text-gray-600">
+                      {job.start_date && (
+                        <div className="flex items-center">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          Start: {new Date(job.start_date).toLocaleDateString()}
+                        </div>
+                      )}
+                      {job.end_date && (
+                        <div className="flex items-center">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          End: {new Date(job.end_date).toLocaleDateString()}
+                        </div>
+                      )}
+                    </div>
+                    {job.estimated_hours && (
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Clock className="h-4 w-4 mr-2" />
+                        Est. {job.estimated_hours}h
+                        {job.actual_hours && ` / Actual ${job.actual_hours}h`}
+                      </div>
+                    )}
+                    {job.description && (
+                      <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded line-clamp-3">
+                        {job.description}
+                      </p>
+                    )}
+                    {job.notes && (
+                      <p className="text-xs text-gray-500 bg-yellow-50 p-2 rounded">
+                        Notes: {job.notes}
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-      {filteredJobs.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500">No jobs found matching your criteria.</p>
-          <Button className="mt-4">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Your First Job
-          </Button>
-        </div>
+          {filteredJobs.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No jobs found matching your criteria.</p>
+              <Button className="mt-4">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Your First Job
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
-import { Phone, Mail, User, Menu, X } from 'lucide-react';
+import { Phone, Mail, User, Menu, X, Briefcase, Users, FileText, Calendar, Receipt, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -26,6 +26,16 @@ const Header = () => {
     logout();
     navigate('/');
   };
+
+  const crmNavItems = [
+    { title: 'Dashboard', href: '/admin', icon: Briefcase },
+    { title: 'Leads', href: '/admin/leads', icon: UserPlus },
+    { title: 'Customers', href: '/admin/customers', icon: Users },
+    { title: 'Jobs', href: '/admin/jobs', icon: Briefcase },
+    { title: 'Estimates', href: '/admin/estimates', icon: FileText },
+    { title: 'Invoices', href: '/admin/invoices', icon: Receipt },
+    { title: 'Tasks', href: '/admin/tasks', icon: Calendar },
+  ];
 
   return (
     <header className="fixed top-0 w-full bg-white/95 backdrop-blur-md z-50 border-b border-gray-100">
@@ -64,6 +74,23 @@ const Header = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-8">
+            {/* CRM Navigation for admin/staff users */}
+            {(user?.role === 'admin' || user?.role === 'staff') && (
+              <div className="flex items-center space-x-4 mr-8 border-r pr-8">
+                {crmNavItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    className="flex items-center gap-2 text-gray-700 hover:text-primary transition-colors font-medium"
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.title}
+                  </Link>
+                ))}
+              </div>
+            )}
+            
+            {/* Public site navigation */}
             <a href="#services" className="text-gray-700 hover:text-primary transition-colors font-medium">
               Services
             </a>
@@ -118,6 +145,24 @@ const Header = () => {
       {isMenuOpen && (
         <div className="lg:hidden bg-white border-t border-gray-100">
           <nav className="container mx-auto px-4 py-4 space-y-4">
+            {/* CRM Navigation for mobile */}
+            {(user?.role === 'admin' || user?.role === 'staff') && (
+              <div className="space-y-2 border-b pb-4 mb-4">
+                <h3 className="font-semibold text-gray-900">CRM</h3>
+                {crmNavItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    className="flex items-center gap-2 text-gray-700 hover:text-primary transition-colors font-medium"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.title}
+                  </Link>
+                ))}
+              </div>
+            )}
+            
             <a href="#services" className="block text-gray-700 hover:text-primary transition-colors font-medium">
               Services
             </a>
@@ -133,6 +178,7 @@ const Header = () => {
             <a href="#contact" className="block text-gray-700 hover:text-primary transition-colors font-medium">
               Contact
             </a>
+            
             <div className="flex flex-col gap-2 pt-4 border-t border-gray-100">
               {user ? (
                 <>
