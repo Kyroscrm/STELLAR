@@ -51,9 +51,14 @@ const Header = () => {
       {/* Main header */}
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
-          <div className="flex items-center">
+          <div className="flex items-center gap-4">
+            <img 
+              src="/lovable-uploads/f6ae6373-2ac3-4ff4-8436-389ab0da2914.png" 
+              alt="Final Roofing & Retro-Fit Logo" 
+              className="h-12 w-auto"
+            />
             <h1 className="text-2xl font-heading font-bold text-primary">
-              Final<span className="text-secondary">Roofing</span> & Retro-Fit
+              Final <span className="text-secondary">Roofing</span> & Retro-Fit
             </h1>
           </div>
 

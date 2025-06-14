@@ -275,10 +275,17 @@ const Index = () => {
       <footer className="bg-primary text-white py-12">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="text-2xl font-heading font-bold mb-4">
-                Final<span className="text-secondary">Roofing</span> & Retro-Fit
-              </h3>
+            <div className="flex flex-col items-start">
+              <div className="flex items-center gap-3 mb-4">
+                <img 
+                  src="/lovable-uploads/f6ae6373-2ac3-4ff4-8436-389ab0da2914.png" 
+                  alt="Final Roofing & Retro-Fit Logo" 
+                  className="h-10 w-auto"
+                />
+                <h3 className="text-2xl font-heading font-bold">
+                  Final <span className="text-secondary">Roofing</span> & Retro-Fit
+                </h3>
+              </div>
               <p className="text-white/80">
                 Premium roofing and retrofit solutions for your home. Licensed, insured, and trusted.
               </p>

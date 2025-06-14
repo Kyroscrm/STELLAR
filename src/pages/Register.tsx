@@ -78,7 +78,7 @@ const Register = () => {
             Back to Home
           </Link>
           <h1 className="text-3xl font-heading font-bold text-primary">
-            Final Roofing<span className="text-secondary"> & Retro-Fit</span>
+            Final <span className="text-secondary">Roofing</span> & Retro-Fit
           </h1>
           <p className="text-gray-600 mt-2">Create your account</p>
         </div>
