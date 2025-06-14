@@ -12,7 +12,6 @@ type Estimate = Tables<'estimates'> & {
 };
 type EstimateInsert = TablesInsert<'estimates'>;
 type EstimateUpdate = TablesUpdate<'estimates'>;
-type EstimateLineItem = Tables<'estimate_line_items'>;
 
 export const useEstimates = () => {
   const [estimates, setEstimates] = useState<Estimate[]>([]);
@@ -28,17 +27,8 @@ export const useEstimates = () => {
         .from('estimates')
         .select(`
           *,
-          customers (
-            id,
-            first_name,
-            last_name,
-            email,
-            phone
-          ),
-          jobs (
-            id,
-            title
-          ),
+          customers (*),
+          jobs (*),
           estimate_line_items (*)
         `)
         .eq('user_id', user.id)
@@ -54,7 +44,7 @@ export const useEstimates = () => {
     }
   };
 
-  const createEstimate = async (estimateData: Omit<EstimateInsert, 'user_id'>) => {
+  const createEstimate = async (estimateData: Omit<EstimateInsert, 'user_id' | 'estimate_number'>) => {
     if (!user) return null;
 
     try {
@@ -70,17 +60,8 @@ export const useEstimates = () => {
         })
         .select(`
           *,
-          customers (
-            id,
-            first_name,
-            last_name,
-            email,
-            phone
-          ),
-          jobs (
-            id,
-            title
-          ),
+          customers (*),
+          jobs (*),
           estimate_line_items (*)
         `)
         .single();
@@ -96,7 +77,7 @@ export const useEstimates = () => {
         entity_type: 'estimate',
         entity_id: data.id,
         action: 'created',
-        description: `Estimate created: ${data.title}`
+        description: `Estimate created: ${data.estimate_number}`
       });
 
       return data;
@@ -115,17 +96,8 @@ export const useEstimates = () => {
         .eq('id', id)
         .select(`
           *,
-          customers (
-            id,
-            first_name,
-            last_name,
-            email,
-            phone
-          ),
-          jobs (
-            id,
-            title
-          ),
+          customers (*),
+          jobs (*),
           estimate_line_items (*)
         `)
         .single();
@@ -185,16 +157,15 @@ export const useEstimates = () => {
   const convertToInvoice = async (estimateId: string) => {
     try {
       const estimate = estimates.find(e => e.id === estimateId);
-      if (!estimate || !user) return null;
-
-      // Generate invoice number
-      const invoiceNumber = `INV-${Date.now()}`;
+      if (!estimate) throw new Error('Estimate not found');
 
       // Create invoice from estimate
+      const invoiceNumber = `INV-${Date.now()}`;
+      
       const { data: invoice, error: invoiceError } = await supabase
         .from('invoices')
         .insert({
-          user_id: user.id,
+          user_id: user?.id,
           customer_id: estimate.customer_id,
           job_id: estimate.job_id,
           estimate_id: estimateId,
@@ -205,18 +176,16 @@ export const useEstimates = () => {
           tax_rate: estimate.tax_rate,
           tax_amount: estimate.tax_amount,
           total_amount: estimate.total_amount,
-          notes: estimate.notes,
-          due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 30 days from now
+          status: 'draft'
         })
         .select()
         .single();
 
       if (invoiceError) throw invoiceError;
 
-      // Copy line items if they exist
-      const estimateLineItems = estimate.estimate_line_items;
-      if (estimateLineItems && estimateLineItems.length > 0) {
-        const invoiceLineItems = estimateLineItems.map((item: EstimateLineItem) => ({
+      // Copy line items
+      if (estimate.estimate_line_items && estimate.estimate_line_items.length > 0) {
+        const lineItems = estimate.estimate_line_items.map(item => ({
           invoice_id: invoice.id,
           description: item.description,
           quantity: item.quantity,
@@ -224,28 +193,32 @@ export const useEstimates = () => {
           sort_order: item.sort_order
         }));
 
-        await supabase
+        const { error: lineItemsError } = await supabase
           .from('invoice_line_items')
-          .insert(invoiceLineItems);
+          .insert(lineItems);
+
+        if (lineItemsError) throw lineItemsError;
       }
 
       // Update estimate status
       await updateEstimate(estimateId, { status: 'approved' });
-      
+
       toast.success('Estimate converted to invoice successfully');
       
       // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'estimate',
-        entity_id: estimateId,
-        action: 'converted',
-        description: `Estimate converted to invoice`
-      });
+      if (user) {
+        await supabase.from('activity_logs').insert({
+          user_id: user.id,
+          entity_type: 'estimate',
+          entity_id: estimateId,
+          action: 'converted',
+          description: `Estimate converted to invoice: ${invoiceNumber}`
+        });
+      }
 
       return invoice;
     } catch (error: any) {
-      console.error('Error converting estimate:', error);
+      console.error('Error converting estimate to invoice:', error);
       toast.error('Failed to convert estimate to invoice');
       return null;
     }

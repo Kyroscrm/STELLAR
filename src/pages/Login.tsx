@@ -62,7 +62,7 @@ const Login = () => {
             Back to Home
           </Link>
           <h1 className="text-3xl font-heading font-bold text-primary">
-            ProBuild<span className="text-secondary">Contractors</span>
+            Final Roofing<span className="text-secondary"> & Retro-Fit</span>
           </h1>
           <p className="text-gray-600 mt-2">Access your project dashboard</p>
         </div>
@@ -130,7 +130,7 @@ const Login = () => {
               <div className="space-y-2 text-sm">
                 <div className="bg-gray-50 p-3 rounded-lg">
                   <p className="font-medium text-primary">Admin/CRM Access:</p>
-                  <p>Email: admin@probuild.com</p>
+                  <p>Email: admin@finalroofing.com</p>
                   <p>Password: admin123</p>
                 </div>
                 <div className="bg-gray-50 p-3 rounded-lg">
@@ -140,7 +140,7 @@ const Login = () => {
                 </div>
                 <div className="bg-gray-50 p-3 rounded-lg">
                   <p className="font-medium text-primary">Staff Access:</p>
-                  <p>Email: staff@probuild.com</p>
+                  <p>Email: staff@finalroofing.com</p>
                   <p>Password: staff123</p>
                 </div>
               </div>

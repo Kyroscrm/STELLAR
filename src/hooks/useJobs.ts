@@ -25,13 +25,7 @@ export const useJobs = () => {
         .from('jobs')
         .select(`
           *,
-          customers (
-            id,
-            first_name,
-            last_name,
-            email,
-            phone
-          )
+          customers (*)
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -55,13 +49,7 @@ export const useJobs = () => {
         .insert({ ...jobData, user_id: user.id })
         .select(`
           *,
-          customers (
-            id,
-            first_name,
-            last_name,
-            email,
-            phone
-          )
+          customers (*)
         `)
         .single();
 
@@ -95,13 +83,7 @@ export const useJobs = () => {
         .eq('id', id)
         .select(`
           *,
-          customers (
-            id,
-            first_name,
-            last_name,
-            email,
-            phone
-          )
+          customers (*)
         `)
         .single();
 

@@ -47,11 +47,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Demo users for different roles
       let userData: User;
-      if (email === 'admin@probuild.com' && password === 'admin123') {
+      if (email === 'admin@finalroofing.com' && password === 'admin123') {
         userData = { id: '1', email, name: 'Admin User', role: 'admin' };
       } else if (email === 'client@example.com' && password === 'client123') {
         userData = { id: '2', email, name: 'John Client', role: 'client' };
-      } else if (email === 'staff@probuild.com' && password === 'staff123') {
+      } else if (email === 'staff@finalroofing.com' && password === 'staff123') {
         userData = { id: '3', email, name: 'Staff Member', role: 'staff' };
       } else {
         return false;
