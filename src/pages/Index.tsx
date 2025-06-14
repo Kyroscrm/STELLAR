@@ -58,8 +58,8 @@ const Index = () => {
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-3xl transform rotate-3"></div>
                 <img 
-                  src="/placeholder.svg" 
-                  alt="Final Roofing & Retro-Fit premium roofing work"
+                  src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&h=400&fit=crop"
+                  alt="Modern home with professional roofing work"
                   className="relative rounded-3xl shadow-2xl w-full h-96 object-cover"
                 />
               </div>
@@ -101,37 +101,51 @@ const Index = () => {
               {
                 title: "Complete Roof Replacement",
                 description: "Full roof replacement with premium materials and expert craftsmanship",
-                features: ["25-year warranty", "Energy efficient materials", "Professional installation"]
+                features: ["25-year warranty", "Energy efficient materials", "Professional installation"],
+                image: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=250&fit=crop"
               },
               {
                 title: "Roof Repairs & Maintenance",
                 description: "Fast, reliable repairs to extend your roof's lifespan",
-                features: ["Emergency repairs", "Preventive maintenance", "Storm damage restoration"]
+                features: ["Emergency repairs", "Preventive maintenance", "Storm damage restoration"],
+                image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=400&h=250&fit=crop"
               },
               {
                 title: "Energy Retrofit Solutions",
                 description: "Improve your home's efficiency with modern retrofit solutions",
-                features: ["Insulation upgrades", "Ventilation systems", "Cool roof technology"]
+                features: ["Insulation upgrades", "Ventilation systems", "Cool roof technology"],
+                image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=250&fit=crop"
               },
               {
                 title: "Solar Integration",
                 description: "Seamless solar panel integration with roofing systems",
-                features: ["Solar-ready roofing", "Panel installation", "Energy monitoring"]
+                features: ["Solar-ready roofing", "Panel installation", "Energy monitoring"],
+                image: "https://images.unsplash.com/photo-1509391366360-2e959784a276?w=400&h=250&fit=crop"
               },
               {
                 title: "Gutter Systems",
                 description: "Complete gutter installation and maintenance services",
-                features: ["Seamless gutters", "Gutter guards", "Downspout systems"]
+                features: ["Seamless gutters", "Gutter guards", "Downspout systems"],
+                image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=250&fit=crop"
               },
               {
                 title: "Commercial Roofing",
                 description: "Professional commercial roofing solutions for businesses",
-                features: ["Flat roof systems", "Metal roofing", "Maintenance contracts"]
+                features: ["Flat roof systems", "Metal roofing", "Maintenance contracts"],
+                image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=250&fit=crop"
               }
             ].map((service, index) => (
-              <Card key={index} className="h-full hover:shadow-lg transition-shadow">
+              <Card key={index} className="h-full hover:shadow-lg transition-all duration-300 overflow-hidden group">
+                <div className="relative h-48 overflow-hidden">
+                  <img 
+                    src={service.image} 
+                    alt={service.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                  <h3 className="absolute bottom-4 left-4 text-white text-xl font-semibold">{service.title}</h3>
+                </div>
                 <CardContent className="p-6">
-                  <h3 className="text-xl font-semibold text-primary mb-3">{service.title}</h3>
                   <p className="text-gray-600 mb-4">{service.description}</p>
                   <ul className="space-y-2">
                     {service.features.map((feature, idx) => (
@@ -149,19 +163,7 @@ const Index = () => {
       </section>
 
       {/* Project Gallery */}
-      <section id="gallery" className="py-20 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-heading font-bold text-primary mb-4">
-              Our Featured Projects
-            </h2>
-            <p className="text-xl text-gray-600">
-              See the quality and craftsmanship that sets us apart
-            </p>
-          </div>
-          <ProjectGallery />
-        </div>
-      </section>
+      <ProjectGallery />
 
       {/* Reviews Section */}
       <section id="reviews" className="py-20">
@@ -218,8 +220,8 @@ const Index = () => {
             </div>
             <div>
               <img 
-                src="/placeholder.svg" 
-                alt="Final Roofing & Retro-Fit team"
+                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&h=400&fit=crop"
+                alt="Professional roofing team at work"
                 className="rounded-3xl shadow-2xl w-full h-96 object-cover"
               />
             </div>
@@ -240,7 +242,7 @@ const Index = () => {
           </div>
 
           <div className="grid lg:grid-cols-3 gap-8">
-            <Card className="text-center p-8">
+            <Card className="text-center p-8 hover:shadow-lg transition-shadow">
               <Phone className="h-12 w-12 text-primary mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-primary mb-2">Call Us</h3>
               <p className="text-gray-600 mb-4">Speak with our experts</p>
@@ -249,7 +251,7 @@ const Index = () => {
               </a>
             </Card>
 
-            <Card className="text-center p-8">
+            <Card className="text-center p-8 hover:shadow-lg transition-shadow">
               <Mail className="h-12 w-12 text-primary mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-primary mb-2">Email Us</h3>
               <p className="text-gray-600 mb-4">Get a detailed quote</p>
@@ -258,7 +260,7 @@ const Index = () => {
               </a>
             </Card>
 
-            <Card className="text-center p-8">
+            <Card className="text-center p-8 hover:shadow-lg transition-shadow">
               <MapPin className="h-12 w-12 text-primary mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-primary mb-2">Visit Us</h3>
               <p className="text-gray-600 mb-4">Our office location</p>
