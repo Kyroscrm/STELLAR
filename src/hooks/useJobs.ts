@@ -5,7 +5,9 @@ import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/type
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-type Job = Tables<'jobs'>;
+type Job = Tables<'jobs'> & {
+  customers?: Tables<'customers'>;
+};
 type JobInsert = TablesInsert<'jobs'>;
 type JobUpdate = TablesUpdate<'jobs'>;
 

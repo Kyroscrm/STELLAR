@@ -1,9 +1,11 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLeads } from '@/hooks/useLeads';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useJobs } from '@/hooks/useJobs';
 import { useEstimates } from '@/hooks/useEstimates';
+import { useProfile } from '@/hooks/useProfile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -24,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 
 const AdminDashboard = () => {
   const { user, logout } = useAuth();
+  const { profile } = useProfile();
   const { leads, loading: leadsLoading } = useLeads();
   const { customers, loading: customersLoading } = useCustomers();
   const { jobs, loading: jobsLoading } = useJobs();
@@ -87,7 +90,7 @@ const AdminDashboard = () => {
               <h1 className="text-2xl font-bold text-primary">
                 Final<span className="text-secondary">Roofing</span> CRM
               </h1>
-              <p className="text-gray-600">Welcome back, {user.first_name || user.email}</p>
+              <p className="text-gray-600">Welcome back, {profile?.first_name || user.email}</p>
             </div>
             <div className="flex items-center gap-4">
               <Button variant="outline" size="sm">
@@ -253,7 +256,7 @@ const AdminDashboard = () => {
                             <p className="font-medium">{job.title}</p>
                             <p className="text-sm text-gray-600">
                               {job.customers ? 
-                                `${(job.customers as any).first_name} ${(job.customers as any).last_name}` : 
+                                `${job.customers.first_name} ${job.customers.last_name}` : 
                                 'No customer assigned'
                               }
                             </p>
@@ -481,7 +484,7 @@ const AdminDashboard = () => {
                           .filter(job => 
                             !searchTerm || 
                             job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            (job.customers && `${(job.customers as any).first_name} ${(job.customers as any).last_name}`.toLowerCase().includes(searchTerm.toLowerCase()))
+                            (job.customers && `${job.customers.first_name} ${job.customers.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()))
                           )
                           .map((job) => (
                           <tr key={job.id} className="border-b hover:bg-gray-50">
@@ -494,8 +497,8 @@ const AdminDashboard = () => {
                             <td className="p-4">
                               {job.customers ? (
                                 <div>
-                                  <p className="font-medium">{(job.customers as any).first_name} {(job.customers as any).last_name}</p>
-                                  <p className="text-sm text-gray-600">{(job.customers as any).email}</p>
+                                  <p className="font-medium">{job.customers.first_name} {job.customers.last_name}</p>
+                                  <p className="text-sm text-gray-600">{job.customers.email}</p>
                                 </div>
                               ) : (
                                 <p>No customer assigned</p>
@@ -570,7 +573,7 @@ const AdminDashboard = () => {
                           .filter(estimate => 
                             !searchTerm || 
                             estimate.estimate_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            (estimate.customers && `${(estimate.customers as any).first_name} ${(estimate.customers as any).last_name}`.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                            (estimate.customers && `${estimate.customers.first_name} ${estimate.customers.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())) ||
                             (estimate.jobs && estimate.jobs.title.toLowerCase().includes(searchTerm.toLowerCase()))
                           )
                           .map((estimate) => (
@@ -581,8 +584,8 @@ const AdminDashboard = () => {
                             <td className="p-4">
                               {estimate.customers ? (
                                 <div>
-                                  <p className="font-medium">{(estimate.customers as any).first_name} {(estimate.customers as any).last_name}</p>
-                                  <p className="text-sm text-gray-600">{(estimate.customers as any).email}</p>
+                                  <p className="font-medium">{estimate.customers.first_name} {estimate.customers.last_name}</p>
+                                  <p className="text-sm text-gray-600">{estimate.customers.email}</p>
                                 </div>
                               ) : (
                                 <p>No customer assigned</p>

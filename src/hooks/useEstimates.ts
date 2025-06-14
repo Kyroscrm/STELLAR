@@ -5,7 +5,11 @@ import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/type
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-type Estimate = Tables<'estimates'>;
+type Estimate = Tables<'estimates'> & {
+  customers?: Tables<'customers'>;
+  jobs?: Tables<'jobs'>;
+  estimate_line_items?: Tables<'estimate_line_items'>[];
+};
 type EstimateInsert = TablesInsert<'estimates'>;
 type EstimateUpdate = TablesUpdate<'estimates'>;
 type EstimateLineItem = Tables<'estimate_line_items'>;
@@ -210,7 +214,7 @@ export const useEstimates = () => {
       if (invoiceError) throw invoiceError;
 
       // Copy line items if they exist
-      const estimateLineItems = (estimate as any).estimate_line_items;
+      const estimateLineItems = estimate.estimate_line_items;
       if (estimateLineItems && estimateLineItems.length > 0) {
         const invoiceLineItems = estimateLineItems.map((item: EstimateLineItem) => ({
           invoice_id: invoice.id,
