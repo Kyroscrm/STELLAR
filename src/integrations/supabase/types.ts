@@ -687,6 +687,81 @@ export type Database = {
           },
         ]
       }
+      file_policies: {
+        Row: {
+          allowed_file_types: string[] | null
+          auto_organize: boolean | null
+          created_at: string | null
+          entity_type: string
+          id: string
+          max_file_size: number | null
+          max_files_per_entity: number | null
+          page_type: string
+          require_approval: boolean | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          allowed_file_types?: string[] | null
+          auto_organize?: boolean | null
+          created_at?: string | null
+          entity_type: string
+          id?: string
+          max_file_size?: number | null
+          max_files_per_entity?: number | null
+          page_type: string
+          require_approval?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          allowed_file_types?: string[] | null
+          auto_organize?: boolean | null
+          created_at?: string | null
+          entity_type?: string
+          id?: string
+          max_file_size?: number | null
+          max_files_per_entity?: number | null
+          page_type?: string
+          require_approval?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      file_workflows: {
+        Row: {
+          created_at: string | null
+          entity_type: string
+          id: string
+          is_active: boolean | null
+          name: string
+          page_type: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          entity_type: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          page_type: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          entity_type?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          page_type?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       invoice_line_items: {
         Row: {
           created_at: string | null
@@ -1677,6 +1752,44 @@ export type Database = {
           },
         ]
       }
+      workflow_steps: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_required: boolean | null
+          step_config: Json | null
+          step_order: number
+          step_type: Database["public"]["Enums"]["file_step_type"]
+          workflow_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_required?: boolean | null
+          step_config?: Json | null
+          step_order: number
+          step_type: Database["public"]["Enums"]["file_step_type"]
+          workflow_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_required?: boolean | null
+          step_config?: Json | null
+          step_order?: number
+          step_type?: Database["public"]["Enums"]["file_step_type"]
+          workflow_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_steps_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "file_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workflows: {
         Row: {
           actions: Json
@@ -1737,6 +1850,7 @@ export type Database = {
         | "approved"
         | "rejected"
         | "expired"
+      file_step_type: "upload" | "review" | "approve" | "organize" | "notify"
       integration_status: "active" | "inactive" | "error" | "pending"
       invoice_status:
         | "draft"
@@ -1902,6 +2016,7 @@ export const Constants = {
         "rejected",
         "expired",
       ],
+      file_step_type: ["upload", "review", "approve", "organize", "notify"],
       integration_status: ["active", "inactive", "error", "pending"],
       invoice_status: [
         "draft",

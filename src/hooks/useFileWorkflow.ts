@@ -49,13 +49,13 @@ export const useFileWorkflow = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('file_policies')
+        .from('file_policies' as any)
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPolicies(data || []);
+      setPolicies(data as FilePolicy[] || []);
     } catch (error: any) {
       console.error('Error fetching file policies:', error);
       toast.error('Failed to fetch file policies');
@@ -70,7 +70,7 @@ export const useFileWorkflow = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('file_workflows')
+        .from('file_workflows' as any)
         .select(`
           *,
           workflow_steps (*)
@@ -80,12 +80,12 @@ export const useFileWorkflow = () => {
 
       if (error) throw error;
       
-      const workflowsWithSteps = data?.map(workflow => ({
+      const workflowsWithSteps = data?.map((workflow: any) => ({
         ...workflow,
         steps: workflow.workflow_steps || []
       })) || [];
       
-      setWorkflows(workflowsWithSteps);
+      setWorkflows(workflowsWithSteps as FileWorkflow[]);
     } catch (error: any) {
       console.error('Error fetching workflows:', error);
       toast.error('Failed to fetch workflows');
@@ -99,14 +99,14 @@ export const useFileWorkflow = () => {
 
     try {
       const { data, error } = await supabase
-        .from('file_policies')
+        .from('file_policies' as any)
         .insert({ ...policyData, user_id: user.id })
         .select()
         .single();
 
       if (error) throw error;
       
-      setPolicies(prev => [data, ...prev]);
+      setPolicies(prev => [data as FilePolicy, ...prev]);
       toast.success('File policy created successfully');
       return data;
     } catch (error: any) {
@@ -121,7 +121,7 @@ export const useFileWorkflow = () => {
 
     try {
       const { data: workflow, error: workflowError } = await supabase
-        .from('file_workflows')
+        .from('file_workflows' as any)
         .insert({ ...workflowData, user_id: user.id })
         .select()
         .single();
@@ -135,14 +135,14 @@ export const useFileWorkflow = () => {
       }));
 
       const { data: workflowSteps, error: stepsError } = await supabase
-        .from('workflow_steps')
+        .from('workflow_steps' as any)
         .insert(stepsWithWorkflowId)
         .select();
 
       if (stepsError) throw stepsError;
 
       const newWorkflow = { ...workflow, steps: workflowSteps };
-      setWorkflows(prev => [newWorkflow, ...prev]);
+      setWorkflows(prev => [newWorkflow as FileWorkflow, ...prev]);
       toast.success('Workflow created successfully');
       return newWorkflow;
     } catch (error: any) {
@@ -155,7 +155,7 @@ export const useFileWorkflow = () => {
   const updatePolicy = async (id: string, updates: Partial<FilePolicy>) => {
     try {
       const { data, error } = await supabase
-        .from('file_policies')
+        .from('file_policies' as any)
         .update(updates)
         .eq('id', id)
         .eq('user_id', user?.id)
@@ -164,7 +164,7 @@ export const useFileWorkflow = () => {
 
       if (error) throw error;
       
-      setPolicies(prev => prev.map(policy => policy.id === id ? data : policy));
+      setPolicies(prev => prev.map(policy => policy.id === id ? data as FilePolicy : policy));
       toast.success('Policy updated successfully');
       return data;
     } catch (error: any) {
@@ -177,7 +177,7 @@ export const useFileWorkflow = () => {
   const deletePolicy = async (id: string) => {
     try {
       const { error } = await supabase
-        .from('file_policies')
+        .from('file_policies' as any)
         .delete()
         .eq('id', id)
         .eq('user_id', user?.id);
