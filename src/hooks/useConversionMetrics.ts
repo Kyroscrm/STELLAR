@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -68,7 +67,8 @@ export const useConversionMetrics = () => {
           const conversionRate = totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0;
 
           const totalEstimates = estimates.length;
-          const acceptedEstimates = estimates.filter(e => e.status === 'accepted').length;
+          // FIX: Use 'approved' instead of 'accepted'
+          const acceptedEstimates = estimates.filter(e => e.status === 'approved').length;
           const estimateAcceptanceRate = totalEstimates > 0 ? (acceptedEstimates / totalEstimates) * 100 : 0;
 
           const totalInvoices = invoices.length;
