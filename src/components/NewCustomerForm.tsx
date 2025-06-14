@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useToast } from '@/hooks/use-toast';
+import { validateCustomer } from '@/lib/serverValidation';
+import FormFieldError from './FormFieldError';
 import { X } from 'lucide-react';
 
 interface NewCustomerFormProps {
@@ -18,6 +19,7 @@ const NewCustomerForm = ({ onClose, onSuccess }: NewCustomerFormProps) => {
   const { createCustomer } = useCustomers();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -36,8 +38,18 @@ const NewCustomerForm = ({ onClose, onSuccess }: NewCustomerFormProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setErrors({});
 
     try {
+      // Server-side validation
+      const validation = await validateCustomer(formData);
+      
+      if (!validation.isValid) {
+        setErrors(validation.errors);
+        setIsSubmitting(false);
+        return;
+      }
+
       await createCustomer(formData);
       
       toast({
@@ -48,6 +60,7 @@ const NewCustomerForm = ({ onClose, onSuccess }: NewCustomerFormProps) => {
       onSuccess?.();
       onClose();
     } catch (error) {
+      console.error('Error creating customer:', error);
       toast({
         title: "Error",
         description: "Failed to create customer. Please try again.",
@@ -60,6 +73,10 @@ const NewCustomerForm = ({ onClose, onSuccess }: NewCustomerFormProps) => {
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
   };
 
   return (
@@ -85,6 +102,7 @@ const NewCustomerForm = ({ onClose, onSuccess }: NewCustomerFormProps) => {
                     onChange={(e) => handleChange('first_name', e.target.value)}
                     required
                   />
+                  <FormFieldError error={errors.first_name} />
                 </div>
                 <div>
                   <Label htmlFor="last_name">Last Name *</Label>
@@ -94,6 +112,7 @@ const NewCustomerForm = ({ onClose, onSuccess }: NewCustomerFormProps) => {
                     onChange={(e) => handleChange('last_name', e.target.value)}
                     required
                   />
+                  <FormFieldError error={errors.last_name} />
                 </div>
               </div>
               
@@ -106,6 +125,7 @@ const NewCustomerForm = ({ onClose, onSuccess }: NewCustomerFormProps) => {
                     value={formData.email}
                     onChange={(e) => handleChange('email', e.target.value)}
                   />
+                  <FormFieldError error={errors.email} />
                 </div>
                 <div>
                   <Label htmlFor="phone">Phone</Label>
@@ -115,6 +135,7 @@ const NewCustomerForm = ({ onClose, onSuccess }: NewCustomerFormProps) => {
                     value={formData.phone}
                     onChange={(e) => handleChange('phone', e.target.value)}
                   />
+                  <FormFieldError error={errors.phone} />
                 </div>
               </div>
 
@@ -125,6 +146,7 @@ const NewCustomerForm = ({ onClose, onSuccess }: NewCustomerFormProps) => {
                   value={formData.company_name}
                   onChange={(e) => handleChange('company_name', e.target.value)}
                 />
+                <FormFieldError error={errors.company_name} />
               </div>
             </div>
 
@@ -138,6 +160,7 @@ const NewCustomerForm = ({ onClose, onSuccess }: NewCustomerFormProps) => {
                   value={formData.address}
                   onChange={(e) => handleChange('address', e.target.value)}
                 />
+                <FormFieldError error={errors.address} />
               </div>
               
               <div className="grid grid-cols-3 gap-4">
@@ -148,6 +171,7 @@ const NewCustomerForm = ({ onClose, onSuccess }: NewCustomerFormProps) => {
                     value={formData.city}
                     onChange={(e) => handleChange('city', e.target.value)}
                   />
+                  <FormFieldError error={errors.city} />
                 </div>
                 <div>
                   <Label htmlFor="state">State</Label>
@@ -156,6 +180,7 @@ const NewCustomerForm = ({ onClose, onSuccess }: NewCustomerFormProps) => {
                     value={formData.state}
                     onChange={(e) => handleChange('state', e.target.value)}
                   />
+                  <FormFieldError error={errors.state} />
                 </div>
                 <div>
                   <Label htmlFor="zip_code">ZIP Code</Label>
@@ -164,6 +189,7 @@ const NewCustomerForm = ({ onClose, onSuccess }: NewCustomerFormProps) => {
                     value={formData.zip_code}
                     onChange={(e) => handleChange('zip_code', e.target.value)}
                   />
+                  <FormFieldError error={errors.zip_code} />
                 </div>
               </div>
             </div>
@@ -179,6 +205,7 @@ const NewCustomerForm = ({ onClose, onSuccess }: NewCustomerFormProps) => {
                     value={formData.emergency_contact_name}
                     onChange={(e) => handleChange('emergency_contact_name', e.target.value)}
                   />
+                  <FormFieldError error={errors.emergency_contact_name} />
                 </div>
                 <div>
                   <Label htmlFor="emergency_contact_phone">Emergency Contact Phone</Label>
@@ -188,6 +215,7 @@ const NewCustomerForm = ({ onClose, onSuccess }: NewCustomerFormProps) => {
                     value={formData.emergency_contact_phone}
                     onChange={(e) => handleChange('emergency_contact_phone', e.target.value)}
                   />
+                  <FormFieldError error={errors.emergency_contact_phone} />
                 </div>
               </div>
             </div>
@@ -202,6 +230,7 @@ const NewCustomerForm = ({ onClose, onSuccess }: NewCustomerFormProps) => {
                 rows={3}
                 placeholder="Any additional information about the customer..."
               />
+              <FormFieldError error={errors.notes} />
             </div>
 
             <div className="flex gap-3 pt-4">

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useCustomers } from '@/hooks/useCustomers';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,11 +25,16 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import NewCustomerForm from '@/components/NewCustomerForm';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 const CustomersPage = () => {
   const { customers, loading, updateCustomer, deleteCustomer } = useCustomers();
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    open: boolean;
+    customer?: any;
+  }>({ open: false });
 
   const filteredCustomers = customers.filter(customer => {
     return !searchTerm || 
@@ -48,6 +52,17 @@ const CustomersPage = () => {
       const now = new Date();
       return createdAt.getMonth() === now.getMonth() && createdAt.getFullYear() === now.getFullYear();
     }).length
+  };
+
+  const handleDeleteCustomer = (customer: any) => {
+    setDeleteConfirm({ open: true, customer });
+  };
+
+  const confirmDelete = async () => {
+    if (deleteConfirm.customer) {
+      await deleteCustomer(deleteConfirm.customer.id);
+      setDeleteConfirm({ open: false });
+    }
   };
 
   if (loading) {
@@ -159,7 +174,7 @@ const CustomersPage = () => {
                     <DropdownMenuItem>Edit Customer</DropdownMenuItem>
                     <DropdownMenuItem 
                       className="text-red-600"
-                      onClick={() => deleteCustomer(customer.id)}
+                      onClick={() => handleDeleteCustomer(customer)}
                     >
                       Delete Customer
                     </DropdownMenuItem>
@@ -236,6 +251,18 @@ const CustomersPage = () => {
           onSuccess={() => window.location.reload()}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => setDeleteConfirm({ open })}
+        title="Delete Customer"
+        description={`Are you sure you want to delete ${deleteConfirm.customer?.first_name} ${deleteConfirm.customer?.last_name}? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLeads } from '@/hooks/useLeads';
 import { useToast } from '@/hooks/use-toast';
+import { validateLead } from '@/lib/serverValidation';
+import FormFieldError from './FormFieldError';
 import { X } from 'lucide-react';
 
 interface NewLeadFormProps {
@@ -19,6 +20,7 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
   const { createLead } = useLeads();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -38,6 +40,7 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setErrors({});
 
     try {
       const leadData = {
@@ -45,6 +48,15 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
         estimated_value: formData.estimated_value ? parseFloat(formData.estimated_value) : null,
         expected_close_date: formData.expected_close_date || null
       };
+
+      // Server-side validation
+      const validation = await validateLead(leadData);
+      
+      if (!validation.isValid) {
+        setErrors(validation.errors);
+        setIsSubmitting(false);
+        return;
+      }
 
       await createLead(leadData);
       
@@ -56,6 +68,7 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
       onSuccess?.();
       onClose();
     } catch (error) {
+      console.error('Error creating lead:', error);
       toast({
         title: "Error",
         description: "Failed to create lead. Please try again.",
@@ -68,6 +81,10 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
   };
 
   return (
@@ -93,6 +110,7 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
                     onChange={(e) => handleChange('first_name', e.target.value)}
                     required
                   />
+                  <FormFieldError error={errors.first_name} />
                 </div>
                 <div>
                   <Label htmlFor="last_name">Last Name *</Label>
@@ -102,6 +120,7 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
                     onChange={(e) => handleChange('last_name', e.target.value)}
                     required
                   />
+                  <FormFieldError error={errors.last_name} />
                 </div>
               </div>
               
@@ -114,6 +133,7 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
                     value={formData.email}
                     onChange={(e) => handleChange('email', e.target.value)}
                   />
+                  <FormFieldError error={errors.email} />
                 </div>
                 <div>
                   <Label htmlFor="phone">Phone</Label>
@@ -123,6 +143,7 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
                     value={formData.phone}
                     onChange={(e) => handleChange('phone', e.target.value)}
                   />
+                  <FormFieldError error={errors.phone} />
                 </div>
               </div>
             </div>
@@ -137,6 +158,7 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
                   value={formData.address}
                   onChange={(e) => handleChange('address', e.target.value)}
                 />
+                <FormFieldError error={errors.address} />
               </div>
               
               <div className="grid grid-cols-3 gap-4">
@@ -147,6 +169,7 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
                     value={formData.city}
                     onChange={(e) => handleChange('city', e.target.value)}
                   />
+                  <FormFieldError error={errors.city} />
                 </div>
                 <div>
                   <Label htmlFor="state">State</Label>
@@ -155,6 +178,7 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
                     value={formData.state}
                     onChange={(e) => handleChange('state', e.target.value)}
                   />
+                  <FormFieldError error={errors.state} />
                 </div>
                 <div>
                   <Label htmlFor="zip_code">ZIP Code</Label>
@@ -163,6 +187,7 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
                     value={formData.zip_code}
                     onChange={(e) => handleChange('zip_code', e.target.value)}
                   />
+                  <FormFieldError error={errors.zip_code} />
                 </div>
               </div>
             </div>
@@ -181,11 +206,12 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
                       <SelectItem value="website">Website</SelectItem>
                       <SelectItem value="referral">Referral</SelectItem>
                       <SelectItem value="social_media">Social Media</SelectItem>
-                      <SelectItem value="google_ads">Google Ads</SelectItem>
-                      <SelectItem value="phone">Phone Call</SelectItem>
+                      <SelectItem value="advertising">Advertising</SelectItem>
+                      <SelectItem value="cold_call">Cold Call</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
+                  <FormFieldError error={errors.source} />
                 </div>
                 <div>
                   <Label htmlFor="status">Status</Label>
@@ -198,10 +224,11 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
                       <SelectItem value="contacted">Contacted</SelectItem>
                       <SelectItem value="qualified">Qualified</SelectItem>
                       <SelectItem value="proposal">Proposal Sent</SelectItem>
-                      <SelectItem value="converted">Converted</SelectItem>
+                      <SelectItem value="won">Won</SelectItem>
                       <SelectItem value="lost">Lost</SelectItem>
                     </SelectContent>
                   </Select>
+                  <FormFieldError error={errors.status} />
                 </div>
               </div>
               
@@ -216,6 +243,7 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
                     value={formData.estimated_value}
                     onChange={(e) => handleChange('estimated_value', e.target.value)}
                   />
+                  <FormFieldError error={errors.estimated_value} />
                 </div>
                 <div>
                   <Label htmlFor="expected_close_date">Expected Close Date</Label>
@@ -225,6 +253,7 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
                     value={formData.expected_close_date}
                     onChange={(e) => handleChange('expected_close_date', e.target.value)}
                   />
+                  <FormFieldError error={errors.expected_close_date} />
                 </div>
               </div>
               
@@ -236,6 +265,7 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
                   onChange={(e) => handleChange('notes', e.target.value)}
                   rows={3}
                 />
+                <FormFieldError error={errors.notes} />
               </div>
             </div>
 
