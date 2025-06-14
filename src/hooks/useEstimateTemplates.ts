@@ -43,7 +43,9 @@ export const useEstimateTemplates = () => {
         id: template.id,
         name: template.name,
         description: template.description,
-        line_items: Array.isArray(template.line_items) ? template.line_items as EstimateTemplateLineItem[] : [],
+        line_items: Array.isArray(template.line_items) 
+          ? (template.line_items as unknown as EstimateTemplateLineItem[])
+          : [],
         tax_rate: template.tax_rate || 0,
         terms: template.terms,
         notes: template.notes,
@@ -65,7 +67,11 @@ export const useEstimateTemplates = () => {
     try {
       const { data, error } = await supabase
         .from('estimate_templates')
-        .insert({ ...templateData, user_id: user.id })
+        .insert({ 
+          ...templateData, 
+          user_id: user.id,
+          line_items: templateData.line_items as any
+        })
         .select()
         .single();
 
@@ -75,7 +81,9 @@ export const useEstimateTemplates = () => {
         id: data.id,
         name: data.name,
         description: data.description,
-        line_items: Array.isArray(data.line_items) ? data.line_items as EstimateTemplateLineItem[] : [],
+        line_items: Array.isArray(data.line_items) 
+          ? (data.line_items as unknown as EstimateTemplateLineItem[])
+          : [],
         tax_rate: data.tax_rate || 0,
         terms: data.terms,
         notes: data.notes,
