@@ -146,6 +146,49 @@ export const validateJob = async (data: any): Promise<ValidationResult> => {
   });
 };
 
+// Task-specific server validation
+export const validateTask = async (data: any): Promise<ValidationResult> => {
+  return validateOnServer(taskSchema, data, async (taskData) => {
+    const errors: Record<string, string> = {};
+
+    // Validate job exists if job_id provided
+    if (taskData.job_id) {
+      const { data: job } = await supabase
+        .from('jobs')
+        .select('id')
+        .eq('id', taskData.job_id)
+        .single();
+
+      if (!job) {
+        errors.job_id = 'Selected job does not exist';
+      }
+    }
+
+    // Validate assigned user exists if assigned_to provided
+    if (taskData.assigned_to) {
+      // Note: In a real app, you'd validate against a users table
+      // For now, just check it's a valid UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(taskData.assigned_to)) {
+        errors.assigned_to = 'Invalid user assignment';
+      }
+    }
+
+    // Validate due date is not in the past
+    if (taskData.due_date) {
+      const dueDate = new Date(taskData.due_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (dueDate < today) {
+        errors.due_date = 'Due date cannot be in the past';
+      }
+    }
+
+    return errors;
+  });
+};
+
 // Estimate-specific server validation
 export const validateEstimate = async (data: any): Promise<ValidationResult> => {
   return validateOnServer(estimateSchema, data, async (estimateData) => {

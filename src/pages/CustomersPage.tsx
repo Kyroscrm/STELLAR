@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useCustomers } from '@/hooks/useCustomers';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,12 +26,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import NewCustomerForm from '@/components/NewCustomerForm';
+import NewJobForm from '@/components/NewJobForm';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
 const CustomersPage = () => {
-  const { customers, loading, updateCustomer, deleteCustomer } = useCustomers();
+  const { customers, loading, deleteCustomer } = useCustomers();
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
+  const [showNewJobForm, setShowNewJobForm] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [deleteConfirm, setDeleteConfirm] = useState<{
     open: boolean;
     customer?: any;
@@ -63,6 +67,11 @@ const CustomersPage = () => {
       await deleteCustomer(deleteConfirm.customer.id);
       setDeleteConfirm({ open: false });
     }
+  };
+
+  const handleCreateJob = (customerId: string) => {
+    setSelectedCustomerId(customerId);
+    setShowNewJobForm(true);
   };
 
   if (loading) {
@@ -168,7 +177,9 @@ const CustomersPage = () => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem>View Details</DropdownMenuItem>
-                    <DropdownMenuItem>Create Job</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleCreateJob(customer.id)}>
+                      Create Job
+                    </DropdownMenuItem>
                     <DropdownMenuItem>Create Estimate</DropdownMenuItem>
                     <DropdownMenuItem>Send Message</DropdownMenuItem>
                     <DropdownMenuItem>Edit Customer</DropdownMenuItem>
@@ -249,6 +260,15 @@ const CustomersPage = () => {
         <NewCustomerForm 
           onClose={() => setShowNewCustomerForm(false)}
           onSuccess={() => window.location.reload()}
+        />
+      )}
+
+      {/* New Job Form Modal */}
+      {showNewJobForm && (
+        <NewJobForm 
+          onClose={() => setShowNewJobForm(false)}
+          onSuccess={() => window.location.reload()}
+          preselectedCustomerId={selectedCustomerId}
         />
       )}
 

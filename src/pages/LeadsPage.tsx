@@ -13,10 +13,12 @@ import {
   Phone,
   Mail,
   MapPin,
+  Star,
+  DollarSign,
+  Calendar,
   TrendingUp,
   Users,
-  Calendar,
-  DollarSign
+  UserCheck
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -25,12 +27,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import NewLeadForm from '@/components/NewLeadForm';
+import ConvertLeadDialog from '@/components/ConvertLeadDialog';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
 const LeadsPage = () => {
-  const { leads, loading, updateLead, deleteLead } = useLeads();
+  const { leads, loading, deleteLead } = useLeads();
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewLeadForm, setShowNewLeadForm] = useState(false);
+  const [convertDialog, setConvertDialog] = useState<{
+    open: boolean;
+    lead?: any;
+  }>({ open: false });
   const [deleteConfirm, setDeleteConfirm] = useState<{
     open: boolean;
     lead?: any;
@@ -46,12 +53,10 @@ const LeadsPage = () => {
   const leadStats = {
     total: leads.length,
     new: leads.filter(l => l.status === 'new').length,
+    contacted: leads.filter(l => l.status === 'contacted').length,
     qualified: leads.filter(l => l.status === 'qualified').length,
-    thisMonth: leads.filter(l => {
-      const createdAt = new Date(l.created_at || '');
-      const now = new Date();
-      return createdAt.getMonth() === now.getMonth() && createdAt.getFullYear() === now.getFullYear();
-    }).length
+    won: leads.filter(l => l.status === 'won').length,
+    totalValue: leads.reduce((sum, lead) => sum + (lead.estimated_value || 0), 0)
   };
 
   const getStatusColor = (status: string) => {
@@ -59,9 +64,18 @@ const LeadsPage = () => {
       case 'new': return 'bg-blue-100 text-blue-800';
       case 'contacted': return 'bg-yellow-100 text-yellow-800';
       case 'qualified': return 'bg-green-100 text-green-800';
-      case 'proposal': return 'bg-purple-100 text-purple-800';
       case 'won': return 'bg-emerald-100 text-emerald-800';
       case 'lost': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getSourceColor = (source: string) => {
+    switch (source) {
+      case 'website': return 'bg-purple-100 text-purple-800';
+      case 'referral': return 'bg-green-100 text-green-800';
+      case 'social_media': return 'bg-blue-100 text-blue-800';
+      case 'google_ads': return 'bg-orange-100 text-orange-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -75,6 +89,10 @@ const LeadsPage = () => {
       await deleteLead(deleteConfirm.lead.id);
       setDeleteConfirm({ open: false });
     }
+  };
+
+  const handleConvertLead = (lead: any) => {
+    setConvertDialog({ open: true, lead });
   };
 
   if (loading) {
@@ -91,7 +109,7 @@ const LeadsPage = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Leads</h1>
-          <p className="text-gray-600">Track and manage your sales leads</p>
+          <p className="text-gray-600">Manage your potential customers</p>
         </div>
         <Button onClick={() => setShowNewLeadForm(true)}>
           <Plus className="h-4 w-4 mr-2" />
@@ -100,7 +118,7 @@ const LeadsPage = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center">
@@ -118,18 +136,6 @@ const LeadsPage = () => {
             <div className="flex items-center">
               <TrendingUp className="h-8 w-8 text-green-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">New Leads</p>
-                <p className="text-2xl font-bold">{leadStats.new}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <DollarSign className="h-8 w-8 text-purple-600" />
-              <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Qualified</p>
                 <p className="text-2xl font-bold">{leadStats.qualified}</p>
               </div>
@@ -140,10 +146,22 @@ const LeadsPage = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center">
-              <Calendar className="h-8 w-8 text-orange-600" />
+              <UserCheck className="h-8 w-8 text-emerald-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">This Month</p>
-                <p className="text-2xl font-bold">{leadStats.thisMonth}</p>
+                <p className="text-sm font-medium text-gray-600">Won</p>
+                <p className="text-2xl font-bold">{leadStats.won}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <DollarSign className="h-8 w-8 text-purple-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Value</p>
+                <p className="text-2xl font-bold">${leadStats.totalValue.toLocaleString()}</p>
               </div>
             </div>
           </CardContent>
@@ -174,12 +192,18 @@ const LeadsPage = () => {
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <CardTitle className="text-lg">
+                  <CardTitle className="text-lg flex items-center gap-2">
                     {lead.first_name} {lead.last_name}
+                    {lead.score >= 80 && <Star className="h-4 w-4 text-yellow-500 fill-current" />}
                   </CardTitle>
-                  <Badge className={`mt-1 ${getStatusColor(lead.status)}`}>
-                    {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
-                  </Badge>
+                  <div className="flex gap-2 mt-2">
+                    <Badge className={getStatusColor(lead.status || 'new')}>
+                      {lead.status || 'new'}
+                    </Badge>
+                    <Badge variant="outline" className={getSourceColor(lead.source || 'website')}>
+                      {lead.source || 'website'}
+                    </Badge>
+                  </div>
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -189,10 +213,14 @@ const LeadsPage = () => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem>View Details</DropdownMenuItem>
-                    <DropdownMenuItem>Convert to Customer</DropdownMenuItem>
-                    <DropdownMenuItem>Create Estimate</DropdownMenuItem>
-                    <DropdownMenuItem>Schedule Follow-up</DropdownMenuItem>
                     <DropdownMenuItem>Edit Lead</DropdownMenuItem>
+                    <DropdownMenuItem>Create Estimate</DropdownMenuItem>
+                    <DropdownMenuItem>Send Message</DropdownMenuItem>
+                    {lead.status !== 'won' && (
+                      <DropdownMenuItem onClick={() => handleConvertLead(lead)}>
+                        Convert to Customer
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem 
                       className="text-red-600"
                       onClick={() => handleDeleteLead(lead)}
@@ -226,10 +254,20 @@ const LeadsPage = () => {
                   </div>
                 )}
                 {lead.estimated_value && (
-                  <div className="bg-green-50 p-2 rounded text-sm">
-                    <p className="font-medium text-green-800">
-                      Estimated Value: ${lead.estimated_value.toLocaleString()}
-                    </p>
+                  <div className="flex items-center text-sm text-gray-600">
+                    <DollarSign className="h-4 w-4 mr-2" />
+                    Estimated Value: ${lead.estimated_value.toLocaleString()}
+                  </div>
+                )}
+                {lead.expected_close_date && (
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Expected Close: {new Date(lead.expected_close_date).toLocaleDateString()}
+                  </div>
+                )}
+                {lead.score !== null && (
+                  <div className="bg-gray-50 p-2 rounded text-sm">
+                    <p className="font-medium">Lead Score: {lead.score}/100</p>
                   </div>
                 )}
                 {lead.notes && (
@@ -238,7 +276,7 @@ const LeadsPage = () => {
                   </p>
                 )}
                 <div className="text-xs text-gray-400">
-                  Lead since {new Date(lead.created_at || '').toLocaleDateString()}
+                  Created {new Date(lead.created_at || '').toLocaleDateString()}
                 </div>
               </div>
             </CardContent>
@@ -263,6 +301,14 @@ const LeadsPage = () => {
           onSuccess={() => window.location.reload()}
         />
       )}
+
+      {/* Convert Lead Dialog */}
+      <ConvertLeadDialog
+        open={convertDialog.open}
+        onOpenChange={(open) => setConvertDialog({ open })}
+        lead={convertDialog.lead}
+        onSuccess={() => window.location.reload()}
+      />
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
