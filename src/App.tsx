@@ -15,6 +15,9 @@ import AdminDashboard from "./pages/AdminDashboard";
 import LeadsPage from "./pages/LeadsPage";
 import CustomersPage from "./pages/CustomersPage";
 import JobsPage from "./pages/JobsPage";
+import TasksPage from "./pages/TasksPage"; // New import
+import EstimatesPage from "./pages/EstimatesPage"; // New import
+import InvoicesPage from "./pages/InvoicesPage"; // New import
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 
@@ -43,9 +46,11 @@ const App = () => (
               path="/admin" 
               element={
                 <ProtectedRoute allowedRoles={['admin', 'staff']}>
-                  <div className="min-h-screen bg-gray-50">
+                  <div className="min-h-screen bg-gray-50 flex flex-col">
                     <Navigation />
-                    <AdminDashboard />
+                    <div className="flex-1">
+                      <AdminDashboard />
+                    </div>
                   </div>
                 </ProtectedRoute>
               } 
@@ -54,9 +59,11 @@ const App = () => (
               path="/admin/leads" 
               element={
                 <ProtectedRoute allowedRoles={['admin', 'staff']}>
-                  <div className="min-h-screen bg-gray-50">
+                  <div className="min-h-screen bg-gray-50 flex flex-col">
                     <Navigation />
-                    <LeadsPage />
+                    <div className="flex-1">
+                      <LeadsPage />
+                    </div>
                   </div>
                 </ProtectedRoute>
               } 
@@ -65,9 +72,11 @@ const App = () => (
               path="/admin/customers" 
               element={
                 <ProtectedRoute allowedRoles={['admin', 'staff']}>
-                  <div className="min-h-screen bg-gray-50">
+                  <div className="min-h-screen bg-gray-50 flex flex-col">
                     <Navigation />
-                    <CustomersPage />
+                    <div className="flex-1">
+                      <CustomersPage />
+                    </div>
                   </div>
                 </ProtectedRoute>
               } 
@@ -76,9 +85,51 @@ const App = () => (
               path="/admin/jobs" 
               element={
                 <ProtectedRoute allowedRoles={['admin', 'staff']}>
-                  <div className="min-h-screen bg-gray-50">
+                  <div className="min-h-screen bg-gray-50 flex flex-col">
                     <Navigation />
-                    <JobsPage />
+                    <div className="flex-1">
+                      <JobsPage />
+                    </div>
+                  </div>
+                </ProtectedRoute>
+              } 
+            />
+            {/* New Routes */}
+            <Route 
+              path="/admin/tasks" 
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'staff']}>
+                  <div className="min-h-screen bg-gray-50 flex flex-col">
+                    <Navigation />
+                    <div className="flex-1">
+                      <TasksPage />
+                    </div>
+                  </div>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/estimates" 
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'staff']}>
+                  <div className="min-h-screen bg-gray-50 flex flex-col">
+                    <Navigation />
+                    <div className="flex-1">
+                      <EstimatesPage />
+                    </div>
+                  </div>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/invoices" 
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'staff']}>
+                  <div className="min-h-screen bg-gray-50 flex flex-col">
+                    <Navigation />
+                    <div className="flex-1">
+                      <InvoicesPage />
+                    </div>
                   </div>
                 </ProtectedRoute>
               } 
@@ -87,9 +138,11 @@ const App = () => (
               path="/admin/settings" 
               element={
                 <ProtectedRoute allowedRoles={['admin', 'staff']}>
-                  <div className="min-h-screen bg-gray-50">
+                  <div className="min-h-screen bg-gray-50 flex flex-col">
                     <Navigation />
-                    <SettingsPage />
+                    <div className="flex-1">
+                      <SettingsPage />
+                    </div>
                   </div>
                 </ProtectedRoute>
               } 
