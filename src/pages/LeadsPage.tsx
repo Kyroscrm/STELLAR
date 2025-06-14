@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useLeads } from '@/hooks/useLeads';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -302,7 +301,7 @@ const LeadsPage = () => {
         />
       )}
 
-      {/* Convert Lead Dialog */}
+      {/* Enhanced Convert Lead Dialog */}
       <ConvertLeadDialog
         open={convertDialog.open}
         onOpenChange={(open) => setConvertDialog({ open })}

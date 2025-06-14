@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
@@ -11,6 +10,7 @@ import {
   Calendar,
   Target
 } from 'lucide-react';
+import ConversionMetrics from '@/components/ConversionMetrics';
 
 interface MetricCardProps {
   title: string;
@@ -93,6 +93,9 @@ const DashboardMetrics: React.FC = () => {
           <MetricCard key={index} {...metric} />
         ))}
       </div>
+
+      {/* Conversion Analytics Section */}
+      <ConversionMetrics />
 
       {/* Additional Insights */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
