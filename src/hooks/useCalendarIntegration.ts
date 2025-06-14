@@ -3,6 +3,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import type { Database } from '@/integrations/supabase/types';
+
+type CalendarIntegrationsRow = Database['public']['Tables']['calendar_integrations']['Row'];
 
 export interface CalendarIntegration {
   id: string;
@@ -35,7 +38,14 @@ export const useCalendarIntegration = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setIntegrations(data || []);
+      
+      // Transform the data to match our interface
+      const transformedData: CalendarIntegration[] = (data || []).map((item: CalendarIntegrationsRow) => ({
+        ...item,
+        provider: item.provider as 'google' | 'outlook'
+      }));
+      
+      setIntegrations(transformedData);
     } catch (error: any) {
       console.error('Error fetching calendar integrations:', error);
       toast.error('Failed to fetch calendar integrations');
@@ -56,9 +66,14 @@ export const useCalendarIntegration = () => {
 
       if (error) throw error;
       
-      setIntegrations(prev => [data, ...prev]);
+      const transformedData: CalendarIntegration = {
+        ...data,
+        provider: data.provider as 'google' | 'outlook'
+      };
+      
+      setIntegrations(prev => [transformedData, ...prev]);
       toast.success('Calendar integration added successfully');
-      return data;
+      return transformedData;
     } catch (error: any) {
       console.error('Error creating calendar integration:', error);
       toast.error('Failed to add calendar integration');
@@ -77,9 +92,14 @@ export const useCalendarIntegration = () => {
 
       if (error) throw error;
       
-      setIntegrations(prev => prev.map(integration => integration.id === id ? data : integration));
+      const transformedData: CalendarIntegration = {
+        ...data,
+        provider: data.provider as 'google' | 'outlook'
+      };
+      
+      setIntegrations(prev => prev.map(integration => integration.id === id ? transformedData : integration));
       toast.success('Calendar integration updated successfully');
-      return data;
+      return transformedData;
     } catch (error: any) {
       console.error('Error updating calendar integration:', error);
       toast.error('Failed to update calendar integration');

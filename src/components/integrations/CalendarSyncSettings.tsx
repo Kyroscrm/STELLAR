@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Plus, Sync, Trash2, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Calendar, Plus, RefreshCw, Trash2, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { useCalendarIntegration } from '@/hooks/useCalendarIntegration';
+import { toast } from 'sonner';
 
 const CalendarSyncSettings = () => {
   const { integrations, loading, createIntegration, updateIntegration, toggleSync, syncCalendar, deleteIntegration } = useCalendarIntegration();
@@ -221,7 +222,7 @@ const CalendarSyncSettings = () => {
                       onClick={() => syncCalendar(integration.id)}
                       disabled={!integration.sync_enabled}
                     >
-                      <Sync className="h-4 w-4" />
+                      <RefreshCw className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="outline"

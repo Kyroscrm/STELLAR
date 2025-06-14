@@ -3,6 +3,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import type { Database } from '@/integrations/supabase/types';
+
+type SignedDocumentsRow = Database['public']['Tables']['signed_documents']['Row'];
 
 export interface SignedDocument {
   id: string;
@@ -37,7 +40,15 @@ export const useDocumentSignature = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setDocuments(data || []);
+      
+      // Transform the data to match our interface
+      const transformedData: SignedDocument[] = (data || []).map((item: SignedDocumentsRow) => ({
+        ...item,
+        status: item.status as 'pending' | 'signed' | 'expired' | 'cancelled',
+        metadata: (item.metadata as Record<string, any>) || {}
+      }));
+      
+      setDocuments(transformedData);
     } catch (error: any) {
       console.error('Error fetching documents:', error);
       toast.error('Failed to fetch documents');
@@ -58,9 +69,15 @@ export const useDocumentSignature = () => {
 
       if (error) throw error;
       
-      setDocuments(prev => [data, ...prev]);
+      const transformedData: SignedDocument = {
+        ...data,
+        status: data.status as 'pending' | 'signed' | 'expired' | 'cancelled',
+        metadata: (data.metadata as Record<string, any>) || {}
+      };
+      
+      setDocuments(prev => [transformedData, ...prev]);
       toast.success('Document created successfully');
-      return data;
+      return transformedData;
     } catch (error: any) {
       console.error('Error creating document:', error);
       toast.error('Failed to create document');
@@ -83,9 +100,15 @@ export const useDocumentSignature = () => {
 
       if (error) throw error;
       
-      setDocuments(prev => prev.map(doc => doc.id === id ? data : doc));
+      const transformedData: SignedDocument = {
+        ...data,
+        status: data.status as 'pending' | 'signed' | 'expired' | 'cancelled',
+        metadata: (data.metadata as Record<string, any>) || {}
+      };
+      
+      setDocuments(prev => prev.map(doc => doc.id === id ? transformedData : doc));
       toast.success('Document signed successfully');
-      return data;
+      return transformedData;
     } catch (error: any) {
       console.error('Error signing document:', error);
       toast.error('Failed to sign document');
@@ -104,9 +127,15 @@ export const useDocumentSignature = () => {
 
       if (error) throw error;
       
-      setDocuments(prev => prev.map(doc => doc.id === id ? data : doc));
+      const transformedData: SignedDocument = {
+        ...data,
+        status: data.status as 'pending' | 'signed' | 'expired' | 'cancelled',
+        metadata: (data.metadata as Record<string, any>) || {}
+      };
+      
+      setDocuments(prev => prev.map(doc => doc.id === id ? transformedData : doc));
       toast.success('Document status updated');
-      return data;
+      return transformedData;
     } catch (error: any) {
       console.error('Error updating document status:', error);
       toast.error('Failed to update document status');
