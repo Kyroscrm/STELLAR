@@ -16,6 +16,8 @@ import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import PasswordReset from "./pages/PasswordReset";
+import ProfilePage from "./pages/ProfilePage";
 import AdminDashboard from "./pages/AdminDashboard";
 import ClientDashboard from "./pages/ClientDashboard";
 import LeadsPage from "./pages/LeadsPage";
@@ -61,6 +63,16 @@ function App() {
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/password-reset" element={<PasswordReset />} />
+                
+                {/* Protected Profile Route */}
+                <Route path="/profile" element={
+                  <ErrorBoundary>
+                    <ProtectedRoute>
+                      <ProfilePage />
+                    </ProtectedRoute>
+                  </ErrorBoundary>
+                } />
                 
                 {/* Admin Routes with Layout */}
                 <Route path="/admin" element={

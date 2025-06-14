@@ -14,7 +14,8 @@ import {
   BarChart3,
   LogOut,
   Menu,
-  X
+  X,
+  User
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
@@ -91,15 +92,24 @@ const AdminLayout = () => {
               <p className="text-xs text-gray-500 capitalize">{user?.role || 'Admin'}</p>
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={logout}
-            className="w-full"
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
+          
+          <div className="space-y-2">
+            <Link to="/profile">
+              <Button variant="outline" size="sm" className="w-full">
+                <User className="h-4 w-4 mr-2" />
+                Profile
+              </Button>
+            </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={logout}
+              className="w-full"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+          </div>
         </div>
       </div>
 
