@@ -62,14 +62,16 @@ const Header = () => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <img 
-              src="/lovable-uploads/f6ae6373-2ac3-4ff4-8436-389ab0da2914.png" 
-              alt="Final Roofing & Retro-Fit Logo" 
-              className="h-12 w-auto"
-            />
-            <h1 className="text-2xl font-heading font-bold text-primary">
-              Final <span className="text-secondary">Roofing</span> & Retro-Fit
-            </h1>
+            <Link to="/" className="flex items-center gap-4">
+              <img 
+                src="/lovable-uploads/f6ae6373-2ac3-4ff4-8436-389ab0da2914.png" 
+                alt="Final Roofing & Retro-Fit Logo" 
+                className="h-12 w-auto"
+              />
+              <h1 className="text-2xl font-heading font-bold text-primary">
+                Final <span className="text-secondary">Roofing</span> & Retro-Fit
+              </h1>
+            </Link>
           </div>
 
           {/* Desktop Navigation */}
@@ -91,21 +93,21 @@ const Header = () => {
             )}
             
             {/* Public site navigation */}
-            <a href="#services" className="text-gray-700 hover:text-primary transition-colors font-medium">
+            <Link to="/services" className="text-gray-700 hover:text-primary transition-colors font-medium">
               Services
-            </a>
-            <a href="#gallery" className="text-gray-700 hover:text-primary transition-colors font-medium">
+            </Link>
+            <Link to="/gallery" className="text-gray-700 hover:text-primary transition-colors font-medium">
               Gallery
-            </a>
-            <a href="#reviews" className="text-gray-700 hover:text-primary transition-colors font-medium">
+            </Link>
+            <Link to="/reviews" className="text-gray-700 hover:text-primary transition-colors font-medium">
               Reviews
-            </a>
-            <a href="#about" className="text-gray-700 hover:text-primary transition-colors font-medium">
+            </Link>
+            <Link to="/about" className="text-gray-700 hover:text-primary transition-colors font-medium">
               About
-            </a>
-            <a href="#contact" className="text-gray-700 hover:text-primary transition-colors font-medium">
+            </Link>
+            <Link to="/contact" className="text-gray-700 hover:text-primary transition-colors font-medium">
               Contact
-            </a>
+            </Link>
           </nav>
 
           {/* Auth and CTA */}
@@ -163,21 +165,21 @@ const Header = () => {
               </div>
             )}
             
-            <a href="#services" className="block text-gray-700 hover:text-primary transition-colors font-medium">
+            <Link to="/services" className="block text-gray-700 hover:text-primary transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
               Services
-            </a>
-            <a href="#gallery" className="block text-gray-700 hover:text-primary transition-colors font-medium">
+            </Link>
+            <Link to="/gallery" className="block text-gray-700 hover:text-primary transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
               Gallery
-            </a>
-            <a href="#reviews" className="block text-gray-700 hover:text-primary transition-colors font-medium">
+            </Link>
+            <Link to="/reviews" className="block text-gray-700 hover:text-primary transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
               Reviews
-            </a>
-            <a href="#about" className="block text-gray-700 hover:text-primary transition-colors font-medium">
+            </Link>
+            <Link to="/about" className="block text-gray-700 hover:text-primary transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
               About
-            </a>
-            <a href="#contact" className="block text-gray-700 hover:text-primary transition-colors font-medium">
+            </Link>
+            <Link to="/contact" className="block text-gray-700 hover:text-primary transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
               Contact
-            </a>
+            </Link>
             
             <div className="flex flex-col gap-2 pt-4 border-t border-gray-100">
               {user ? (

@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,6 +7,11 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
+import ServicesPage from "./pages/ServicesPage";
+import GalleryPage from "./pages/GalleryPage";
+import ReviewsPage from "./pages/ReviewsPage";
+import AboutPage from "./pages/AboutPage";
+import ContactPage from "./pages/ContactPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -46,7 +50,13 @@ function App() {
             <Sonner />
             <BrowserRouter>
               <Routes>
+                {/* Public Pages */}
                 <Route path="/" element={<Index />} />
+                <Route path="/services" element={<ServicesPage />} />
+                <Route path="/gallery" element={<GalleryPage />} />
+                <Route path="/reviews" element={<ReviewsPage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/contact" element={<ContactPage />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 
