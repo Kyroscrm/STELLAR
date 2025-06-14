@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useEstimates } from '@/hooks/useEstimates';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,11 +29,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import EstimateForm from '@/components/EstimateForm';
 
 const EstimatesPage = () => {
-  const { estimates, loading, error } // Add updateEstimate, deleteEstimate when implemented
-    = useEstimates();
+  const { estimates, loading, error, addEstimate, updateEstimate, deleteEstimate } = useEstimates();
   const [searchTerm, setSearchTerm] = useState('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const filteredEstimates = estimates.filter(estimate => 
     estimate.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -49,6 +57,23 @@ const EstimatesPage = () => {
     approved: estimates.filter(e => e.status === 'approved').length,
   };
 
+  const handleCreateEstimate = async (data: any) => {
+    setIsSubmitting(true);
+    try {
+      const result = await addEstimate(data);
+      if (result) {
+        setIsCreateModalOpen(false);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteEstimate = async (estimateId: string) => {
+    if (window.confirm('Are you sure you want to delete this estimate?')) {
+      await deleteEstimate(estimateId);
+    }
+  };
 
   if (loading) {
     return (
@@ -75,10 +100,24 @@ const EstimatesPage = () => {
           <h1 className="text-3xl font-bold">Estimates</h1>
           <p className="text-gray-600">Create and manage project estimates</p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          New Estimate
-        </Button>
+        <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              New Estimate
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Create New Estimate</DialogTitle>
+            </DialogHeader>
+            <EstimateForm
+              onSubmit={handleCreateEstimate}
+              onCancel={() => setIsCreateModalOpen(false)}
+              isSubmitting={isSubmitting}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Stats Cards */}
@@ -201,7 +240,7 @@ const EstimatesPage = () => {
                         <DropdownMenuItem>Download PDF</DropdownMenuItem>
                         <DropdownMenuItem 
                           className="text-red-600"
-                          // onClick={() => deleteEstimate(estimate.id)}
+                          onClick={() => handleDeleteEstimate(estimate.id)}
                         >
                           Delete Estimate
                         </DropdownMenuItem>
@@ -215,7 +254,7 @@ const EstimatesPage = () => {
           {filteredEstimates.length === 0 && (
             <div className="text-center py-12">
               <p className="text-gray-500">No estimates found.</p>
-              <Button className="mt-4">
+              <Button className="mt-4" onClick={() => setIsCreateModalOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Your First Estimate
               </Button>
