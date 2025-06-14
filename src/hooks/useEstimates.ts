@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,9 +7,13 @@ import { Database } from '@/integrations/supabase/types';
 
 export type Estimate = Database['public']['Tables']['estimates']['Row'];
 export type EstimateLineItem = Database['public']['Tables']['estimate_line_items']['Row'];
+export type Customer = Database['public']['Tables']['customers']['Row'];
+export type Job = Database['public']['Tables']['jobs']['Row'];
 
 export interface EstimateWithLineItems extends Estimate {
   estimate_line_items: EstimateLineItem[];
+  customers?: Customer | null;
+  jobs?: Job | null;
 }
 
 export const useEstimates = () => {
@@ -27,14 +32,14 @@ export const useEstimates = () => {
 
       try {
         setLoading(true);
-        // Fetch estimates and their line items
-        // This might need to be adjusted based on your actual data structure and relationships in Supabase
-        // For simplicity, we'll fetch estimates first, then line items for each, or use a view/RPC if available.
+        // Fetch estimates with their line items, customers, and jobs
         const { data, error: supabaseError } = await supabase
           .from('estimates')
           .select(`
             *,
-            estimate_line_items ( * )
+            estimate_line_items ( * ),
+            customers ( * ),
+            jobs ( * )
           `)
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
@@ -76,7 +81,6 @@ export const useEstimates = () => {
     console.log('Deleting estimate:', estimateId);
     toast({ title: "Estimate deleted (mock)", variant: "destructive" });
   };
-
 
   return { estimates, loading, error, addEstimate, updateEstimate, deleteEstimate };
 };

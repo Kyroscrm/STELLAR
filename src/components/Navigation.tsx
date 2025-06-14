@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -219,7 +218,7 @@ const Navigation = () => {
             {/* User menu */}
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-700">
-                {user?.user_metadata?.full_name || user?.email}
+                {user?.email}
               </span>
               <Button variant="ghost" size="sm" asChild>
                 <Link to="/admin/settings">

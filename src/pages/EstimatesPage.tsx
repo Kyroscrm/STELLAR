@@ -13,8 +13,8 @@ import {
   FileText,
   DollarSign,
   CheckCircle,
-  XCircle,
-  Eye
+  Eye,
+  AlertTriangle
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -38,8 +38,8 @@ const EstimatesPage = () => {
 
   const filteredEstimates = estimates.filter(estimate => 
     estimate.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    estimate.estimate_number.toLowerCase().includes(searchTerm.toLowerCase())
-    // Add customer name search once customer data is linked
+    estimate.estimate_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (estimate.customers && `${estimate.customers.first_name} ${estimate.customers.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()))
   );
   
   const estimateStats = {
@@ -66,7 +66,6 @@ const EstimatesPage = () => {
       </div>
     );
   }
-
 
   return (
     <div className="p-6 space-y-6">
@@ -170,7 +169,12 @@ const EstimatesPage = () => {
                 <TableRow key={estimate.id}>
                   <TableCell className="font-medium">{estimate.estimate_number}</TableCell>
                   <TableCell>{estimate.title}</TableCell>
-                  <TableCell>{estimate.customer_id || 'N/A'}</TableCell> {/* Replace with customer name */}
+                  <TableCell>
+                    {estimate.customers ? 
+                      `${estimate.customers.first_name} ${estimate.customers.last_name}` : 
+                      'N/A'
+                    }
+                  </TableCell>
                   <TableCell>
                     <Badge variant={
                       estimate.status === 'approved' ? 'default' :
