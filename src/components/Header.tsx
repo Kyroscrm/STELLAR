@@ -37,9 +37,9 @@ const Header = () => {
               <Phone className="h-4 w-4" />
               <span className="hidden sm:inline">(123) 456-7890</span>
             </a>
-            <a href="mailto:info@probuild.com" className="flex items-center gap-2 hover:text-secondary transition-colors">
+            <a href="mailto:info@finalroofing.com" className="flex items-center gap-2 hover:text-secondary transition-colors">
               <Mail className="h-4 w-4" />
-              <span className="hidden sm:inline">info@probuild.com</span>
+              <span className="hidden sm:inline">info@finalroofing.com</span>
             </a>
           </div>
           <div className="text-xs">
@@ -53,7 +53,7 @@ const Header = () => {
         <div className="flex justify-between items-center">
           <div className="flex items-center">
             <h1 className="text-2xl font-heading font-bold text-primary">
-              ProBuild<span className="text-secondary">Contractors</span>
+              Final<span className="text-secondary">Roofing</span> & Retro-Fit
             </h1>
           </div>
 

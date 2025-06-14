@@ -1,151 +1,100 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLeads } from '@/hooks/useLeads';
+import { useCustomers } from '@/hooks/useCustomers';
+import { useJobs } from '@/hooks/useJobs';
+import { useEstimates } from '@/hooks/useEstimates';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { 
   Users, 
+  Briefcase, 
+  FileText, 
   DollarSign, 
-  Calendar, 
-  BarChart3,
-  Search,
+  TrendingUp,
+  Calendar,
+  Settings,
   Plus,
-  Eye,
-  Edit,
-  Phone,
-  Mail,
-  MapPin,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  TrendingUp
+  Search,
+  Filter
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 
 const AdminDashboard = () => {
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
+  const { leads, loading: leadsLoading } = useLeads();
+  const { customers, loading: customersLoading } = useCustomers();
+  const { jobs, loading: jobsLoading } = useJobs();
+  const { estimates, loading: estimatesLoading } = useEstimates();
+  
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('overview');
 
-  // Mock CRM data
-  const stats = {
-    totalLeads: 127,
-    activeProjects: 23,
-    monthlyRevenue: 450000,
-    completedProjects: 89
-  };
+  // Calculate dashboard metrics
+  const totalRevenue = estimates
+    .filter(e => e.status === 'approved')
+    .reduce((sum, e) => sum + (e.total_amount || 0), 0);
 
-  const leads = [
-    {
-      id: '1',
-      name: 'Sarah Johnson',
-      email: 'sarah.j@email.com',
-      phone: '(555) 123-4567',
-      project: 'Kitchen Remodel',
-      status: 'hot',
-      value: 45000,
-      source: 'Website',
-      date: '2024-02-10',
-      notes: 'Ready to start ASAP, budget approved'
-    },
-    {
-      id: '2',
-      name: 'Mike Rodriguez',
-      email: 'mike.r@email.com',
-      phone: '(555) 234-5678',
-      project: 'Bathroom Addition',
-      status: 'warm',
-      value: 32000,
-      source: 'Referral',
-      date: '2024-02-08',
-      notes: 'Comparing quotes, needs to decide by end of month'
-    },
-    {
-      id: '3',
-      name: 'Jennifer Chen',
-      email: 'jen.chen@email.com',
-      phone: '(555) 345-6789',
-      project: 'Home Addition',
-      status: 'cold',
-      value: 85000,
-      source: 'Google Ads',
-      date: '2024-02-05',
-      notes: 'Still planning, timeline flexible'
-    }
-  ];
-
-  const projects = [
-    {
-      id: '1',
-      name: 'Kitchen Renovation - Johnson',
-      client: 'Sarah Johnson',
-      status: 'in-progress',
-      progress: 65,
-      startDate: '2024-01-15',
-      endDate: '2024-02-28',
-      budget: 45000,
-      spent: 29250,
-      team: ['John D.', 'Mike S.']
-    },
-    {
-      id: '2',
-      name: 'Bathroom Remodel - Smith',
-      client: 'Robert Smith',
-      status: 'planning',
-      progress: 15,
-      startDate: '2024-02-20',
-      endDate: '2024-03-30',
-      budget: 25000,
-      spent: 3750,
-      team: ['Lisa R.', 'Tom K.']
-    }
-  ];
-
-  const recentActivity = [
-    { id: '1', type: 'lead', message: 'New lead from website: Kitchen remodel inquiry', time: '2 hours ago' },
-    { id: '2', type: 'project', message: 'Project update: Johnson Kitchen - 65% complete', time: '4 hours ago' },
-    { id: '3', type: 'payment', message: 'Payment received: $15,000 from Smith project', time: '6 hours ago' },
-    { id: '4', type: 'quote', message: 'Quote sent to Mike Rodriguez - $32,000', time: '1 day ago' }
-  ];
+  const activeJobs = jobs.filter(j => ['scheduled', 'in_progress'].includes(j.status || ''));
+  const newLeads = leads.filter(l => l.status === 'new');
+  const monthlyRevenue = estimates
+    .filter(e => {
+      const createdAt = new Date(e.created_at || '');
+      const now = new Date();
+      return createdAt.getMonth() === now.getMonth() && 
+             createdAt.getFullYear() === now.getFullYear() &&
+             e.status === 'approved';
+    })
+    .reduce((sum, e) => sum + (e.total_amount || 0), 0);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'hot': return 'bg-red-500';
-      case 'warm': return 'bg-yellow-500';
-      case 'cold': return 'bg-blue-500';
-      case 'in-progress': return 'bg-green-500';
-      case 'planning': return 'bg-orange-500';
-      case 'completed': return 'bg-gray-500';
-      default: return 'bg-gray-400';
+      case 'new': return 'bg-blue-100 text-blue-800';
+      case 'contacted': return 'bg-yellow-100 text-yellow-800';
+      case 'qualified': return 'bg-green-100 text-green-800';
+      case 'won': return 'bg-emerald-100 text-emerald-800';
+      case 'lost': return 'bg-red-100 text-red-800';
+      case 'scheduled': return 'bg-purple-100 text-purple-800';
+      case 'in_progress': return 'bg-blue-100 text-blue-800';
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'draft': return 'bg-gray-100 text-gray-800';
+      case 'sent': return 'bg-blue-100 text-blue-800';
+      case 'approved': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'lead': return <Users className="h-4 w-4" />;
-      case 'project': return <Calendar className="h-4 w-4" />;
-      case 'payment': return <DollarSign className="h-4 w-4" />;
-      case 'quote': return <BarChart3 className="h-4 w-4" />;
-      default: return <AlertCircle className="h-4 w-4" />;
-    }
-  };
+  if (!user || (user.role !== 'admin' && user.role !== 'staff')) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
+          <p className="text-gray-600">You don't have permission to access this page.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-heading font-bold text-primary">
-                ProBuild<span className="text-secondary">CRM</span>
+              <h1 className="text-2xl font-bold text-primary">
+                Final<span className="text-secondary">Roofing</span> CRM
               </h1>
-              <p className="text-gray-600">Admin Dashboard</p>
+              <p className="text-gray-600">Welcome back, {user.first_name || user.email}</p>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">Welcome, {user?.name}</span>
-              <Button variant="outline" onClick={logout}>
+              <Button variant="outline" size="sm">
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </Button>
+              <Button variant="ghost" size="sm" onClick={logout}>
                 Logout
               </Button>
             </div>
@@ -153,325 +102,536 @@ const AdminDashboard = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar Navigation */}
-          <div className="lg:col-span-1">
-            <Card>
-              <CardContent className="p-0">
-                <nav className="space-y-1">
-                  {[
-                    { id: 'overview', label: 'Overview', icon: BarChart3 },
-                    { id: 'leads', label: 'Leads', icon: Users },
-                    { id: 'projects', label: 'Projects', icon: Calendar },
-                    { id: 'analytics', label: 'Analytics', icon: TrendingUp }
-                  ].map(item => (
-                    <button
-                      key={item.id}
-                      onClick={() => setActiveTab(item.id)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
-                        activeTab === item.id ? 'bg-primary/5 text-primary border-r-2 border-primary' : 'text-gray-700'
-                      }`}
-                    >
-                      <item.icon className="h-5 w-5" />
-                      {item.label}
-                    </button>
-                  ))}
-                </nav>
-              </CardContent>
-            </Card>
+      <div className="flex">
+        {/* Sidebar */}
+        <nav className="w-64 bg-white shadow-sm min-h-screen border-r">
+          <div className="p-6">
+            <div className="space-y-2">
+              <Button 
+                variant={activeTab === 'overview' ? 'default' : 'ghost'} 
+                className="w-full justify-start"
+                onClick={() => setActiveTab('overview')}
+              >
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Overview
+              </Button>
+              <Button 
+                variant={activeTab === 'leads' ? 'default' : 'ghost'} 
+                className="w-full justify-start"
+                onClick={() => setActiveTab('leads')}
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Leads ({newLeads.length})
+              </Button>
+              <Button 
+                variant={activeTab === 'customers' ? 'default' : 'ghost'} 
+                className="w-full justify-start"
+                onClick={() => setActiveTab('customers')}
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Customers ({customers.length})
+              </Button>
+              <Button 
+                variant={activeTab === 'jobs' ? 'default' : 'ghost'} 
+                className="w-full justify-start"
+                onClick={() => setActiveTab('jobs')}
+              >
+                <Briefcase className="h-4 w-4 mr-2" />
+                Jobs ({activeJobs.length})
+              </Button>
+              <Button 
+                variant={activeTab === 'estimates' ? 'default' : 'ghost'} 
+                className="w-full justify-start"
+                onClick={() => setActiveTab('estimates')}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Estimates ({estimates.length})
+              </Button>
+              <Button 
+                variant={activeTab === 'calendar' ? 'default' : 'ghost'} 
+                className="w-full justify-start"
+                onClick={() => setActiveTab('calendar')}
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Calendar
+              </Button>
+            </div>
           </div>
+        </nav>
 
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-            {/* Overview Tab */}
-            {activeTab === 'overview' && (
-              <div className="space-y-6">
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-gray-600">Total Leads</p>
-                          <p className="text-2xl font-bold text-primary">{stats.totalLeads}</p>
-                        </div>
-                        <Users className="h-8 w-8 text-primary/60" />
-                      </div>
-                    </CardContent>
-                  </Card>
+        {/* Main Content */}
+        <main className="flex-1 p-6">
+          {activeTab === 'overview' && (
+            <div className="space-y-6">
+              {/* Metrics Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">${totalRevenue.toLocaleString()}</div>
+                    <p className="text-xs text-muted-foreground">
+                      +20.1% from last month
+                    </p>
+                  </CardContent>
+                </Card>
 
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-gray-600">Active Projects</p>
-                          <p className="text-2xl font-bold text-primary">{stats.activeProjects}</p>
-                        </div>
-                        <Calendar className="h-8 w-8 text-primary/60" />
-                      </div>
-                    </CardContent>
-                  </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">New Leads</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{newLeads.length}</div>
+                    <p className="text-xs text-muted-foreground">
+                      +5 from last week
+                    </p>
+                  </CardContent>
+                </Card>
 
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-gray-600">Monthly Revenue</p>
-                          <p className="text-2xl font-bold text-primary">${stats.monthlyRevenue.toLocaleString()}</p>
-                        </div>
-                        <DollarSign className="h-8 w-8 text-primary/60" />
-                      </div>
-                    </CardContent>
-                  </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Active Jobs</CardTitle>
+                    <Briefcase className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{activeJobs.length}</div>
+                    <p className="text-xs text-muted-foreground">
+                      {jobs.filter(j => j.status === 'completed').length} completed this month
+                    </p>
+                  </CardContent>
+                </Card>
 
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-gray-600">Completed Projects</p>
-                          <p className="text-2xl font-bold text-primary">{stats.completedProjects}</p>
-                        </div>
-                        <CheckCircle className="h-8 w-8 text-primary/60" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">${monthlyRevenue.toLocaleString()}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Current month
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
 
-                {/* Recent Activity */}
+              {/* Recent Activity */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Recent Activity</CardTitle>
+                    <CardTitle>Recent Leads</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {recentActivity.map(activity => (
-                        <div key={activity.id} className="flex items-start gap-3">
-                          <div className="mt-1 p-1 rounded-full bg-primary/10 text-primary">
-                            {getActivityIcon(activity.type)}
+                      {leads.slice(0, 5).map((lead) => (
+                        <div key={lead.id} className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{lead.first_name} {lead.last_name}</p>
+                            <p className="text-sm text-gray-600">{lead.email}</p>
                           </div>
-                          <div className="flex-1">
-                            <p className="text-sm">{activity.message}</p>
-                            <p className="text-xs text-gray-500">{activity.time}</p>
+                          <Badge className={getStatusColor(lead.status || 'new')}>
+                            {lead.status}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Active Jobs</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {activeJobs.slice(0, 5).map((job) => (
+                        <div key={job.id} className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{job.title}</p>
+                            <p className="text-sm text-gray-600">
+                              {job.customers ? 
+                                `${(job.customers as any).first_name} ${(job.customers as any).last_name}` : 
+                                'No customer assigned'
+                              }
+                            </p>
                           </div>
+                          <Badge className={getStatusColor(job.status || 'quoted')}>
+                            {job.status}
+                          </Badge>
                         </div>
                       ))}
                     </div>
                   </CardContent>
                 </Card>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Leads Tab */}
-            {activeTab === 'leads' && (
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-bold text-primary">Lead Management</h2>
-                  <Button className="bg-secondary text-primary hover:bg-secondary/90">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Lead
-                  </Button>
-                </div>
+          {activeTab === 'leads' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold">Leads Management</h2>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Lead
+                </Button>
+              </div>
 
-                {/* Search */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search leads..."
+              <div className="flex gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input 
+                    placeholder="Search leads..." 
+                    className="pl-10"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
                   />
                 </div>
+                <Button variant="outline">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filter
+                </Button>
+              </div>
 
-                {/* Leads List */}
-                <div className="space-y-4">
-                  {leads.map(lead => (
-                    <Card key={lead.id}>
-                      <CardContent className="p-6">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h3 className="font-semibold text-lg">{lead.name}</h3>
-                              <Badge className={`${getStatusColor(lead.status)} text-white`}>
-                                {lead.status.toUpperCase()}
+              <Card>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="border-b">
+                        <tr>
+                          <th className="text-left p-4 font-medium">Name</th>
+                          <th className="text-left p-4 font-medium">Contact</th>
+                          <th className="text-left p-4 font-medium">Source</th>
+                          <th className="text-left p-4 font-medium">Status</th>
+                          <th className="text-left p-4 font-medium">Value</th>
+                          <th className="text-left p-4 font-medium">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {leads
+                          .filter(lead => 
+                            !searchTerm || 
+                            `${lead.first_name} ${lead.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            (lead.email && lead.email.toLowerCase().includes(searchTerm.toLowerCase()))
+                          )
+                          .map((lead) => (
+                          <tr key={lead.id} className="border-b hover:bg-gray-50">
+                            <td className="p-4">
+                              <div>
+                                <p className="font-medium">{lead.first_name} {lead.last_name}</p>
+                                <p className="text-sm text-gray-600">{lead.address}</p>
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <div>
+                                <p className="text-sm">{lead.email}</p>
+                                <p className="text-sm">{lead.phone}</p>
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <Badge variant="outline">{lead.source}</Badge>
+                            </td>
+                            <td className="p-4">
+                              <Badge className={getStatusColor(lead.status || 'new')}>
+                                {lead.status}
                               </Badge>
-                            </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                              <div className="space-y-2">
-                                <div className="flex items-center gap-2 text-sm">
-                                  <Mail className="h-4 w-4 text-gray-400" />
-                                  {lead.email}
-                                </div>
-                                <div className="flex items-center gap-2 text-sm">
-                                  <Phone className="h-4 w-4 text-gray-400" />
-                                  {lead.phone}
-                                </div>
+                            </td>
+                            <td className="p-4">
+                              ${lead.estimated_value?.toLocaleString() || '0'}
+                            </td>
+                            <td className="p-4">
+                              <div className="flex gap-2">
+                                <Button size="sm" variant="outline">Edit</Button>
+                                <Button size="sm" variant="outline">Convert</Button>
                               </div>
-                              <div className="space-y-2">
-                                <div className="text-sm">
-                                  <span className="font-medium">Project:</span> {lead.project}
-                                </div>
-                                <div className="text-sm">
-                                  <span className="font-medium">Value:</span> ${lead.value.toLocaleString()}
-                                </div>
-                                <div className="text-sm">
-                                  <span className="font-medium">Source:</span> {lead.source}
-                                </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {activeTab === 'customers' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold">Customers Management</h2>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Customer
+                </Button>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input 
+                    placeholder="Search customers..." 
+                    className="pl-10"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <Button variant="outline">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filter
+                </Button>
+              </div>
+
+              <Card>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="border-b">
+                        <tr>
+                          <th className="text-left p-4 font-medium">Name</th>
+                          <th className="text-left p-4 font-medium">Contact</th>
+                          <th className="text-left p-4 font-medium">Address</th>
+                          <th className="text-left p-4 font-medium">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {customers
+                          .filter(customer => 
+                            !searchTerm || 
+                            `${customer.first_name} ${customer.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase()))
+                          )
+                          .map((customer) => (
+                          <tr key={customer.id} className="border-b hover:bg-gray-50">
+                            <td className="p-4">
+                              <div>
+                                <p className="font-medium">{customer.first_name} {customer.last_name}</p>
+                                <p className="text-sm text-gray-600">{customer.company_name}</p>
                               </div>
-                            </div>
-                            
-                            <div className="bg-gray-50 p-3 rounded-lg mb-4">
-                              <p className="text-sm text-gray-700">{lead.notes}</p>
-                            </div>
-                          </div>
-                          
-                          <div className="flex gap-2 ml-4">
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4 mr-2" />
-                              View
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
-                            </Button>
-                            <Button size="sm" className="bg-secondary text-primary hover:bg-secondary/90">
-                              <Phone className="h-4 w-4 mr-2" />
-                              Call
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                            </td>
+                            <td className="p-4">
+                              <div>
+                                <p className="text-sm">{customer.email}</p>
+                                <p className="text-sm">{customer.phone}</p>
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <p className="text-sm">{customer.address}</p>
+                              <p className="text-sm">{customer.city}, {customer.state} {customer.zip_code}</p>
+                            </td>
+                            <td className="p-4">
+                              <div className="flex gap-2">
+                                <Button size="sm" variant="outline">View</Button>
+                                <Button size="sm" variant="outline">Edit</Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {activeTab === 'jobs' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold">Jobs Management</h2>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Job
+                </Button>
               </div>
-            )}
 
-            {/* Projects Tab */}
-            {activeTab === 'projects' && (
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-bold text-primary">Project Management</h2>
-                  <Button className="bg-secondary text-primary hover:bg-secondary/90">
-                    <Plus className="h-4 w-4 mr-2" />
-                    New Project
-                  </Button>
+              <div className="flex gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input 
+                    placeholder="Search jobs..." 
+                    className="pl-10"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
                 </div>
-
-                <div className="space-y-4">
-                  {projects.map(project => (
-                    <Card key={project.id}>
-                      <CardContent className="p-6">
-                        <div className="flex justify-between items-start mb-4">
-                          <div>
-                            <h3 className="font-semibold text-lg">{project.name}</h3>
-                            <p className="text-gray-600">Client: {project.client}</p>
-                          </div>
-                          <Badge className={`${getStatusColor(project.status)} text-white`}>
-                            {project.status.replace('-', ' ').toUpperCase()}
-                          </Badge>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                          <div>
-                            <p className="text-sm text-gray-600">Budget</p>
-                            <p className="font-semibold">${project.budget.toLocaleString()}</p>
-                            <p className="text-xs text-gray-500">Spent: ${project.spent.toLocaleString()}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600">Timeline</p>
-                            <p className="font-semibold">{new Date(project.startDate).toLocaleDateString()}</p>
-                            <p className="text-xs text-gray-500">End: {new Date(project.endDate).toLocaleDateString()}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600">Team</p>
-                            <p className="font-semibold">{project.team.join(', ')}</p>
-                          </div>
-                        </div>
-
-                        <div className="flex justify-between items-center">
-                          <div className="flex-1 mr-4">
-                            <div className="flex justify-between text-sm mb-1">
-                              <span>Progress</span>
-                              <span>{project.progress}%</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-primary h-2 rounded-full transition-all duration-300" 
-                                style={{ width: `${project.progress}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4 mr-2" />
-                              View
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                <Button variant="outline">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filter
+                </Button>
               </div>
-            )}
 
-            {/* Analytics Tab */}
-            {activeTab === 'analytics' && (
-              <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-primary">Analytics & Reports</h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Lead Conversion Rate</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-3xl font-bold text-primary mb-2">68%</div>
-                      <p className="text-sm text-gray-600">↑ 12% from last month</p>
-                    </CardContent>
-                  </Card>
+              <Card>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="border-b">
+                        <tr>
+                          <th className="text-left p-4 font-medium">Job Title</th>
+                          <th className="text-left p-4 font-medium">Customer</th>
+                          <th className="text-left p-4 font-medium">Status</th>
+                          <th className="text-left p-4 font-medium">Budget</th>
+                          <th className="text-left p-4 font-medium">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {jobs
+                          .filter(job => 
+                            !searchTerm || 
+                            job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            (job.customers && `${(job.customers as any).first_name} ${(job.customers as any).last_name}`.toLowerCase().includes(searchTerm.toLowerCase()))
+                          )
+                          .map((job) => (
+                          <tr key={job.id} className="border-b hover:bg-gray-50">
+                            <td className="p-4">
+                              <div>
+                                <p className="font-medium">{job.title}</p>
+                                <p className="text-sm text-gray-600">{job.address}</p>
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              {job.customers ? (
+                                <div>
+                                  <p className="font-medium">{(job.customers as any).first_name} {(job.customers as any).last_name}</p>
+                                  <p className="text-sm text-gray-600">{(job.customers as any).email}</p>
+                                </div>
+                              ) : (
+                                <p>No customer assigned</p>
+                              )}
+                            </td>
+                            <td className="p-4">
+                              <Badge className={getStatusColor(job.status || 'quoted')}>
+                                {job.status}
+                              </Badge>
+                            </td>
+                            <td className="p-4">
+                              ${job.budget?.toLocaleString() || '0'}
+                            </td>
+                            <td className="p-4">
+                              <div className="flex gap-2">
+                                <Button size="sm" variant="outline">View</Button>
+                                <Button size="sm" variant="outline">Edit</Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Average Project Value</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-3xl font-bold text-primary mb-2">$42,500</div>
-                      <p className="text-sm text-gray-600">↑ 5% from last month</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Customer Satisfaction</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-3xl font-bold text-primary mb-2">4.8/5</div>
-                      <p className="text-sm text-gray-600">Based on 127 reviews</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Project Completion Rate</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-3xl font-bold text-primary mb-2">94%</div>
-                      <p className="text-sm text-gray-600">On-time delivery</p>
-                    </CardContent>
-                  </Card>
-                </div>
+          {activeTab === 'estimates' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold">Estimates Management</h2>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Estimate
+                </Button>
               </div>
-            )}
-          </div>
-        </div>
+
+              <div className="flex gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input 
+                    placeholder="Search estimates..." 
+                    className="pl-10"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <Button variant="outline">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filter
+                </Button>
+              </div>
+
+              <Card>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="border-b">
+                        <tr>
+                          <th className="text-left p-4 font-medium">Estimate #</th>
+                          <th className="text-left p-4 font-medium">Customer</th>
+                          <th className="text-left p-4 font-medium">Job</th>
+                          <th className="text-left p-4 font-medium">Status</th>
+                          <th className="text-left p-4 font-medium">Total</th>
+                          <th className="text-left p-4 font-medium">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {estimates
+                          .filter(estimate => 
+                            !searchTerm || 
+                            estimate.estimate_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            (estimate.customers && `${(estimate.customers as any).first_name} ${(estimate.customers as any).last_name}`.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                            (estimate.jobs && estimate.jobs.title.toLowerCase().includes(searchTerm.toLowerCase()))
+                          )
+                          .map((estimate) => (
+                          <tr key={estimate.id} className="border-b hover:bg-gray-50">
+                            <td className="p-4">
+                              <p className="font-medium">{estimate.estimate_number}</p>
+                            </td>
+                            <td className="p-4">
+                              {estimate.customers ? (
+                                <div>
+                                  <p className="font-medium">{(estimate.customers as any).first_name} {(estimate.customers as any).last_name}</p>
+                                  <p className="text-sm text-gray-600">{(estimate.customers as any).email}</p>
+                                </div>
+                              ) : (
+                                <p>No customer assigned</p>
+                              )}
+                            </td>
+                            <td className="p-4">
+                              {estimate.jobs ? (
+                                <p className="font-medium">{estimate.jobs.title}</p>
+                              ) : (
+                                <p>No job assigned</p>
+                              )}
+                            </td>
+                            <td className="p-4">
+                              <Badge className={getStatusColor(estimate.status || 'draft')}>
+                                {estimate.status}
+                              </Badge>
+                            </td>
+                            <td className="p-4">
+                              ${estimate.total_amount?.toLocaleString() || '0'}
+                            </td>
+                            <td className="p-4">
+                              <div className="flex gap-2">
+                                <Button size="sm" variant="outline">View</Button>
+                                <Button size="sm" variant="outline">Edit</Button>
+                                <Button size="sm" variant="outline">Convert to Invoice</Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {activeTab === 'calendar' && (
+            <div>
+              <h2 className="text-2xl font-bold mb-4">Calendar</h2>
+              <Card>
+                <CardContent>
+                  {/* Add calendar component here */}
+                  <p>Calendar content will be here.</p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </main>
       </div>
     </div>
   );
