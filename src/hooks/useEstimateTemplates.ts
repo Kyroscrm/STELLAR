@@ -4,15 +4,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
+interface EstimateTemplateLineItem {
+  description: string;
+  quantity: number;
+  unit_price: number;
+}
+
 interface EstimateTemplate {
   id: string;
   name: string;
   description?: string;
-  line_items: Array<{
-    description: string;
-    quantity: number;
-    unit_price: number;
-  }>;
+  line_items: EstimateTemplateLineItem[];
   tax_rate: number;
   terms?: string;
   notes?: string;
@@ -41,7 +43,7 @@ export const useEstimateTemplates = () => {
         id: template.id,
         name: template.name,
         description: template.description,
-        line_items: template.line_items || [],
+        line_items: Array.isArray(template.line_items) ? template.line_items as EstimateTemplateLineItem[] : [],
         tax_rate: template.tax_rate || 0,
         terms: template.terms,
         notes: template.notes,
@@ -73,7 +75,7 @@ export const useEstimateTemplates = () => {
         id: data.id,
         name: data.name,
         description: data.description,
-        line_items: data.line_items || [],
+        line_items: Array.isArray(data.line_items) ? data.line_items as EstimateTemplateLineItem[] : [],
         tax_rate: data.tax_rate || 0,
         terms: data.terms,
         notes: data.notes,

@@ -25,6 +25,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import NewCustomerForm from '@/components/NewCustomerForm';
 import NewJobForm from '@/components/NewJobForm';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -72,6 +78,17 @@ const CustomersPage = () => {
   const handleCreateJob = (customerId: string) => {
     setSelectedCustomerId(customerId);
     setShowNewJobForm(true);
+  };
+
+  const handleJobSuccess = () => {
+    setShowNewJobForm(false);
+    setSelectedCustomerId('');
+    window.location.reload();
+  };
+
+  const handleJobCancel = () => {
+    setShowNewJobForm(false);
+    setSelectedCustomerId('');
   };
 
   if (loading) {
@@ -264,13 +281,17 @@ const CustomersPage = () => {
       )}
 
       {/* New Job Form Modal */}
-      {showNewJobForm && (
-        <NewJobForm 
-          onClose={() => setShowNewJobForm(false)}
-          onSuccess={() => window.location.reload()}
-          preselectedCustomerId={selectedCustomerId}
-        />
-      )}
+      <Dialog open={showNewJobForm} onOpenChange={setShowNewJobForm}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create New Job</DialogTitle>
+          </DialogHeader>
+          <NewJobForm 
+            onSuccess={handleJobSuccess}
+            onCancel={handleJobCancel}
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog

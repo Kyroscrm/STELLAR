@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -30,9 +31,10 @@ type JobFormData = z.infer<typeof jobSchema>;
 interface NewJobFormProps {
   onSuccess: () => void;
   onCancel: () => void;
+  preselectedCustomerId?: string;
 }
 
-const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel }) => {
+const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel, preselectedCustomerId }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { customers } = useCustomers();
   const { createJob } = useJobs();
@@ -43,7 +45,7 @@ const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel }) => {
     defaultValues: {
       title: '',
       description: '',
-      customer_id: '',
+      customer_id: preselectedCustomerId || '',
       address: '',
       start_date: '',
       end_date: '',
@@ -54,6 +56,13 @@ const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel }) => {
     },
   });
 
+  // Set preselected customer when component mounts or prop changes
+  useEffect(() => {
+    if (preselectedCustomerId) {
+      form.setValue('customer_id', preselectedCustomerId);
+    }
+  }, [preselectedCustomerId, form]);
+
   const handleGenerateJobNumber = async () => {
     const jobNumber = await generateJobNumber();
     form.setValue('title', jobNumber);
@@ -63,7 +72,7 @@ const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel }) => {
     setIsSubmitting(true);
     try {
       const jobData = {
-        title: data.title, // Ensure title is included
+        title: data.title,
         description: data.description || '',
         customer_id: data.customer_id || null,
         address: data.address || '',
@@ -137,7 +146,7 @@ const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel }) => {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Customer</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a customer" />
