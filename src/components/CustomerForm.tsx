@@ -43,6 +43,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
   const handleSubmit = async (data: CustomerFormData) => {
     try {
       await onSubmit(data);
+      form.reset();
     } catch (error) {
       console.error('Error submitting customer form:', error);
     }
@@ -229,7 +230,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
 
         <div className="flex gap-2 pt-4">
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : 'Save Customer'}
+            {isSubmitting ? 'Saving...' : initialData?.id ? 'Update Customer' : 'Save Customer'}
           </Button>
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel

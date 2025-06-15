@@ -128,54 +128,6 @@ export const useLeads = () => {
     }
   };
 
-  const convertToCustomer = async (leadId: string) => {
-    try {
-      const lead = leads.find(l => l.id === leadId);
-      if (!lead || !user) return null;
-
-      // Create customer from lead
-      const { data: customer, error: customerError } = await supabase
-        .from('customers')
-        .insert({
-          user_id: user.id,
-          lead_id: leadId,
-          first_name: lead.first_name,
-          last_name: lead.last_name,
-          email: lead.email,
-          phone: lead.phone,
-          address: lead.address,
-          city: lead.city,
-          state: lead.state,
-          zip_code: lead.zip_code,
-          notes: lead.notes
-        })
-        .select()
-        .single();
-
-      if (customerError) throw customerError;
-
-      // Update lead status
-      await updateLead(leadId, { status: 'won' });
-      
-      toast.success('Lead converted to customer successfully');
-      
-      // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'lead',
-        entity_id: leadId,
-        action: 'converted',
-        description: `Lead converted to customer`
-      });
-
-      return customer;
-    } catch (error: any) {
-      console.error('Error converting lead:', error);
-      toast.error('Failed to convert lead to customer');
-      return null;
-    }
-  };
-
   useEffect(() => {
     fetchLeads();
   }, [user]);
@@ -186,7 +138,6 @@ export const useLeads = () => {
     fetchLeads,
     createLead,
     updateLead,
-    deleteLead,
-    convertToCustomer
+    deleteLead
   };
 };

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useLeads } from '@/hooks/useLeads';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,7 +31,7 @@ import ConvertLeadDialog from '@/components/ConvertLeadDialog';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
 const LeadsPage = () => {
-  const { leads, loading, deleteLead } = useLeads();
+  const { leads, loading, deleteLead, fetchLeads } = useLeads();
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewLeadForm, setShowNewLeadForm] = useState(false);
   const [convertDialog, setConvertDialog] = useState<{
@@ -92,6 +93,16 @@ const LeadsPage = () => {
 
   const handleConvertLead = (lead: any) => {
     setConvertDialog({ open: true, lead });
+  };
+
+  const handleFormSuccess = async () => {
+    setShowNewLeadForm(false);
+    await fetchLeads();
+  };
+
+  const handleConversionSuccess = async () => {
+    setConvertDialog({ open: false });
+    await fetchLeads();
   };
 
   if (loading) {
@@ -297,16 +308,16 @@ const LeadsPage = () => {
       {showNewLeadForm && (
         <NewLeadForm 
           onClose={() => setShowNewLeadForm(false)}
-          onSuccess={() => window.location.reload()}
+          onSuccess={handleFormSuccess}
         />
       )}
 
-      {/* Enhanced Convert Lead Dialog */}
+      {/* Convert Lead Dialog */}
       <ConvertLeadDialog
         open={convertDialog.open}
         onOpenChange={(open) => setConvertDialog({ open })}
         lead={convertDialog.lead}
-        onSuccess={() => window.location.reload()}
+        onSuccess={handleConversionSuccess}
       />
 
       {/* Delete Confirmation Dialog */}

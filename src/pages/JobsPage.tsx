@@ -78,7 +78,16 @@ const JobsPage = () => {
   };
 
   const handleStatusChange = async (jobId: string, newStatus: string) => {
-    await updateJob(jobId, { status: newStatus as any });
+    const success = await updateJob(jobId, { status: newStatus as any });
+    if (success) {
+      console.log(`Job ${jobId} status updated to ${newStatus}`);
+    }
+  };
+
+  const handleDeleteJob = async (jobId: string) => {
+    if (window.confirm('Are you sure you want to delete this job?')) {
+      await deleteJob(jobId);
+    }
   };
 
   if (loading) {
@@ -249,7 +258,7 @@ const JobsPage = () => {
                         </DropdownMenuItem>
                         <DropdownMenuItem 
                           className="text-red-600"
-                          onClick={() => deleteJob(job.id)}
+                          onClick={() => handleDeleteJob(job.id)}
                         >
                           Delete Job
                         </DropdownMenuItem>
