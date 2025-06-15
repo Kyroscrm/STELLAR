@@ -106,13 +106,7 @@ const FollowUpReminders = () => {
                         <Calendar className="h-3 w-3" />
                         {new Date(reminder.reminder_date).toLocaleDateString()}
                       </div>
-                      {reminder.entity_data && (
-                        <span>
-                          {reminder.entity_type === 'lead' && reminder.entity_data.first_name
-                            ? `${reminder.entity_data.first_name} ${reminder.entity_data.last_name}`
-                            : reminder.entity_data.title || reminder.entity_data.estimate_number || reminder.entity_data.invoice_number}
-                        </span>
-                      )}
+                      <span>Entity ID: {reminder.entity_id}</span>
                     </div>
                   </div>
                   

@@ -13,6 +13,7 @@ export interface FollowUpReminder {
   reminder_date: string;
   status: string;
   created_at: string;
+  entity_data?: any; // Added entity_data property
 }
 
 export const useFollowUpReminders = () => {
@@ -34,6 +35,7 @@ export const useFollowUpReminders = () => {
         .from('follow_up_reminders')
         .select('*')
         .eq('user_id', user.id)
+        .eq('status', 'pending')
         .order('reminder_date', { ascending: true });
 
       if (supabaseError) {
@@ -124,6 +126,22 @@ export const useFollowUpReminders = () => {
     }
   };
 
+  const markAsSent = async (reminderId: string) => {
+    const result = await updateReminder(reminderId, { status: 'sent' });
+    if (result) {
+      setReminders(prev => prev.filter(reminder => reminder.id !== reminderId));
+      toast.success('Reminder marked as sent');
+    }
+  };
+
+  const dismissReminder = async (reminderId: string) => {
+    const result = await updateReminder(reminderId, { status: 'dismissed' });
+    if (result) {
+      setReminders(prev => prev.filter(reminder => reminder.id !== reminderId));
+      toast.success('Reminder dismissed');
+    }
+  };
+
   const deleteReminder = async (reminderId: string) => {
     if (!user) return;
 
@@ -160,6 +178,8 @@ export const useFollowUpReminders = () => {
     addReminder, 
     updateReminder, 
     deleteReminder, 
+    markAsSent,
+    dismissReminder,
     fetchReminders 
   };
 };
