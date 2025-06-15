@@ -29,7 +29,6 @@ interface LineItemTemplate {
   name: string;
   description: string;
   unit_price: number;
-  category: string;
 }
 
 const AdvancedLineItemManager: React.FC<AdvancedLineItemManagerProps> = ({
@@ -47,34 +46,27 @@ const AdvancedLineItemManager: React.FC<AdvancedLineItemManagerProps> = ({
       id: '1',
       name: 'Basic Consultation',
       description: 'Initial consultation and assessment',
-      unit_price: 150,
-      category: 'Service'
+      unit_price: 150
     },
     {
       id: '2',
       name: 'Material Package A',
       description: 'Standard material package including tools and supplies',
-      unit_price: 500,
-      category: 'Materials'
+      unit_price: 500
     },
     {
       id: '3',
       name: 'Labor - Skilled Technician',
       description: 'Hourly rate for skilled technical work',
-      unit_price: 85,
-      category: 'Labor'
+      unit_price: 85
     }
   ]);
 
   const [newItem, setNewItem] = useState({
     description: '',
     quantity: 1,
-    unit_price: 0,
-    category: '',
-    tax_exempt: false
+    unit_price: 0
   });
-
-  const categories = ['Service', 'Materials', 'Labor', 'Equipment', 'Travel', 'Other'];
 
   const calculateSubtotal = () => {
     return lineItems.reduce((sum, item) => sum + (item.total || 0), 0);
@@ -104,7 +96,7 @@ const AdvancedLineItemManager: React.FC<AdvancedLineItemManagerProps> = ({
 
     const result = await addLineItem(newItem);
     if (result) {
-      setNewItem({ description: '', quantity: 1, unit_price: 0, category: '', tax_exempt: false });
+      setNewItem({ description: '', quantity: 1, unit_price: 0 });
       toast.success('Line item added');
     }
   };
@@ -204,8 +196,7 @@ const AdvancedLineItemManager: React.FC<AdvancedLineItemManagerProps> = ({
           {/* Header */}
           <div className="grid grid-cols-12 gap-2 text-sm font-medium text-gray-600 px-3 py-2 bg-gray-50 rounded">
             <div className="col-span-1"></div>
-            <div className="col-span-4">Description</div>
-            <div className="col-span-1">Category</div>
+            <div className="col-span-5">Description</div>
             <div className="col-span-2">Quantity</div>
             <div className="col-span-2">Unit Price</div>
             <div className="col-span-1">Total</div>
@@ -218,26 +209,12 @@ const AdvancedLineItemManager: React.FC<AdvancedLineItemManagerProps> = ({
               <div className="col-span-1 flex justify-center">
                 <GripVertical className="h-4 w-4 text-gray-400 cursor-move" />
               </div>
-              <div className="col-span-4">
+              <div className="col-span-5">
                 <Textarea
                   value={item.description}
                   onChange={(e) => updateLineItem(item.id, { description: e.target.value })}
                   className="min-h-[60px]"
                 />
-              </div>
-              <div className="col-span-1">
-                <Select onValueChange={(value) => updateLineItem(item.id, { category: value })}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
               <div className="col-span-2">
                 <Input
@@ -287,27 +264,13 @@ const AdvancedLineItemManager: React.FC<AdvancedLineItemManagerProps> = ({
           {/* Add New Item Form */}
           <div className="grid grid-cols-12 gap-2 items-center p-3 border-2 border-dashed border-gray-300 rounded-lg">
             <div className="col-span-1"></div>
-            <div className="col-span-4">
+            <div className="col-span-5">
               <Textarea
                 value={newItem.description}
                 onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
                 placeholder="Enter item description..."
                 className="min-h-[60px]"
               />
-            </div>
-            <div className="col-span-1">
-              <Select onValueChange={(value) => setNewItem({ ...newItem, category: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
             <div className="col-span-2">
               <Input
