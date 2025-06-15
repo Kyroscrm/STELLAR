@@ -47,18 +47,22 @@ const CustomersPage = () => {
   }>({ open: false });
 
   const filteredCustomers = customers.filter(customer => {
-    return !searchTerm || 
-      `${customer.first_name} ${customer.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      `${customer.first_name} ${customer.last_name}`.toLowerCase().includes(searchLower) ||
+      (customer.email && customer.email.toLowerCase().includes(searchLower)) ||
       (customer.phone && customer.phone.includes(searchTerm)) ||
-      (customer.company_name && customer.company_name.toLowerCase().includes(searchTerm.toLowerCase()));
+      (customer.company_name && customer.company_name.toLowerCase().includes(searchLower))
+    );
   });
 
   const customerStats = {
     total: customers.length,
     withJobs: customers.filter(c => c.company_name).length,
     thisMonth: customers.filter(c => {
-      const createdAt = new Date(c.created_at || '');
+      if (!c.created_at) return false;
+      const createdAt = new Date(c.created_at);
       const now = new Date();
       return createdAt.getMonth() === now.getMonth() && createdAt.getFullYear() === now.getFullYear();
     }).length
@@ -101,7 +105,6 @@ const CustomersPage = () => {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Customers</h1>
@@ -113,7 +116,6 @@ const CustomersPage = () => {
         </Button>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4">
@@ -152,7 +154,6 @@ const CustomersPage = () => {
         </Card>
       </div>
 
-      {/* Search and Filters */}
       <div className="flex gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -169,7 +170,6 @@ const CustomersPage = () => {
         </Button>
       </div>
 
-      {/* Customers Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredCustomers.map((customer) => (
           <Card key={customer.id} className="hover:shadow-lg transition-shadow">
@@ -254,7 +254,7 @@ const CustomersPage = () => {
                   </p>
                 )}
                 <div className="text-xs text-gray-400">
-                  Customer since {new Date(customer.created_at || '').toLocaleDateString()}
+                  Customer since {customer.created_at ? new Date(customer.created_at).toLocaleDateString() : 'Unknown'}
                 </div>
               </div>
             </CardContent>
@@ -272,7 +272,6 @@ const CustomersPage = () => {
         </div>
       )}
 
-      {/* New Customer Form Modal */}
       {showNewCustomerForm && (
         <NewCustomerForm 
           onClose={() => setShowNewCustomerForm(false)}
@@ -280,7 +279,6 @@ const CustomersPage = () => {
         />
       )}
 
-      {/* New Job Form Modal */}
       <Dialog open={showNewJobForm} onOpenChange={setShowNewJobForm}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -293,7 +291,6 @@ const CustomersPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         open={deleteConfirm.open}
         onOpenChange={(open) => setDeleteConfirm({ open })}

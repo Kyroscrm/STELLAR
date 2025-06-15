@@ -14,7 +14,6 @@ import {
   Filter, 
   MoreHorizontal,
   FileText,
-  DollarSign,
   CheckCircle,
   Eye,
   AlertTriangle,
@@ -55,8 +54,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import EstimateForm from '@/components/EstimateForm';
-import EstimateLineItemsManager from '@/components/EstimateLineItemsManager';
-import EstimateAutomations from '@/components/EstimateAutomations';
 import AdvancedLineItemManager from '@/components/AdvancedLineItemManager';
 import { toast } from 'sonner';
 
@@ -117,7 +114,6 @@ const EstimatesPage = () => {
   const handleCreateEstimate = async (data: any) => {
     setIsSubmitting(true);
     try {
-      // Create the estimate first
       const estimateData = {
         title: data.title,
         description: data.description || '',
@@ -137,7 +133,6 @@ const EstimatesPage = () => {
       const result = await addEstimate(estimateData);
       
       if (result && data.lineItems && data.lineItems.length > 0) {
-        // Add line items to the estimate using direct Supabase calls
         await addLineItemsToEstimate(result.id, data.lineItems);
       }
       
@@ -194,7 +189,6 @@ const EstimatesPage = () => {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Estimates</h1>
@@ -220,7 +214,6 @@ const EstimatesPage = () => {
         </Dialog>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
@@ -268,7 +261,6 @@ const EstimatesPage = () => {
         </Card>
       </div>
 
-      {/* Search and Filters */}
       <div className="flex gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -285,7 +277,6 @@ const EstimatesPage = () => {
         </Button>
       </div>
 
-      {/* Estimates Table */}
       <Card>
         <CardHeader>
           <CardTitle>Estimate List</CardTitle>
@@ -393,7 +384,6 @@ const EstimatesPage = () => {
         </CardContent>
       </Card>
 
-      {/* View Estimate Modal */}
       <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
         <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -431,11 +421,7 @@ const EstimatesPage = () => {
                 </div>
               )}
 
-              {/* Enhanced Line Items Manager */}
               <AdvancedLineItemManager estimateId={selectedEstimate.id} />
-
-              {/* Estimate Automations */}
-              <EstimateAutomations estimateId={selectedEstimate.id} />
 
               <div className="flex justify-between items-center pt-4 border-t">
                 <div className="flex gap-2">
@@ -456,7 +442,6 @@ const EstimatesPage = () => {
                     <Button 
                       variant="outline"
                       onClick={() => {
-                        // Navigate to create invoice from estimate
                         console.log('Create invoice from estimate:', selectedEstimate.id);
                       }}
                     >
@@ -474,7 +459,6 @@ const EstimatesPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -492,7 +476,7 @@ const EstimatesPage = () => {
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
-        </AlertDialogContent>
+        </AlertDialogFooter>
       </AlertDialog>
     </div>
   );

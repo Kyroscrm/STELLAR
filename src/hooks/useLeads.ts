@@ -5,8 +5,8 @@ import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/type
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-type Lead = Tables<'leads'>;
-type LeadInsert = TablesInsert<'leads'>;
+export type Lead = Tables<'leads'>;
+type LeadInsert = Omit<TablesInsert<'leads'>, 'user_id'>;
 type LeadUpdate = TablesUpdate<'leads'>;
 
 export const useLeads = () => {
@@ -16,26 +16,19 @@ export const useLeads = () => {
 
   const fetchLeads = async () => {
     if (!user) {
-      console.log('No user available for fetching leads');
+      setLeads([]);
       return;
     }
     
     setLoading(true);
     try {
-      console.log('Fetching leads for user:', user.id);
-      
       const { data, error } = await supabase
         .from('leads')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching leads:', error);
-        throw error;
-      }
-      
-      console.log(`Fetched ${data?.length || 0} leads`);
+      if (error) throw error;
       setLeads(data || []);
     } catch (error: any) {
       console.error('Error fetching leads:', error);
@@ -46,43 +39,36 @@ export const useLeads = () => {
     }
   };
 
-  const createLead = async (leadData: Omit<LeadInsert, 'user_id'>) => {
+  const addLead = async (leadData: LeadInsert) => {
     if (!user) {
-      toast.error('You must be logged in to create leads');
+      toast.error('You must be logged in to add leads');
       return null;
     }
 
     try {
-      console.log('Creating lead:', leadData);
-      
       const { data, error } = await supabase
         .from('leads')
         .insert({ ...leadData, user_id: user.id })
         .select()
         .single();
 
-      if (error) {
-        console.error('Error creating lead:', error);
-        throw error;
-      }
+      if (error) throw error;
       
-      console.log('Lead created successfully:', data);
       setLeads(prev => [data, ...prev]);
-      toast.success('Lead created successfully');
+      toast.success('Lead added successfully');
       
-      // Log activity
       await supabase.from('activity_logs').insert({
         user_id: user.id,
         entity_type: 'lead',
         entity_id: data.id,
         action: 'created',
-        description: `Lead created for ${data.first_name} ${data.last_name}`
+        description: `Lead created: ${data.first_name} ${data.last_name}`
       });
 
       return data;
     } catch (error: any) {
-      console.error('Error creating lead:', error);
-      toast.error(error.message || 'Failed to create lead');
+      console.error('Error adding lead:', error);
+      toast.error(error.message || 'Failed to add lead');
       return null;
     }
   };
@@ -90,12 +76,10 @@ export const useLeads = () => {
   const updateLead = async (id: string, updates: LeadUpdate) => {
     if (!user) {
       toast.error('You must be logged in to update leads');
-      return null;
+      return false;
     }
 
     try {
-      console.log('Updating lead:', id, updates);
-      
       const { data, error } = await supabase
         .from('leads')
         .update(updates)
@@ -104,16 +88,11 @@ export const useLeads = () => {
         .select()
         .single();
 
-      if (error) {
-        console.error('Error updating lead:', error);
-        throw error;
-      }
+      if (error) throw error;
       
-      console.log('Lead updated successfully:', data);
       setLeads(prev => prev.map(lead => lead.id === id ? data : lead));
       toast.success('Lead updated successfully');
       
-      // Log activity
       await supabase.from('activity_logs').insert({
         user_id: user.id,
         entity_type: 'lead',
@@ -122,11 +101,11 @@ export const useLeads = () => {
         description: `Lead updated`
       });
 
-      return data;
+      return true;
     } catch (error: any) {
       console.error('Error updating lead:', error);
       toast.error(error.message || 'Failed to update lead');
-      return null;
+      return false;
     }
   };
 
@@ -137,24 +116,17 @@ export const useLeads = () => {
     }
 
     try {
-      console.log('Deleting lead:', id);
-      
       const { error } = await supabase
         .from('leads')
         .delete()
         .eq('id', id)
         .eq('user_id', user.id);
 
-      if (error) {
-        console.error('Error deleting lead:', error);
-        throw error;
-      }
+      if (error) throw error;
       
-      console.log('Lead deleted successfully');
       setLeads(prev => prev.filter(lead => lead.id !== id));
       toast.success('Lead deleted successfully');
       
-      // Log activity
       await supabase.from('activity_logs').insert({
         user_id: user.id,
         entity_type: 'lead',
@@ -168,18 +140,60 @@ export const useLeads = () => {
     }
   };
 
-  useEffect(() => {
-    if (user) {
-      fetchLeads();
+  const convertToCustomer = async (leadId: string) => {
+    if (!user) {
+      toast.error('You must be logged in to convert leads');
+      return null;
     }
+
+    try {
+      const lead = leads.find(l => l.id === leadId);
+      if (!lead) {
+        toast.error('Lead not found');
+        return null;
+      }
+
+      const { data: customer, error: customerError } = await supabase
+        .from('customers')
+        .insert({
+          user_id: user.id,
+          first_name: lead.first_name,
+          last_name: lead.last_name,
+          email: lead.email,
+          phone: lead.phone,
+          address: lead.address,
+          city: lead.city,
+          state: lead.state,
+          zip_code: lead.zip_code,
+          notes: lead.notes
+        })
+        .select()
+        .single();
+
+      if (customerError) throw customerError;
+
+      await updateLead(leadId, { status: 'converted' });
+      
+      toast.success('Lead converted to customer successfully');
+      return customer;
+    } catch (error: any) {
+      console.error('Error converting lead:', error);
+      toast.error('Failed to convert lead to customer');
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    fetchLeads();
   }, [user]);
 
   return {
     leads,
     loading,
     fetchLeads,
-    createLead,
+    addLead,
     updateLead,
-    deleteLead
+    deleteLead,
+    convertToCustomer
   };
 };

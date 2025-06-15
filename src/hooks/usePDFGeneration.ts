@@ -8,21 +8,36 @@ export const usePDFGeneration = () => {
   const generateEstimatePDF = async (estimate: any) => {
     setGenerating(true);
     try {
-      // For now, this is a placeholder implementation
-      // In a real app, you'd use a PDF library like jsPDF or react-pdf
-      console.log('Generating PDF for estimate:', estimate);
+      // Simple PDF generation simulation
+      const content = `
+        ESTIMATE #${estimate.estimate_number}
+        
+        Customer: ${estimate.customers ? `${estimate.customers.first_name} ${estimate.customers.last_name}` : 'N/A'}
+        Title: ${estimate.title}
+        Description: ${estimate.description || 'N/A'}
+        
+        LINE ITEMS:
+        ${estimate.estimate_line_items?.map((item: any) => 
+          `${item.description} - Qty: ${item.quantity} - Price: $${item.unit_price} - Total: $${item.total}`
+        ).join('\n') || 'No line items'}
+        
+        TOTAL: $${estimate.total_amount || 0}
+      `;
       
-      // Simulate PDF generation
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `estimate-${estimate.estimate_number}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       
       toast.success('PDF generated successfully');
-      
-      // In a real implementation, you'd download or open the PDF here
-      return true;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error generating PDF:', error);
       toast.error('Failed to generate PDF');
-      return false;
     } finally {
       setGenerating(false);
     }
@@ -31,25 +46,43 @@ export const usePDFGeneration = () => {
   const generateInvoicePDF = async (invoice: any) => {
     setGenerating(true);
     try {
-      console.log('Generating PDF for invoice:', invoice);
+      const content = `
+        INVOICE #${invoice.invoice_number}
+        
+        Customer: ${invoice.customers ? `${invoice.customers.first_name} ${invoice.customers.last_name}` : 'N/A'}
+        Title: ${invoice.title}
+        Due Date: ${invoice.due_date || 'N/A'}
+        
+        LINE ITEMS:
+        ${invoice.invoice_line_items?.map((item: any) => 
+          `${item.description} - Qty: ${item.quantity} - Price: $${item.unit_price} - Total: $${item.total}`
+        ).join('\n') || 'No line items'}
+        
+        TOTAL: $${invoice.total_amount || 0}
+      `;
       
-      // Simulate PDF generation
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `invoice-${invoice.invoice_number}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       
-      toast.success('Invoice PDF generated successfully');
-      return true;
-    } catch (error: any) {
-      console.error('Error generating invoice PDF:', error);
-      toast.error('Failed to generate invoice PDF');
-      return false;
+      toast.success('PDF generated successfully');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF');
     } finally {
       setGenerating(false);
     }
   };
 
   return {
+    generating,
     generateEstimatePDF,
-    generateInvoicePDF,
-    generating
+    generateInvoicePDF
   };
 };

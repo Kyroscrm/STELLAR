@@ -1,45 +1,142 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { Database } from '@/integrations/supabase/types';
 
-export type Task = Database['public']['Tables']['tasks']['Row'];
+export type Task = Tables<'tasks'>;
+type TaskInsert = Omit<TablesInsert<'tasks'>, 'user_id'>;
+type TaskUpdate = TablesUpdate<'tasks'>;
 
 export const useTasks = () => {
-  const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
   const fetchTasks = async () => {
     if (!user) {
       setTasks([]);
-      setLoading(false);
       return;
     }
-
+    
+    setLoading(true);
     try {
-      setLoading(true);
-      const { data, error: supabaseError } = await supabase
+      const { data, error } = await supabase
         .from('tasks')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (supabaseError) {
-        throw supabaseError;
-      }
-      
+      if (error) throw error;
       setTasks(data || []);
-      setError(null);
-    } catch (err: any) {
-      console.error('Error fetching tasks:', err);
-      setError(err);
-      toast.error('Error fetching tasks: ' + (err.message || 'Could not retrieve tasks from the server.'));
+    } catch (error: any) {
+      console.error('Error fetching tasks:', error);
+      toast.error('Failed to fetch tasks');
+      setTasks([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const addTask = async (taskData: TaskInsert) => {
+    if (!user) {
+      toast.error('You must be logged in to add tasks');
+      return null;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert({ ...taskData, user_id: user.id })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setTasks(prev => [data, ...prev]);
+      toast.success('Task added successfully');
+      
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        entity_type: 'task',
+        entity_id: data.id,
+        action: 'created',
+        description: `Task created: ${data.title}`
+      });
+
+      return data;
+    } catch (error: any) {
+      console.error('Error adding task:', error);
+      toast.error(error.message || 'Failed to add task');
+      return null;
+    }
+  };
+
+  const updateTask = async (id: string, updates: TaskUpdate) => {
+    if (!user) {
+      toast.error('You must be logged in to update tasks');
+      return false;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setTasks(prev => prev.map(task => task.id === id ? data : task));
+      toast.success('Task updated successfully');
+      
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        entity_type: 'task',
+        entity_id: id,
+        action: 'updated',
+        description: `Task updated`
+      });
+
+      return true;
+    } catch (error: any) {
+      console.error('Error updating task:', error);
+      toast.error(error.message || 'Failed to update task');
+      return false;
+    }
+  };
+
+  const deleteTask = async (id: string) => {
+    if (!user) {
+      toast.error('You must be logged in to delete tasks');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      setTasks(prev => prev.filter(task => task.id !== id));
+      toast.success('Task deleted successfully');
+      
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        entity_type: 'task',
+        entity_id: id,
+        action: 'deleted',
+        description: `Task deleted`
+      });
+    } catch (error: any) {
+      console.error('Error deleting task:', error);
+      toast.error(error.message || 'Failed to delete task');
     }
   };
 
@@ -47,111 +144,12 @@ export const useTasks = () => {
     fetchTasks();
   }, [user]);
 
-  const addTask = async (newTaskData: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!user) return null;
-
-    try {
-      const { data, error } = await supabase
-        .from('tasks')
-        .insert([{ ...newTaskData, user_id: user.id }])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setTasks(prev => [data, ...prev]);
-      toast.success('Task added successfully');
-
-      // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'task',
-        entity_id: data.id,
-        action: 'created',
-        description: `Task created: ${newTaskData.title}`
-      });
-
-      return data;
-    } catch (err: any) {
-      console.error('Error creating task:', err);
-      toast.error('Error creating task: ' + (err.message || 'Could not create the task.'));
-      return null;
-    }
-  };
-
-  const updateTask = async (taskId: string, updatedTaskData: Partial<Task>) => {
-    if (!user) return null;
-
-    try {
-      const { data, error } = await supabase
-        .from('tasks')
-        .update(updatedTaskData)
-        .eq('id', taskId)
-        .eq('user_id', user.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setTasks(prev => prev.map(task => 
-        task.id === taskId ? data : task
-      ));
-      
-      toast.success('Task updated successfully');
-
-      // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'task',
-        entity_id: taskId,
-        action: 'updated',
-        description: `Task updated: ${data.title}`
-      });
-
-      return data;
-    } catch (err: any) {
-      console.error('Error updating task:', err);
-      toast.error('Error updating task: ' + (err.message || 'Could not update the task.'));
-      return null;
-    }
-  };
-
-  const deleteTask = async (taskId: string) => {
-    if (!user) return;
-
-    try {
-      const { error } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('id', taskId)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
-      setTasks(prev => prev.filter(task => task.id !== taskId));
-      toast.success('Task deleted successfully');
-
-      // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'task',
-        entity_id: taskId,
-        action: 'deleted',
-        description: `Task deleted`
-      });
-    } catch (err: any) {
-      console.error('Error deleting task:', err);
-      toast.error('Error deleting task: ' + (err.message || 'Could not delete the task.'));
-    }
-  };
-
-  return { 
-    tasks, 
-    loading, 
-    error, 
-    addTask, 
-    updateTask, 
-    deleteTask,
-    fetchTasks 
+  return {
+    tasks,
+    loading,
+    fetchTasks,
+    addTask,
+    updateTask,
+    deleteTask
   };
 };

@@ -1,88 +1,177 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/components/ui/use-toast';
-import { Database } from '@/integrations/supabase/types';
-import { Customer } from '@/hooks/useCustomers';
+import { toast } from 'sonner';
 
-export type Invoice = Database['public']['Tables']['invoices']['Row'];
-export type InvoiceLineItem = Database['public']['Tables']['invoice_line_items']['Row'];
-
-export interface InvoiceWithLineItems extends Invoice {
+export type Invoice = Tables<'invoices'>;
+export type InvoiceLineItem = Tables<'invoice_line_items'>;
+export type InvoiceWithLineItems = Invoice & {
   invoice_line_items: InvoiceLineItem[];
-  customers?: Customer | null;
-}
+  customers?: Tables<'customers'> | null;
+  jobs?: Tables<'jobs'> | null;
+};
+
+type InvoiceInsert = Omit<TablesInsert<'invoices'>, 'user_id'>;
+type InvoiceUpdate = TablesUpdate<'invoices'>;
 
 export const useInvoices = () => {
-  const { user } = useAuth();
   const [invoices, setInvoices] = useState<InvoiceWithLineItems[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+
+  const fetchInvoices = async () => {
+    if (!user) {
+      setInvoices([]);
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('invoices')
+        .select(`
+          *,
+          invoice_line_items (*),
+          customers (*),
+          jobs (*)
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setInvoices(data as InvoiceWithLineItems[] || []);
+    } catch (error: any) {
+      console.error('Error fetching invoices:', error);
+      toast.error('Failed to fetch invoices');
+      setInvoices([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addInvoice = async (invoiceData: InvoiceInsert) => {
+    if (!user) {
+      toast.error('You must be logged in to add invoices');
+      return null;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('invoices')
+        .insert({ ...invoiceData, user_id: user.id })
+        .select(`
+          *,
+          invoice_line_items (*),
+          customers (*),
+          jobs (*)
+        `)
+        .single();
+
+      if (error) throw error;
+      
+      setInvoices(prev => [data, ...prev]);
+      toast.success('Invoice added successfully');
+      
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        entity_type: 'invoice',
+        entity_id: data.id,
+        action: 'created',
+        description: `Invoice created: ${data.invoice_number}`
+      });
+
+      return data;
+    } catch (error: any) {
+      console.error('Error adding invoice:', error);
+      toast.error(error.message || 'Failed to add invoice');
+      return null;
+    }
+  };
+
+  const updateInvoice = async (id: string, updates: InvoiceUpdate) => {
+    if (!user) {
+      toast.error('You must be logged in to update invoices');
+      return false;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('invoices')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select(`
+          *,
+          invoice_line_items (*),
+          customers (*),
+          jobs (*)
+        `)
+        .single();
+
+      if (error) throw error;
+      
+      setInvoices(prev => prev.map(invoice => invoice.id === id ? data : invoice));
+      toast.success('Invoice updated successfully');
+      
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        entity_type: 'invoice',
+        entity_id: id,
+        action: 'updated',
+        description: `Invoice updated`
+      });
+
+      return true;
+    } catch (error: any) {
+      console.error('Error updating invoice:', error);
+      toast.error(error.message || 'Failed to update invoice');
+      return false;
+    }
+  };
+
+  const deleteInvoice = async (id: string) => {
+    if (!user) {
+      toast.error('You must be logged in to delete invoices');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('invoices')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      setInvoices(prev => prev.filter(invoice => invoice.id !== id));
+      toast.success('Invoice deleted successfully');
+      
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        entity_type: 'invoice',
+        entity_id: id,
+        action: 'deleted',
+        description: `Invoice deleted`
+      });
+    } catch (error: any) {
+      console.error('Error deleting invoice:', error);
+      toast.error(error.message || 'Failed to delete invoice');
+    }
+  };
 
   useEffect(() => {
-    const fetchInvoices = async () => {
-      if (!user) {
-        setInvoices([]);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        const { data, error: supabaseError } = await supabase
-          .from('invoices')
-          .select(`
-            *,
-            customers (
-              id,
-              first_name,
-              last_name,
-              email,
-              phone
-            ),
-            invoice_line_items ( * )
-          `)
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (supabaseError) {
-          throw supabaseError;
-        }
-
-        setInvoices(data as InvoiceWithLineItems[] || []);
-      } catch (err: any) {
-        console.error('Error fetching invoices:', err);
-        setError(err);
-        toast({
-          title: "Error fetching invoices",
-          description: err.message || "Could not retrieve invoices from the server.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchInvoices();
   }, [user]);
 
-  // Placeholder CRUD functions
-  const addInvoice = async (newInvoiceData: Omit<Invoice, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    console.log('Adding invoice:', newInvoiceData);
-    toast({ title: "Invoice added (mock)" });
-    // Update: No return value needed
+  return {
+    invoices,
+    loading,
+    fetchInvoices,
+    addInvoice,
+    updateInvoice,
+    deleteInvoice
   };
-
-  const updateInvoice = async (invoiceId: string, updatedInvoiceData: Partial<Invoice>) => {
-    console.log('Updating invoice:', invoiceId, updatedInvoiceData);
-    toast({ title: "Invoice updated (mock)" });
-  };
-
-  const deleteInvoice = async (invoiceId: string) => {
-    console.log('Deleting invoice:', invoiceId);
-    toast({ title: "Invoice deleted (mock)", variant: "destructive" });
-  };
-
-  return { invoices, loading, error, addInvoice, updateInvoice, deleteInvoice };
 };
