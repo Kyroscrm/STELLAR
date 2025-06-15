@@ -9,8 +9,18 @@ export type Job = Tables<'jobs'>;
 type JobInsert = TablesInsert<'jobs'>;
 type JobUpdate = TablesUpdate<'jobs'>;
 
+// Define a type for the partial customer data we fetch
+export interface JobCustomer {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  company_name: string;
+}
+
 export interface JobWithCustomer extends Job {
-  customers?: Tables<'customers'> | null;
+  customers?: JobCustomer | null;
 }
 
 export const useJobs = () => {
