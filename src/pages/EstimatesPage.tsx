@@ -62,7 +62,6 @@ const EstimatesPage = () => {
   const { estimates, loading, error, addEstimate, updateEstimate, deleteEstimate } = useEstimates();
   const { customers } = useCustomers();
   const { generateEstimatePDF, generating } = usePDFGeneration();
-  const { addLineItem } = useEstimateLineItems();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -107,10 +106,13 @@ const EstimatesPage = () => {
       const result = await addEstimate(estimateData);
       
       if (result && data.lineItems && data.lineItems.length > 0) {
+        // Get the hook for this specific estimate
+        const { addLineItem } = useEstimateLineItems(result.id);
+        
         // Add line items to the estimate
         for (const item of data.lineItems) {
           if (item.description.trim()) {
-            await addLineItem(result.id, {
+            await addLineItem({
               description: item.description,
               quantity: item.quantity,
               unit_price: item.unit_price
