@@ -12,6 +12,7 @@ type LeadUpdate = TablesUpdate<'leads'>;
 export const useLeads = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   const { user } = useAuth();
 
   const fetchLeads = async () => {
@@ -21,6 +22,7 @@ export const useLeads = () => {
     }
     
     setLoading(true);
+    setError(null);
     try {
       const { data, error } = await supabase
         .from('leads')
@@ -32,6 +34,7 @@ export const useLeads = () => {
       setLeads(data || []);
     } catch (error: any) {
       console.error('Error fetching leads:', error);
+      setError(error);
       toast.error('Failed to fetch leads');
       setLeads([]);
     } finally {
@@ -72,6 +75,8 @@ export const useLeads = () => {
       return null;
     }
   };
+
+  const createLead = addLead; // Alias for compatibility
 
   const updateLead = async (id: string, updates: LeadUpdate) => {
     if (!user) {
@@ -172,7 +177,7 @@ export const useLeads = () => {
 
       if (customerError) throw customerError;
 
-      await updateLead(leadId, { status: 'converted' });
+      await updateLead(leadId, { status: 'won' }); // Changed from 'converted' to 'won'
       
       toast.success('Lead converted to customer successfully');
       return customer;
@@ -190,8 +195,10 @@ export const useLeads = () => {
   return {
     leads,
     loading,
+    error,
     fetchLeads,
     addLead,
+    createLead,
     updateLead,
     deleteLead,
     convertToCustomer

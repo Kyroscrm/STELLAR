@@ -12,6 +12,7 @@ type CustomerUpdate = TablesUpdate<'customers'>;
 export const useCustomers = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   const { user } = useAuth();
 
   const fetchCustomers = async () => {
@@ -21,6 +22,7 @@ export const useCustomers = () => {
     }
     
     setLoading(true);
+    setError(null);
     try {
       const { data, error } = await supabase
         .from('customers')
@@ -33,6 +35,7 @@ export const useCustomers = () => {
       console.log(`Fetched ${data?.length || 0} customers`);
     } catch (error: any) {
       console.error('Error fetching customers:', error);
+      setError(error);
       toast.error('Failed to fetch customers');
       setCustomers([]);
     } finally {
@@ -73,6 +76,8 @@ export const useCustomers = () => {
       return null;
     }
   };
+
+  const createCustomer = addCustomer; // Alias for compatibility
 
   const updateCustomer = async (id: string, updates: CustomerUpdate) => {
     if (!user) {
@@ -148,8 +153,10 @@ export const useCustomers = () => {
   return {
     customers,
     loading,
+    error,
     fetchCustomers,
     addCustomer,
+    createCustomer,
     updateCustomer,
     deleteCustomer
   };

@@ -8,9 +8,8 @@ import { toast } from 'sonner';
 export type Invoice = Tables<'invoices'>;
 export type InvoiceLineItem = Tables<'invoice_line_items'>;
 export type InvoiceWithLineItems = Invoice & {
-  invoice_line_items: InvoiceLineItem[];
-  customers?: Tables<'customers'> | null;
-  jobs?: Tables<'jobs'> | null;
+  invoice_line_items?: InvoiceLineItem[];
+  customers?: Tables<'customers'>;
 };
 
 type InvoiceInsert = Omit<TablesInsert<'invoices'>, 'user_id'>;
@@ -19,6 +18,7 @@ type InvoiceUpdate = TablesUpdate<'invoices'>;
 export const useInvoices = () => {
   const [invoices, setInvoices] = useState<InvoiceWithLineItems[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   const { user } = useAuth();
 
   const fetchInvoices = async () => {
@@ -28,22 +28,23 @@ export const useInvoices = () => {
     }
     
     setLoading(true);
+    setError(null);
     try {
       const { data, error } = await supabase
         .from('invoices')
         .select(`
           *,
           invoice_line_items (*),
-          customers (*),
-          jobs (*)
+          customers (*)
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setInvoices(data as InvoiceWithLineItems[] || []);
+      setInvoices(data || []);
     } catch (error: any) {
       console.error('Error fetching invoices:', error);
+      setError(error);
       toast.error('Failed to fetch invoices');
       setInvoices([]);
     } finally {
@@ -61,17 +62,13 @@ export const useInvoices = () => {
       const { data, error } = await supabase
         .from('invoices')
         .insert({ ...invoiceData, user_id: user.id })
-        .select(`
-          *,
-          invoice_line_items (*),
-          customers (*),
-          jobs (*)
-        `)
+        .select()
         .single();
 
       if (error) throw error;
       
-      setInvoices(prev => [data, ...prev]);
+      const newInvoice = { ...data, invoice_line_items: [], customers: null };
+      setInvoices(prev => [newInvoice, ...prev]);
       toast.success('Invoice added successfully');
       
       await supabase.from('activity_logs').insert({
@@ -102,17 +99,14 @@ export const useInvoices = () => {
         .update(updates)
         .eq('id', id)
         .eq('user_id', user.id)
-        .select(`
-          *,
-          invoice_line_items (*),
-          customers (*),
-          jobs (*)
-        `)
+        .select()
         .single();
 
       if (error) throw error;
       
-      setInvoices(prev => prev.map(invoice => invoice.id === id ? data : invoice));
+      setInvoices(prev => prev.map(invoice => 
+        invoice.id === id ? { ...invoice, ...data } : invoice
+      ));
       toast.success('Invoice updated successfully');
       
       await supabase.from('activity_logs').insert({
@@ -169,6 +163,7 @@ export const useInvoices = () => {
   return {
     invoices,
     loading,
+    error,
     fetchInvoices,
     addInvoice,
     updateInvoice,

@@ -12,6 +12,7 @@ type TaskUpdate = TablesUpdate<'tasks'>;
 export const useTasks = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   const { user } = useAuth();
 
   const fetchTasks = async () => {
@@ -21,6 +22,7 @@ export const useTasks = () => {
     }
     
     setLoading(true);
+    setError(null);
     try {
       const { data, error } = await supabase
         .from('tasks')
@@ -32,6 +34,7 @@ export const useTasks = () => {
       setTasks(data || []);
     } catch (error: any) {
       console.error('Error fetching tasks:', error);
+      setError(error);
       toast.error('Failed to fetch tasks');
       setTasks([]);
     } finally {
@@ -147,6 +150,7 @@ export const useTasks = () => {
   return {
     tasks,
     loading,
+    error,
     fetchTasks,
     addTask,
     updateTask,
