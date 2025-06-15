@@ -54,6 +54,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import EstimateForm from '@/components/EstimateForm';
 import EstimateLineItemsManager from '@/components/EstimateLineItemsManager';
+import EstimateAutomations from '@/components/EstimateAutomations';
+import AdvancedLineItemManager from '@/components/AdvancedLineItemManager';
 
 const EstimatesPage = () => {
   const { estimates, loading, error, addEstimate, updateEstimate, deleteEstimate } = useEstimates();
@@ -334,7 +336,7 @@ const EstimatesPage = () => {
 
       {/* View Estimate Modal */}
       <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               Estimate Details - {selectedEstimate?.estimate_number}
@@ -370,7 +372,11 @@ const EstimatesPage = () => {
                 </div>
               )}
 
-              <EstimateLineItemsManager estimateId={selectedEstimate.id} />
+              {/* Enhanced Line Items Manager */}
+              <AdvancedLineItemManager estimateId={selectedEstimate.id} />
+
+              {/* Estimate Automations */}
+              <EstimateAutomations estimateId={selectedEstimate.id} />
 
               <div className="flex justify-between items-center pt-4 border-t">
                 <div className="flex gap-2">
