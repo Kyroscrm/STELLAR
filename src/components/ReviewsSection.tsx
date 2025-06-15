@@ -26,7 +26,7 @@ const ReviewsSection = () => {
       name: 'Sarah M.',
       rating: 5,
       date: '2024-01-15',
-      text: 'ProBuild completely transformed our kitchen! The team was professional, on time, and the quality exceeded our expectations. They handled every detail and kept us informed throughout the process.',
+      text: 'Final Roofing & Retro-Fit completely transformed our roof! The team was professional, on time, and the quality exceeded our expectations. They handled every detail and kept us informed throughout the process.',
       platform: 'google',
       verified: true,
       helpful: 12
@@ -36,7 +36,7 @@ const ReviewsSection = () => {
       name: 'Michael R.',
       rating: 5,
       date: '2024-01-10',
-      text: 'Outstanding work on our basement renovation. The project was completed on schedule and within budget. The crew was respectful of our home and cleaned up thoroughly each day.',
+      text: 'Outstanding work on our roofing project. The project was completed on schedule and within budget. The crew was respectful of our home and cleaned up thoroughly each day.',
       platform: 'yelp',
       verified: true,
       helpful: 8
@@ -46,7 +46,7 @@ const ReviewsSection = () => {
       name: 'Jennifer L.',
       rating: 5,
       date: '2024-01-05',
-      text: 'We hired ProBuild for a bathroom remodel and couldn\'t be happier. The attention to detail is incredible and they helped us make design decisions that perfectly matched our vision.',
+      text: 'We hired Final Roofing & Retro-Fit for a complete roof replacement and couldn\'t be happier. The attention to detail is incredible and they helped us make design decisions that perfectly matched our vision.',
       platform: 'bbb',
       verified: true,
       helpful: 15
@@ -56,7 +56,7 @@ const ReviewsSection = () => {
       name: 'David K.',
       rating: 5,
       date: '2023-12-28',
-      text: 'Excellent experience from start to finish. The estimate was detailed and fair, the timeline was realistic, and the final result is beautiful. Highly recommend for any home renovation project.',
+      text: 'Excellent experience from start to finish. The estimate was detailed and fair, the timeline was realistic, and the final result is beautiful. Highly recommend for any roofing project.',
       platform: 'angi',
       verified: true,
       helpful: 6
@@ -66,7 +66,7 @@ const ReviewsSection = () => {
       name: 'Amanda T.',
       rating: 5,
       date: '2023-12-20',
-      text: 'ProBuild added a second story to our home and the process was seamless. They coordinated all permits and inspections, and their communication was excellent throughout the entire project.',
+      text: 'Final Roofing & Retro-Fit installed a new roof on our home and the process was seamless. They coordinated all permits and inspections, and their communication was excellent throughout the entire project.',
       platform: 'google',
       verified: true,
       helpful: 11
@@ -76,7 +76,7 @@ const ReviewsSection = () => {
       name: 'Robert H.',
       rating: 4,
       date: '2023-12-15',
-      text: 'Great work on our deck installation. The team was skilled and efficient. Only minor delay due to weather, but they kept us informed and made up the time. Very satisfied with the results.',
+      text: 'Great work on our roof repair. The team was skilled and efficient. Only minor delay due to weather, but they kept us informed and made up the time. Very satisfied with the results.',
       platform: 'yelp',
       verified: true,
       helpful: 4
@@ -117,6 +117,23 @@ const ReviewsSection = () => {
     );
   };
 
+  const handleReviewButtonClick = () => {
+    window.open('https://www.google.com/search?q=final+roofing+%26+Retro-fit+google+reviews&sca_esv=f066f66756e41e74&sxsrf=AE3TifOQx5rqHZNuc-RmjORG4-GuvDPGHw%3A1750003218656&source=hp&ei=Eu5OaITuJdOJptQPgabJoQM&iflsig=AOw8s4IAAAAAaE78Ipa2GMRTPrlFp9jsOfAL8eKHm4zH&ved=0ahUKEwiEv86B5vONAxXThIkEHQFTMjQQ4dUDCCs&uact=5&oq=final+roofing+%26+Retro-fit+google+reviews&gs_lp=Egdnd3Mtd2l6IihmaW5hbCByb29maW5nICYgUmV0cm8tZml0IGdvb2dsZSByZXZpZXdzMgQQIxgnMgUQABjvBTIFEAAY7wUyBRAAGO8FMggQABiABBiiBDIIEAAYgAQYogRI0hBQoQNYoQNwAXgAkAEAmAF7oAF7qgEDMC4xuAEDyAEA-AEC-AEBmAICoAJ_qAIKwgIHECMYJxjqAsICChAjGCcYyQIY6gKYAwPxBd1f6Q2trDLckgcDMS4xoAf7BbIHAzAuMbgHfMIHAzAuMsgHAw&sclient=gws-wiz', '_blank');
+  };
+
+  const handlePlatformButtonClick = (platform: string) => {
+    const urls: Record<string, string> = {
+      google: 'https://www.google.com/search?q=final+roofing+%26+Retro-fit+google+reviews',
+      yelp: 'https://www.yelp.com/biz/final-roofing-retro-fit',
+      bbb: 'https://www.bbb.org/us/ca/final-roofing-retro-fit',
+      angi: 'https://www.angi.com/companyprofile/final-roofing-retro-fit'
+    };
+    
+    if (urls[platform]) {
+      window.open(urls[platform], '_blank');
+    }
+  };
+
   return (
     <section id="reviews" className="py-16 bg-white">
       <div className="container mx-auto px-4">
@@ -130,7 +147,7 @@ const ReviewsSection = () => {
             <span className="text-gray-600">({totalReviews} reviews)</span>
           </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Don't just take our word for it. Here's what our satisfied clients have to say about their experience with ProBuild Contractors.
+            Don't just take our word for it. Here's what our satisfied clients have to say about their experience with Final Roofing & Retro-Fit.
           </p>
         </div>
 
@@ -210,22 +227,22 @@ const ReviewsSection = () => {
             Check out our reviews on your favorite platform
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Button variant="outline" className="flex items-center gap-2">
+            <Button variant="outline" className="flex items-center gap-2" onClick={() => handlePlatformButtonClick('google')}>
               <span>🔵</span>
               Google Reviews
               <ExternalLink className="h-4 w-4" />
             </Button>
-            <Button variant="outline" className="flex items-center gap-2">
+            <Button variant="outline" className="flex items-center gap-2" onClick={() => handlePlatformButtonClick('yelp')}>
               <span>🔴</span>
               Yelp Reviews
               <ExternalLink className="h-4 w-4" />
             </Button>
-            <Button variant="outline" className="flex items-center gap-2">
+            <Button variant="outline" className="flex items-center gap-2" onClick={() => handlePlatformButtonClick('bbb')}>
               <span>🏛️</span>
               BBB Profile
               <ExternalLink className="h-4 w-4" />
             </Button>
-            <Button variant="outline" className="flex items-center gap-2">
+            <Button variant="outline" className="flex items-center gap-2" onClick={() => handlePlatformButtonClick('angi')}>
               <span>🔨</span>
               Angi Reviews
               <ExternalLink className="h-4 w-4" />
@@ -240,10 +257,13 @@ const ReviewsSection = () => {
           </h3>
           <p className="mb-6">
             Completed a project with us? We'd love to hear about your experience! 
-            Leave a review and get 5% off your next project.
+            Leave a review to help other homeowners.
           </p>
-          <Button className="bg-secondary text-primary hover:bg-secondary/90 font-semibold">
-            Leave a Review & Save 5%
+          <Button 
+            className="bg-secondary text-primary hover:bg-secondary/90 font-semibold"
+            onClick={handleReviewButtonClick}
+          >
+            Leave a Review
           </Button>
         </div>
       </div>

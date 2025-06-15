@@ -25,7 +25,7 @@ const ClientDashboard = () => {
   const projects = [
     {
       id: '1',
-      name: 'Kitchen Renovation',
+      name: 'Complete Roof Replacement',
       status: 'in-progress',
       progress: 65,
       startDate: '2024-01-15',
@@ -35,7 +35,7 @@ const ClientDashboard = () => {
     },
     {
       id: '2',
-      name: 'Bathroom Remodel',
+      name: 'Roof Repair & Gutters',
       status: 'completed',
       progress: 100,
       startDate: '2023-11-01',
@@ -48,7 +48,7 @@ const ClientDashboard = () => {
   const invoices = [
     {
       id: 'INV-001',
-      project: 'Kitchen Renovation',
+      project: 'Complete Roof Replacement',
       amount: 15000,
       date: '2024-01-15',
       status: 'paid',
@@ -56,7 +56,7 @@ const ClientDashboard = () => {
     },
     {
       id: 'INV-002',
-      project: 'Kitchen Renovation',
+      project: 'Complete Roof Replacement',
       amount: 14250,
       date: '2024-02-01',
       status: 'paid',
@@ -64,7 +64,7 @@ const ClientDashboard = () => {
     },
     {
       id: 'INV-003',
-      project: 'Kitchen Renovation',
+      project: 'Complete Roof Replacement',
       amount: 15750,
       date: '2024-02-10',
       status: 'pending',
@@ -76,17 +76,17 @@ const ClientDashboard = () => {
     {
       id: '1',
       from: 'Project Manager',
-      subject: 'Kitchen Progress Update',
+      subject: 'Roof Progress Update',
       date: '2024-02-10',
-      preview: 'The cabinet installation is complete and we\'re moving on to countertops...',
+      preview: 'The new shingles installation is complete and we\'re moving on to gutters...',
       unread: true
     },
     {
       id: '2',
       from: 'Admin Team',
-      subject: 'Final Invoice - Bathroom Project',
+      subject: 'Final Invoice - Roof Repair Project',
       date: '2024-01-20',
-      preview: 'Please find attached the final invoice for your bathroom renovation...',
+      preview: 'Please find attached the final invoice for your roof repair project...',
       unread: false
     }
   ];
@@ -110,6 +110,26 @@ const ClientDashboard = () => {
     }
   };
 
+  const handleDownloadInvoice = (invoiceId: string) => {
+    // Implement invoice download functionality
+    console.log('Downloading invoice:', invoiceId);
+  };
+
+  const handlePayInvoice = (invoiceId: string) => {
+    // Implement payment functionality
+    console.log('Processing payment for invoice:', invoiceId);
+  };
+
+  const handleProjectDetails = (projectId: string) => {
+    // Implement project details view
+    console.log('Viewing project details:', projectId);
+  };
+
+  const handleDownloadReports = (projectId: string) => {
+    // Implement report download functionality
+    console.log('Downloading reports for project:', projectId);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -118,7 +138,7 @@ const ClientDashboard = () => {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-heading font-bold text-primary">
-                ProBuild<span className="text-secondary">Contractors</span>
+                Final Roofing<span className="text-secondary"> & Retro-Fit</span>
               </h1>
               <p className="text-gray-600">Client Portal</p>
             </div>
@@ -218,11 +238,11 @@ const ClientDashboard = () => {
                         </div>
 
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => handleProjectDetails(project.id)}>
                             <FileText className="h-4 w-4 mr-2" />
                             View Details
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => handleDownloadReports(project.id)}>
                             <Download className="h-4 w-4 mr-2" />
                             Download Reports
                           </Button>
@@ -261,12 +281,12 @@ const ClientDashboard = () => {
                             </Badge>
                           </div>
                           <div className="flex gap-2">
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => handleDownloadInvoice(invoice.id)}>
                               <Download className="h-4 w-4 mr-2" />
                               Download
                             </Button>
                             {invoice.status === 'pending' && (
-                              <Button size="sm" className="bg-secondary text-primary hover:bg-secondary/90">
+                              <Button size="sm" className="bg-secondary text-primary hover:bg-secondary/90" onClick={() => handlePayInvoice(invoice.id)}>
                                 <DollarSign className="h-4 w-4 mr-2" />
                                 Pay Now
                               </Button>

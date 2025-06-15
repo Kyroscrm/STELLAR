@@ -22,79 +22,83 @@ const ProjectGallery = () => {
   const projects: Project[] = [
     {
       id: '1',
-      title: 'Modern Kitchen Renovation',
-      category: 'kitchen',
-      beforeImage: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop',
-      afterImage: 'https://images.unsplash.com/photo-1556909088-1b3ac7b9b3b9?w=400&h=300&fit=crop',
+      title: 'Complete Roof Replacement',
+      category: 'roofing',
+      beforeImage: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop',
+      afterImage: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=400&h=300&fit=crop',
       cost: '$45,000',
-      duration: '6 weeks',
-      description: 'Complete kitchen transformation with custom cabinets, quartz countertops, and modern appliances.'
+      duration: '2 weeks',
+      description: 'Complete roof replacement with premium architectural shingles and new gutters.'
     },
     {
       id: '2',
-      title: 'Luxury Master Bathroom',
-      category: 'bathroom',
+      title: 'Metal Roof Installation',
+      category: 'roofing',
       beforeImage: 'https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=400&h=300&fit=crop',
-      afterImage: 'https://images.unsplash.com/photo-1552321554-5fefe8c9ef64?w=400&h=300&fit=crop',
+      afterImage: 'https://images.unsplash.com/photo-1504233529578-6d46beb811cd?w=400&h=300&fit=crop',
       cost: '$32,000',
-      duration: '4 weeks',
-      description: 'Spa-like master bathroom with walk-in shower, soaking tub, and heated floors.'
+      duration: '1.5 weeks',
+      description: 'Modern metal roofing installation with energy-efficient coating and extended warranty.'
     },
     {
       id: '3',
-      title: 'Two-Story Home Addition',
-      category: 'addition',
+      title: 'Roof Repair & Gutters',
+      category: 'repair',
       beforeImage: 'https://images.unsplash.com/photo-1523755231516-e43fd2e8dca5?w=400&h=300&fit=crop',
       afterImage: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop',
-      cost: '$125,000',
-      duration: '12 weeks',
-      description: 'Added 800 sq ft with new master suite and home office space.'
+      cost: '$12,500',
+      duration: '3 days',
+      description: 'Storm damage repair with new shingle sections and complete gutter replacement.'
     },
     {
       id: '4',
-      title: 'Basement Finishing',
-      category: 'basement',
+      title: 'Tile Roof Restoration',
+      category: 'restoration',
       beforeImage: 'https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?w=400&h=300&fit=crop',
       afterImage: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&h=300&fit=crop',
       cost: '$28,000',
-      duration: '5 weeks',
-      description: 'Transformed unfinished basement into entertainment area with full bathroom.'
+      duration: '1 week',
+      description: 'Clay tile roof restoration with cleaning, sealing, and damaged tile replacement.'
     },
     {
       id: '5',
-      title: 'Outdoor Deck & Patio',
-      category: 'outdoor',
+      title: 'Solar Panel Integration',
+      category: 'solar',
       beforeImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&h=300&fit=crop',
       afterImage: 'https://images.unsplash.com/photo-1600573472550-8090b5e0745e?w=400&h=300&fit=crop',
       cost: '$18,000',
-      duration: '3 weeks',
-      description: 'Custom deck with built-in seating and stone patio with outdoor kitchen.'
+      duration: '2 days',
+      description: 'Solar panel installation with proper roof mounting and electrical integration.'
     },
     {
       id: '6',
-      title: 'Whole House Renovation',
-      category: 'renovation',
+      title: 'Commercial Roof Overhaul',
+      category: 'commercial',
       beforeImage: 'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=400&h=300&fit=crop',
       afterImage: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=400&h=300&fit=crop',
       cost: '$180,000',
-      duration: '16 weeks',
-      description: 'Complete home renovation including kitchen, bathrooms, flooring, and exterior.'
+      duration: '3 weeks',
+      description: 'Complete commercial building roof replacement with EPDM membrane and insulation upgrade.'
     }
   ];
 
   const categories = [
     { id: 'all', label: 'All Projects' },
-    { id: 'kitchen', label: 'Kitchen' },
-    { id: 'bathroom', label: 'Bathroom' },
-    { id: 'addition', label: 'Additions' },
-    { id: 'basement', label: 'Basement' },
-    { id: 'outdoor', label: 'Outdoor' },
-    { id: 'renovation', label: 'Full Renovation' }
+    { id: 'roofing', label: 'New Roofing' },
+    { id: 'repair', label: 'Repairs' },
+    { id: 'restoration', label: 'Restoration' },
+    { id: 'solar', label: 'Solar Integration' },
+    { id: 'commercial', label: 'Commercial' }
   ];
 
   const filteredProjects = selectedCategory === 'all' 
     ? projects 
     : projects.filter(project => project.category === selectedCategory);
+
+  const handleGetEstimate = () => {
+    // Navigate to contact form or estimate request
+    window.location.href = '/contact';
+  };
 
   return (
     <section id="gallery" className="py-16 bg-gray-50">
@@ -104,7 +108,7 @@ const ProjectGallery = () => {
             Our Recent Projects
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            See the transformation stories from our recent projects. Each project showcases our commitment to quality craftsmanship and attention to detail.
+            See the transformation stories from our recent roofing projects. Each project showcases our commitment to quality craftsmanship and attention to detail.
           </p>
         </div>
 
@@ -229,9 +233,12 @@ const ProjectGallery = () => {
                   <div>
                     <h4 className="font-semibold mb-2">Interested in Similar Work?</h4>
                     <p className="text-gray-600 mb-4">
-                      Get a free consultation and estimate for your project. Our experts will work with you to create the perfect solution for your home.
+                      Get a free consultation and estimate for your roofing project. Our experts will work with you to create the perfect solution for your home.
                     </p>
-                    <Button className="w-full bg-secondary text-primary hover:bg-secondary/90">
+                    <Button 
+                      className="w-full bg-secondary text-primary hover:bg-secondary/90"
+                      onClick={handleGetEstimate}
+                    >
                       Get Free Estimate
                     </Button>
                   </div>
