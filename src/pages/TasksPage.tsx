@@ -1,6 +1,8 @@
+
 import React, { useState } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import TaskKanbanBoard from '@/components/TaskKanbanBoard';
+import TaskFormDialog from '@/components/TaskFormDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,6 +55,26 @@ const TasksPage = () => {
     completed: tasks.filter(t => t.status === 'completed').length,
   };
 
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'bg-red-100 text-red-800 border-red-200';
+      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'low': return 'bg-gray-100 text-gray-800 border-gray-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'in_progress': return 'bg-blue-100 text-blue-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -102,10 +124,7 @@ const TasksPage = () => {
         {/* Action Bar */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Button className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700">
-              <Plus className="h-4 w-4 mr-2" />
-              New Task
-            </Button>
+            <TaskFormDialog />
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input 
@@ -133,7 +152,7 @@ const TasksPage = () => {
             </Button>
             <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white">
               <Filter className="h-4 w-4 mr-2" />
-              Advanced Filters
+              Filters
             </Button>
           </div>
         </div>
@@ -209,15 +228,77 @@ const TasksPage = () => {
                     className="mx-auto w-48 h-32 object-cover rounded-lg mb-6 opacity-60"
                   />
                   <p className="text-gray-500 text-lg mb-4">No tasks found.</p>
-                  <Button className="bg-gradient-to-r from-blue-500 to-indigo-600">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Your First Task
-                  </Button>
+                  <TaskFormDialog trigger={
+                    <Button className="bg-gradient-to-r from-blue-500 to-indigo-600">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Your First Task
+                    </Button>
+                  } />
                 </div>
               ) : (
-                <div className="p-4">
-                  <p className="text-gray-500">List view content will be implemented here...</p>
-                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Due Date</TableHead>
+                      <TableHead>Hours</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredTasks.map((task) => (
+                      <TableRow key={task.id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{task.title}</p>
+                            {task.description && (
+                              <p className="text-sm text-gray-500 truncate max-w-xs">{task.description}</p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getStatusColor(task.status || 'pending')}>
+                            {task.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getPriorityColor(task.priority || 'medium')}>
+                            {task.priority}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-gray-600">
+                            {task.estimated_hours || 0}h est
+                            {task.actual_hours ? ` / ${task.actual_hours}h actual` : ''}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <TaskFormDialog 
+                                task={task}
+                                trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}>Edit Task</DropdownMenuItem>}
+                              />
+                              <DropdownMenuItem className="text-red-600">
+                                Delete Task
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               )}
             </CardContent>
           </Card>
