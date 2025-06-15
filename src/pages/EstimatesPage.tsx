@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { useEstimates } from '@/hooks/useEstimates';
-import { useEstimateLineItems } from '@/hooks/useEstimateLineItems';
 import { useCustomers } from '@/hooks/useCustomers';
 import { usePDFGeneration } from '@/hooks/usePDFGeneration';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,6 +58,7 @@ import EstimateForm from '@/components/EstimateForm';
 import EstimateLineItemsManager from '@/components/EstimateLineItemsManager';
 import EstimateAutomations from '@/components/EstimateAutomations';
 import AdvancedLineItemManager from '@/components/AdvancedLineItemManager';
+import { toast } from 'sonner';
 
 const EstimatesPage = () => {
   const { estimates, loading, error, addEstimate, updateEstimate, deleteEstimate } = useEstimates();
@@ -83,6 +85,35 @@ const EstimatesPage = () => {
     approved: estimates.filter(e => e.status === 'approved').length,
   };
 
+  const addLineItemsToEstimate = async (estimateId: string, lineItems: any[]) => {
+    try {
+      for (const item of lineItems) {
+        if (item.description.trim()) {
+          const total = Number(item.quantity) * Number(item.unit_price);
+          
+          const { error } = await supabase
+            .from('estimate_line_items')
+            .insert({
+              estimate_id: estimateId,
+              description: item.description,
+              quantity: item.quantity,
+              unit_price: item.unit_price,
+              total,
+              sort_order: 0
+            });
+
+          if (error) {
+            console.error('Error adding line item:', error);
+            throw error;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error adding line items:', error);
+      toast.error('Failed to add some line items');
+    }
+  };
+
   const handleCreateEstimate = async (data: any) => {
     setIsSubmitting(true);
     try {
@@ -106,24 +137,17 @@ const EstimatesPage = () => {
       const result = await addEstimate(estimateData);
       
       if (result && data.lineItems && data.lineItems.length > 0) {
-        // Get the hook for this specific estimate
-        const { addLineItem } = useEstimateLineItems(result.id);
-        
-        // Add line items to the estimate
-        for (const item of data.lineItems) {
-          if (item.description.trim()) {
-            await addLineItem({
-              description: item.description,
-              quantity: item.quantity,
-              unit_price: item.unit_price
-            });
-          }
-        }
+        // Add line items to the estimate using direct Supabase calls
+        await addLineItemsToEstimate(result.id, data.lineItems);
       }
       
       if (result) {
         setIsCreateModalOpen(false);
+        toast.success('Estimate created successfully');
       }
+    } catch (error) {
+      console.error('Error creating estimate:', error);
+      toast.error('Failed to create estimate');
     } finally {
       setIsSubmitting(false);
     }
