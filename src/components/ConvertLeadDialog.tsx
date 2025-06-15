@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -82,7 +81,7 @@ const ConvertLeadDialog = ({ open, onOpenChange, lead, onSuccess }: ConvertLeadD
                 Convert Lead to Customer
               </DialogTitle>
               <DialogDescription>
-                You're about to convert <strong>{lead.first_name} {lead.last_name}</strong> to a customer.
+                You're about to convert <strong>{lead.first_name} {lead.last_name}</strong> to a customer. This will create a new customer record and mark the lead as won.
               </DialogDescription>
             </DialogHeader>
             
@@ -182,15 +181,23 @@ const ConvertLeadDialog = ({ open, onOpenChange, lead, onSuccess }: ConvertLeadD
         )}
 
         {step === 'success' && (
-          <div className="text-center py-6">
-            <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-green-900 mb-2">
-              Conversion Successful!
-            </h3>
-            <p className="text-green-700">
-              {lead.first_name} {lead.last_name} is now a customer.
-            </p>
-          </div>
+          <>
+            <DialogHeader>
+              <DialogTitle>Conversion Successful!</DialogTitle>
+              <DialogDescription>
+                The lead has been successfully converted to a customer.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="text-center py-6">
+              <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-green-900 mb-2">
+                Conversion Successful!
+              </h3>
+              <p className="text-green-700">
+                {lead.first_name} {lead.last_name} is now a customer.
+              </p>
+            </div>
+          </>
         )}
       </DialogContent>
     </Dialog>

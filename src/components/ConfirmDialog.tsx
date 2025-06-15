@@ -45,8 +45,10 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>{cancelText}</AlertDialogCancel>
-          <AlertDialogAction 
+          <AlertDialogCancel onClick={() => onOpenChange(false)}>
+            {cancelText}
+          </AlertDialogCancel>
+          <AlertDialogAction
             onClick={handleConfirm}
             className={variant === 'destructive' ? 'bg-red-600 hover:bg-red-700' : ''}
           >

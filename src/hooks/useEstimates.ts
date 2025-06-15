@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { Database } from '@/integrations/supabase/types';
 
 export type Estimate = Database['public']['Tables']['estimates']['Row'];
@@ -50,11 +50,7 @@ export const useEstimates = () => {
     } catch (err: any) {
       console.error('Error fetching estimates:', err);
       setError(err);
-      toast({
-        title: "Error fetching estimates",
-        description: err.message || "Could not retrieve estimates from the server.",
-        variant: "destructive",
-      });
+      toast.error('Error fetching estimates: ' + (err.message || 'Could not retrieve estimates from the server.'));
     } finally {
       setLoading(false);
     }
@@ -82,10 +78,7 @@ export const useEstimates = () => {
       if (error) throw error;
 
       setEstimates(prev => [data, ...prev]);
-      toast({ 
-        title: "Estimate created", 
-        description: "The estimate has been successfully created." 
-      });
+      toast.success('Estimate created successfully');
 
       // Log activity
       await supabase.from('activity_logs').insert({
@@ -99,11 +92,7 @@ export const useEstimates = () => {
       return data;
     } catch (err: any) {
       console.error('Error creating estimate:', err);
-      toast({
-        title: "Error creating estimate",
-        description: err.message || "Could not create the estimate.",
-        variant: "destructive",
-      });
+      toast.error('Error creating estimate: ' + (err.message || 'Could not create the estimate.'));
       return null;
     }
   };
@@ -131,10 +120,7 @@ export const useEstimates = () => {
         estimate.id === estimateId ? data : estimate
       ));
       
-      toast({ 
-        title: "Estimate updated", 
-        description: "The estimate has been successfully updated." 
-      });
+      toast.success('Estimate updated successfully');
 
       // Log activity
       await supabase.from('activity_logs').insert({
@@ -148,11 +134,7 @@ export const useEstimates = () => {
       return data;
     } catch (err: any) {
       console.error('Error updating estimate:', err);
-      toast({
-        title: "Error updating estimate",
-        description: err.message || "Could not update the estimate.",
-        variant: "destructive",
-      });
+      toast.error('Error updating estimate: ' + (err.message || 'Could not update the estimate.'));
       return null;
     }
   };
@@ -170,11 +152,7 @@ export const useEstimates = () => {
       if (error) throw error;
 
       setEstimates(prev => prev.filter(estimate => estimate.id !== estimateId));
-      toast({ 
-        title: "Estimate deleted", 
-        description: "The estimate has been successfully deleted.",
-        variant: "destructive" 
-      });
+      toast.success('Estimate deleted successfully');
 
       // Log activity
       await supabase.from('activity_logs').insert({
@@ -186,11 +164,7 @@ export const useEstimates = () => {
       });
     } catch (err: any) {
       console.error('Error deleting estimate:', err);
-      toast({
-        title: "Error deleting estimate",
-        description: err.message || "Could not delete the estimate.",
-        variant: "destructive",
-      });
+      toast.error('Error deleting estimate: ' + (err.message || 'Could not delete the estimate.'));
     }
   };
 

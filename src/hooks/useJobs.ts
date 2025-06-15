@@ -5,56 +5,66 @@ import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/type
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-type Job = Tables<'jobs'> & {
-  customers?: Tables<'customers'>;
-};
+export type Job = Tables<'jobs'>;
 type JobInsert = TablesInsert<'jobs'>;
 type JobUpdate = TablesUpdate<'jobs'>;
 
 export const useJobs = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
+  const { user, session } = useAuth();
 
   const fetchJobs = async () => {
-    if (!user) return;
+    if (!user || !session) {
+      console.log('No user or session available for fetching jobs');
+      return;
+    }
     
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('jobs')
-        .select(`
-          *,
-          customers (*)
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching jobs:', error);
+        throw error;
+      }
+      
+      console.log(`Fetched ${data?.length || 0} jobs`);
       setJobs(data || []);
     } catch (error: any) {
       console.error('Error fetching jobs:', error);
       toast.error('Failed to fetch jobs');
+      setJobs([]);
     } finally {
       setLoading(false);
     }
   };
 
   const createJob = async (jobData: Omit<JobInsert, 'user_id'>) => {
-    if (!user) return null;
+    if (!user || !session) {
+      toast.error('You must be logged in to create jobs');
+      return null;
+    }
 
     try {
+      console.log('Creating job:', jobData);
+      
       const { data, error } = await supabase
         .from('jobs')
         .insert({ ...jobData, user_id: user.id })
-        .select(`
-          *,
-          customers (*)
-        `)
+        .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating job:', error);
+        throw error;
+      }
       
+      console.log('Job created successfully:', data);
       setJobs(prev => [data, ...prev]);
       toast.success('Job created successfully');
       
@@ -70,78 +80,97 @@ export const useJobs = () => {
       return data;
     } catch (error: any) {
       console.error('Error creating job:', error);
-      toast.error('Failed to create job');
+      toast.error(error.message || 'Failed to create job');
       return null;
     }
   };
 
   const updateJob = async (id: string, updates: JobUpdate) => {
+    if (!user || !session) {
+      toast.error('You must be logged in to update jobs');
+      return null;
+    }
+
     try {
+      console.log('Updating job:', id, updates);
+      
       const { data, error } = await supabase
         .from('jobs')
         .update(updates)
         .eq('id', id)
-        .select(`
-          *,
-          customers (*)
-        `)
+        .eq('user_id', user.id)
+        .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating job:', error);
+        throw error;
+      }
       
+      console.log('Job updated successfully:', data);
       setJobs(prev => prev.map(job => job.id === id ? data : job));
       toast.success('Job updated successfully');
       
       // Log activity
-      if (user) {
-        await supabase.from('activity_logs').insert({
-          user_id: user.id,
-          entity_type: 'job',
-          entity_id: id,
-          action: 'updated',
-          description: `Job updated`
-        });
-      }
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        entity_type: 'job',
+        entity_id: id,
+        action: 'updated',
+        description: `Job updated`
+      });
 
       return data;
     } catch (error: any) {
       console.error('Error updating job:', error);
-      toast.error('Failed to update job');
+      toast.error(error.message || 'Failed to update job');
       return null;
     }
   };
 
   const deleteJob = async (id: string) => {
+    if (!user || !session) {
+      toast.error('You must be logged in to delete jobs');
+      return;
+    }
+
     try {
+      console.log('Deleting job:', id);
+      
       const { error } = await supabase
         .from('jobs')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error deleting job:', error);
+        throw error;
+      }
       
+      console.log('Job deleted successfully');
       setJobs(prev => prev.filter(job => job.id !== id));
       toast.success('Job deleted successfully');
       
       // Log activity
-      if (user) {
-        await supabase.from('activity_logs').insert({
-          user_id: user.id,
-          entity_type: 'job',
-          entity_id: id,
-          action: 'deleted',
-          description: `Job deleted`
-        });
-      }
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        entity_type: 'job',
+        entity_id: id,
+        action: 'deleted',
+        description: `Job deleted`
+      });
     } catch (error: any) {
       console.error('Error deleting job:', error);
-      toast.error('Failed to delete job');
+      toast.error(error.message || 'Failed to delete job');
     }
   };
 
   useEffect(() => {
-    fetchJobs();
-  }, [user]);
+    if (user && session) {
+      fetchJobs();
+    }
+  }, [user, session]);
 
   return {
     jobs,
