@@ -33,9 +33,7 @@ export const useEstimateLineItems = (estimateId?: string) => {
     }
   };
 
-  const addLineItem = async (itemData: Omit<EstimateLineItemInsert, 'estimate_id'>) => {
-    if (!estimateId) return null;
-
+  const addLineItem = async (estimateId: string, itemData: Omit<EstimateLineItemInsert, 'estimate_id'>) => {
     try {
       const total = Number(itemData.quantity) * Number(itemData.unit_price);
       

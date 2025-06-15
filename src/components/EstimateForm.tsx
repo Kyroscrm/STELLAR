@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
@@ -11,13 +12,22 @@ import { useJobs } from '@/hooks/useJobs';
 import { useJobNumberGenerator } from '@/hooks/useJobNumberGenerator';
 import { EstimateWithLineItems } from '@/hooks/useEstimates';
 import { estimateSchema, EstimateFormData } from '@/lib/validation';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Plus, Trash2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import EstimateTemplateSelector from './EstimateTemplateSelector';
 
 interface EstimateFormProps {
-  onSubmit: (data: EstimateFormData) => Promise<void>;
+  onSubmit: (data: EstimateFormData & { lineItems: LineItem[] }) => Promise<void>;
   onCancel: () => void;
   initialData?: Partial<EstimateWithLineItems>;
   isSubmitting?: boolean;
+}
+
+interface LineItem {
+  description: string;
+  quantity: number;
+  unit_price: number;
+  total: number;
 }
 
 const EstimateForm: React.FC<EstimateFormProps> = ({
@@ -29,6 +39,9 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
   const { customers } = useCustomers();
   const { jobs } = useJobs();
   const { generateEstimateNumber, loading: generatingNumber } = useJobNumberGenerator();
+  
+  const [lineItems, setLineItems] = useState<LineItem[]>([]);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
 
   const form = useForm<EstimateFormData>({
     resolver: zodResolver(estimateSchema),
@@ -51,6 +64,48 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
     form.setValue('estimate_number', estimateNumber);
   };
 
+  const addLineItem = () => {
+    setLineItems([...lineItems, { description: '', quantity: 1, unit_price: 0, total: 0 }]);
+  };
+
+  const updateLineItem = (index: number, field: keyof LineItem, value: string | number) => {
+    const updated = [...lineItems];
+    updated[index] = { ...updated[index], [field]: value };
+    
+    if (field === 'quantity' || field === 'unit_price') {
+      updated[index].total = Number(updated[index].quantity) * Number(updated[index].unit_price);
+    }
+    
+    setLineItems(updated);
+  };
+
+  const removeLineItem = (index: number) => {
+    setLineItems(lineItems.filter((_, i) => i !== index));
+  };
+
+  const calculateSubtotal = () => {
+    return lineItems.reduce((sum, item) => sum + item.total, 0);
+  };
+
+  const handleTemplateSelect = (template: any) => {
+    // Apply template data to form
+    form.setValue('title', template.name);
+    form.setValue('tax_rate', template.tax_rate);
+    form.setValue('terms', template.terms || '');
+    form.setValue('notes', template.notes || '');
+    
+    // Apply template line items
+    const templateLineItems = template.line_items.map((item: any) => ({
+      description: item.description,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      total: item.quantity * item.unit_price
+    }));
+    
+    setLineItems(templateLineItems);
+    setShowTemplateSelector(false);
+  };
+
   // Auto-generate estimate number on mount if not provided
   useEffect(() => {
     if (!initialData?.estimate_number) {
@@ -58,17 +113,51 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
     }
   }, []);
 
+  // Load initial line items if editing
+  useEffect(() => {
+    if (initialData?.estimate_line_items) {
+      const items = initialData.estimate_line_items.map(item => ({
+        description: item.description,
+        quantity: Number(item.quantity),
+        unit_price: Number(item.unit_price),
+        total: Number(item.total || 0)
+      }));
+      setLineItems(items);
+    }
+  }, [initialData]);
+
   const handleSubmit = async (data: EstimateFormData) => {
     try {
-      await onSubmit(data);
+      await onSubmit({ ...data, lineItems });
     } catch (error) {
       console.error('Error submitting estimate:', error);
     }
   };
 
+  if (showTemplateSelector) {
+    return (
+      <EstimateTemplateSelector
+        onSelectTemplate={handleTemplateSelect}
+        onCreateNew={() => setShowTemplateSelector(false)}
+      />
+    );
+  }
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        {/* Header with Template Button */}
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-semibold">Estimate Details</h3>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setShowTemplateSelector(true)}
+          >
+            Use Template
+          </Button>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -113,20 +202,6 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
             )}
           />
         </div>
-
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Enter estimate description" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
@@ -179,6 +254,91 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
             )}
           />
         </div>
+
+        {/* Line Items Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              Line Items
+              <Button type="button" size="sm" onClick={addLineItem}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Item
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {lineItems.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>No line items yet. Click "Add Item" to get started.</p>
+              </div>
+            ) : (
+              <>
+                {/* Header Row */}
+                <div className="grid grid-cols-12 gap-2 text-sm font-medium text-gray-600 pb-2 border-b">
+                  <div className="col-span-6">Description</div>
+                  <div className="col-span-2">Quantity</div>
+                  <div className="col-span-2">Unit Price</div>
+                  <div className="col-span-1">Total</div>
+                  <div className="col-span-1"></div>
+                </div>
+
+                {/* Line Items */}
+                {lineItems.map((item, index) => (
+                  <div key={index} className="grid grid-cols-12 gap-2 items-center">
+                    <div className="col-span-6">
+                      <Textarea
+                        value={item.description}
+                        onChange={(e) => updateLineItem(index, 'description', e.target.value)}
+                        placeholder="Item description"
+                        className="min-h-[60px]"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <Input
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) => updateLineItem(index, 'quantity', Number(e.target.value))}
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <Input
+                        type="number"
+                        value={item.unit_price}
+                        onChange={(e) => updateLineItem(index, 'unit_price', Number(e.target.value))}
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+                    <div className="col-span-1 text-right font-medium">
+                      ${item.total.toFixed(2)}
+                    </div>
+                    <div className="col-span-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeLineItem(index)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Totals */}
+                <div className="border-t pt-4">
+                  <div className="flex justify-between items-center text-lg font-semibold">
+                    <span>Subtotal:</span>
+                    <span>${calculateSubtotal().toFixed(2)}</span>
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FormField

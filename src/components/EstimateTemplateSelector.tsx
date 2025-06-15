@@ -1,21 +1,100 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useEstimateTemplates } from '@/hooks/useEstimateTemplates';
-import { FileText, Plus, Trash2 } from 'lucide-react';
+import { FileText, Plus, Trash2, Edit, Save, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface EstimateTemplateSelectorProps {
   onSelectTemplate: (template: any) => void;
   onCreateNew: () => void;
 }
 
+interface LineItem {
+  description: string;
+  quantity: number;
+  unit_price: number;
+}
+
 const EstimateTemplateSelector: React.FC<EstimateTemplateSelectorProps> = ({
   onSelectTemplate,
   onCreateNew
 }) => {
-  const { templates, loading, deleteTemplate } = useEstimateTemplates();
+  const { templates, loading, createTemplate, deleteTemplate } = useEstimateTemplates();
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<any>(null);
+  
+  const [newTemplate, setNewTemplate] = useState({
+    name: '',
+    description: '',
+    tax_rate: 0,
+    terms: '',
+    notes: '',
+    line_items: [] as LineItem[]
+  });
+
+  const addLineItemToTemplate = () => {
+    setNewTemplate({
+      ...newTemplate,
+      line_items: [...newTemplate.line_items, { description: '', quantity: 1, unit_price: 0 }]
+    });
+  };
+
+  const updateTemplateLineItem = (index: number, field: keyof LineItem, value: string | number) => {
+    const updated = [...newTemplate.line_items];
+    updated[index] = { ...updated[index], [field]: value };
+    setNewTemplate({ ...newTemplate, line_items: updated });
+  };
+
+  const removeTemplateLineItem = (index: number) => {
+    setNewTemplate({
+      ...newTemplate,
+      line_items: newTemplate.line_items.filter((_, i) => i !== index)
+    });
+  };
+
+  const handleCreateTemplate = async () => {
+    if (!newTemplate.name.trim()) {
+      toast.error('Template name is required');
+      return;
+    }
+
+    if (newTemplate.line_items.length === 0) {
+      toast.error('At least one line item is required');
+      return;
+    }
+
+    const result = await createTemplate(newTemplate);
+    if (result) {
+      setShowCreateDialog(false);
+      setNewTemplate({
+        name: '',
+        description: '',
+        tax_rate: 0,
+        terms: '',
+        notes: '',
+        line_items: []
+      });
+      toast.success('Template created successfully');
+    }
+  };
+
+  const resetForm = () => {
+    setNewTemplate({
+      name: '',
+      description: '',
+      tax_rate: 0,
+      terms: '',
+      notes: '',
+      line_items: []
+    });
+    setEditingTemplate(null);
+  };
 
   if (loading) {
     return (
@@ -35,10 +114,158 @@ const EstimateTemplateSelector: React.FC<EstimateTemplateSelectorProps> = ({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Choose an Estimate Template</h3>
-        <Button onClick={onCreateNew} variant="outline">
-          <Plus className="h-4 w-4 mr-2" />
-          Create New Template
-        </Button>
+        <div className="flex gap-2">
+          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Template
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Create New Template</DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Template Name *</label>
+                    <Input
+                      value={newTemplate.name}
+                      onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
+                      placeholder="Enter template name"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Tax Rate (%)</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={newTemplate.tax_rate * 100}
+                      onChange={(e) => setNewTemplate({ ...newTemplate, tax_rate: Number(e.target.value) / 100 })}
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">Description</label>
+                  <Textarea
+                    value={newTemplate.description}
+                    onChange={(e) => setNewTemplate({ ...newTemplate, description: e.target.value })}
+                    placeholder="Template description"
+                  />
+                </div>
+
+                {/* Line Items */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      Template Line Items
+                      <Button size="sm" onClick={addLineItemToTemplate}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Item
+                      </Button>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {newTemplate.line_items.length === 0 ? (
+                      <p className="text-center text-gray-500 py-4">No line items yet</p>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-12 gap-2 text-sm font-medium text-gray-600">
+                          <div className="col-span-6">Description</div>
+                          <div className="col-span-2">Quantity</div>
+                          <div className="col-span-2">Unit Price</div>
+                          <div className="col-span-1">Total</div>
+                          <div className="col-span-1"></div>
+                        </div>
+                        
+                        {newTemplate.line_items.map((item, index) => (
+                          <div key={index} className="grid grid-cols-12 gap-2 items-center">
+                            <div className="col-span-6">
+                              <Input
+                                value={item.description}
+                                onChange={(e) => updateTemplateLineItem(index, 'description', e.target.value)}
+                                placeholder="Item description"
+                              />
+                            </div>
+                            <div className="col-span-2">
+                              <Input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => updateTemplateLineItem(index, 'quantity', Number(e.target.value))}
+                                min="0"
+                                step="0.01"
+                              />
+                            </div>
+                            <div className="col-span-2">
+                              <Input
+                                type="number"
+                                value={item.unit_price}
+                                onChange={(e) => updateTemplateLineItem(index, 'unit_price', Number(e.target.value))}
+                                min="0"
+                                step="0.01"
+                              />
+                            </div>
+                            <div className="col-span-1 text-right font-medium">
+                              ${(item.quantity * item.unit_price).toFixed(2)}
+                            </div>
+                            <div className="col-span-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeTemplateLineItem(index)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Terms & Conditions</label>
+                    <Textarea
+                      value={newTemplate.terms}
+                      onChange={(e) => setNewTemplate({ ...newTemplate, terms: e.target.value })}
+                      placeholder="Enter terms and conditions"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Notes</label>
+                    <Textarea
+                      value={newTemplate.notes}
+                      onChange={(e) => setNewTemplate({ ...newTemplate, notes: e.target.value })}
+                      placeholder="Enter notes"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button variant="outline" onClick={() => { setShowCreateDialog(false); resetForm(); }}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleCreateTemplate}>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Template
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+          
+          <Button variant="outline" onClick={onCreateNew}>
+            <X className="h-4 w-4 mr-2" />
+            Cancel
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -107,7 +334,7 @@ const EstimateTemplateSelector: React.FC<EstimateTemplateSelectorProps> = ({
           <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No templates yet</h3>
           <p className="text-gray-600 mb-4">Create your first estimate template to speed up future quotes</p>
-          <Button onClick={onCreateNew}>
+          <Button onClick={() => setShowCreateDialog(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Create Template
           </Button>

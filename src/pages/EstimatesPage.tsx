@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useEstimates } from '@/hooks/useEstimates';
+import { useEstimateLineItems } from '@/hooks/useEstimateLineItems';
 import { useCustomers } from '@/hooks/useCustomers';
 import { usePDFGeneration } from '@/hooks/usePDFGeneration';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -61,6 +62,7 @@ const EstimatesPage = () => {
   const { estimates, loading, error, addEstimate, updateEstimate, deleteEstimate } = useEstimates();
   const { customers } = useCustomers();
   const { generateEstimatePDF, generating } = usePDFGeneration();
+  const { addLineItem } = useEstimateLineItems();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -85,7 +87,35 @@ const EstimatesPage = () => {
   const handleCreateEstimate = async (data: any) => {
     setIsSubmitting(true);
     try {
-      const result = await addEstimate(data);
+      // Create the estimate first
+      const estimateData = {
+        title: data.title,
+        description: data.description || '',
+        estimate_number: data.estimate_number,
+        customer_id: data.customer_id || null,
+        job_id: data.job_id || null,
+        valid_until: data.valid_until || null,
+        tax_rate: data.tax_rate || 0,
+        status: data.status || 'draft',
+        notes: data.notes || '',
+        terms: data.terms || ''
+      };
+
+      const result = await addEstimate(estimateData);
+      
+      if (result && data.lineItems && data.lineItems.length > 0) {
+        // Add line items to the estimate
+        for (const item of data.lineItems) {
+          if (item.description.trim()) {
+            await addLineItem(result.id, {
+              description: item.description,
+              quantity: item.quantity,
+              unit_price: item.unit_price
+            });
+          }
+        }
+      }
+      
       if (result) {
         setIsCreateModalOpen(false);
       }
@@ -148,7 +178,7 @@ const EstimatesPage = () => {
               New Estimate
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Estimate</DialogTitle>
             </DialogHeader>
