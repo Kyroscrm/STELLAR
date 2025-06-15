@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useLeads } from '@/hooks/useLeads';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,7 +30,7 @@ import ConvertLeadDialog from '@/components/ConvertLeadDialog';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
 const LeadsPage = () => {
-  const { leads, loading, deleteLead, fetchLeads } = useLeads();
+  const { leads, loading, deleteLead } = useLeads();
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewLeadForm, setShowNewLeadForm] = useState(false);
   const [convertDialog, setConvertDialog] = useState<{
@@ -95,14 +94,14 @@ const LeadsPage = () => {
     setConvertDialog({ open: true, lead });
   };
 
-  const handleFormSuccess = async () => {
+  const handleFormSuccess = () => {
     setShowNewLeadForm(false);
-    await fetchLeads();
+    // The useLeads hook will automatically refresh the leads list
   };
 
-  const handleConversionSuccess = async () => {
+  const handleConversionSuccess = () => {
     setConvertDialog({ open: false });
-    await fetchLeads();
+    // The useLeads hook will automatically refresh the leads list
   };
 
   if (loading) {

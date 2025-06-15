@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
@@ -14,7 +15,10 @@ export const useCustomers = () => {
   const { user, session } = useAuth();
 
   const fetchCustomers = async () => {
-    if (!user || !session) return;
+    if (!user || !session) {
+      console.log('No user or session available for fetching customers');
+      return;
+    }
     
     setLoading(true);
     try {
@@ -24,28 +28,43 @@ export const useCustomers = () => {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching customers:', error);
+        throw error;
+      }
+      
+      console.log(`Fetched ${data?.length || 0} customers`);
       setCustomers(data || []);
     } catch (error: any) {
       console.error('Error fetching customers:', error);
       toast.error('Failed to fetch customers');
+      setCustomers([]);
     } finally {
       setLoading(false);
     }
   };
 
   const createCustomer = async (customerData: Omit<CustomerInsert, 'user_id'>) => {
-    if (!user || !session) return null;
+    if (!user || !session) {
+      toast.error('You must be logged in to create customers');
+      return null;
+    }
 
     try {
+      console.log('Creating customer:', customerData);
+      
       const { data, error } = await supabase
         .from('customers')
         .insert({ ...customerData, user_id: user.id })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating customer:', error);
+        throw error;
+      }
       
+      console.log('Customer created successfully:', data);
       setCustomers(prev => [data, ...prev]);
       toast.success('Customer created successfully');
       
@@ -61,15 +80,20 @@ export const useCustomers = () => {
       return data;
     } catch (error: any) {
       console.error('Error creating customer:', error);
-      toast.error('Failed to create customer');
+      toast.error(error.message || 'Failed to create customer');
       return null;
     }
   };
 
   const updateCustomer = async (id: string, updates: CustomerUpdate) => {
-    if (!user || !session) return null;
+    if (!user || !session) {
+      toast.error('You must be logged in to update customers');
+      return null;
+    }
 
     try {
+      console.log('Updating customer:', id, updates);
+      
       const { data, error } = await supabase
         .from('customers')
         .update(updates)
@@ -78,8 +102,12 @@ export const useCustomers = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating customer:', error);
+        throw error;
+      }
       
+      console.log('Customer updated successfully:', data);
       setCustomers(prev => prev.map(customer => customer.id === id ? data : customer));
       toast.success('Customer updated successfully');
       
@@ -95,23 +123,32 @@ export const useCustomers = () => {
       return data;
     } catch (error: any) {
       console.error('Error updating customer:', error);
-      toast.error('Failed to update customer');
+      toast.error(error.message || 'Failed to update customer');
       return null;
     }
   };
 
   const deleteCustomer = async (id: string) => {
-    if (!user || !session) return;
+    if (!user || !session) {
+      toast.error('You must be logged in to delete customers');
+      return;
+    }
 
     try {
+      console.log('Deleting customer:', id);
+      
       const { error } = await supabase
         .from('customers')
         .delete()
         .eq('id', id)
         .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error deleting customer:', error);
+        throw error;
+      }
       
+      console.log('Customer deleted successfully');
       setCustomers(prev => prev.filter(customer => customer.id !== id));
       toast.success('Customer deleted successfully');
       
@@ -125,12 +162,14 @@ export const useCustomers = () => {
       });
     } catch (error: any) {
       console.error('Error deleting customer:', error);
-      toast.error('Failed to delete customer');
+      toast.error(error.message || 'Failed to delete customer');
     }
   };
 
   useEffect(() => {
-    fetchCustomers();
+    if (user && session) {
+      fetchCustomers();
+    }
   }, [user, session]);
 
   return {
