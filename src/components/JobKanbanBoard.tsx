@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
-import { useJobs } from '@/hooks/useJobs';
+import { useJobs, JobWithCustomer } from '@/hooks/useJobs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,39 +20,23 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-interface Job {
-  id: string;
-  title: string;
-  status: string;
-  budget?: number;
-  start_date?: string;
-  end_date?: string;
-  address?: string;
-  customers?: {
-    first_name: string;
-    last_name: string;
-  };
-  estimated_hours?: number;
-  description?: string;
-}
-
 const JobKanbanBoard = () => {
   const { jobs, loading, updateJob } = useJobs();
   const [columns, setColumns] = useState({
-    quoted: { title: 'Quoted', jobs: [] as Job[] },
-    scheduled: { title: 'Scheduled', jobs: [] as Job[] },
-    in_progress: { title: 'In Progress', jobs: [] as Job[] },
-    completed: { title: 'Completed', jobs: [] as Job[] },
-    cancelled: { title: 'Cancelled', jobs: [] as Job[] }
+    quoted: { title: 'Quoted', jobs: [] as JobWithCustomer[] },
+    scheduled: { title: 'Scheduled', jobs: [] as JobWithCustomer[] },
+    in_progress: { title: 'In Progress', jobs: [] as JobWithCustomer[] },
+    completed: { title: 'Completed', jobs: [] as JobWithCustomer[] },
+    cancelled: { title: 'Cancelled', jobs: [] as JobWithCustomer[] }
   });
 
   useEffect(() => {
     const newColumns = {
-      quoted: { title: 'Quoted', jobs: [] as Job[] },
-      scheduled: { title: 'Scheduled', jobs: [] as Job[] },
-      in_progress: { title: 'In Progress', jobs: [] as Job[] },
-      completed: { title: 'Completed', jobs: [] as Job[] },
-      cancelled: { title: 'Cancelled', jobs: [] as Job[] }
+      quoted: { title: 'Quoted', jobs: [] as JobWithCustomer[] },
+      scheduled: { title: 'Scheduled', jobs: [] as JobWithCustomer[] },
+      in_progress: { title: 'In Progress', jobs: [] as JobWithCustomer[] },
+      completed: { title: 'Completed', jobs: [] as JobWithCustomer[] },
+      cancelled: { title: 'Cancelled', jobs: [] as JobWithCustomer[] }
     };
 
     jobs.forEach(job => {

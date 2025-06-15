@@ -9,8 +9,12 @@ export type Job = Tables<'jobs'>;
 type JobInsert = TablesInsert<'jobs'>;
 type JobUpdate = TablesUpdate<'jobs'>;
 
+export interface JobWithCustomer extends Job {
+  customers?: Tables<'customers'> | null;
+}
+
 export const useJobs = () => {
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobs, setJobs] = useState<JobWithCustomer[]>([]);
   const [loading, setLoading] = useState(false);
   const { user, session } = useAuth();
 
@@ -24,7 +28,17 @@ export const useJobs = () => {
     try {
       const { data, error } = await supabase
         .from('jobs')
-        .select('*')
+        .select(`
+          *,
+          customers (
+            id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            company_name
+          )
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -56,7 +70,17 @@ export const useJobs = () => {
       const { data, error } = await supabase
         .from('jobs')
         .insert({ ...jobData, user_id: user.id })
-        .select()
+        .select(`
+          *,
+          customers (
+            id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            company_name
+          )
+        `)
         .single();
 
       if (error) {
@@ -99,7 +123,17 @@ export const useJobs = () => {
         .update(updates)
         .eq('id', id)
         .eq('user_id', user.id)
-        .select()
+        .select(`
+          *,
+          customers (
+            id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            company_name
+          )
+        `)
         .single();
 
       if (error) {

@@ -51,3 +51,50 @@ export const leadSchema = z.object({
 });
 
 export type LeadFormData = z.infer<typeof leadSchema>;
+
+export const jobSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().optional(),
+  customer_id: z.string().optional(),
+  status: z.enum(['quoted', 'scheduled', 'in_progress', 'completed', 'cancelled']).default('quoted'),
+  start_date: z.string().optional(),
+  end_date: z.string().optional(),
+  budget: z.number().min(0).optional(),
+  estimated_hours: z.number().min(0).optional(),
+  actual_hours: z.number().min(0).optional(),
+  address: z.string().optional(),
+  notes: z.string().optional(),
+  total_cost: z.number().min(0).optional(),
+});
+
+export type JobFormData = z.infer<typeof jobSchema>;
+
+export const taskSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().optional(),
+  job_id: z.string().optional(),
+  assigned_to: z.string().optional(),
+  status: z.enum(['pending', 'in_progress', 'completed', 'cancelled']).default('pending'),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
+  due_date: z.string().optional(),
+  estimated_hours: z.number().min(0).optional(),
+  actual_hours: z.number().min(0).optional(),
+});
+
+export type TaskFormData = z.infer<typeof taskSchema>;
+
+export const invoiceSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().optional(),
+  invoice_number: z.string().min(1, 'Invoice number is required'),
+  customer_id: z.string().optional(),
+  job_id: z.string().optional(),
+  estimate_id: z.string().optional(),
+  due_date: z.string().optional(),
+  tax_rate: z.number().min(0).max(1).default(0),
+  status: z.enum(['draft', 'sent', 'paid', 'overdue', 'cancelled']).default('draft'),
+  notes: z.string().optional(),
+  payment_terms: z.string().optional(),
+});
+
+export type InvoiceFormData = z.infer<typeof invoiceSchema>;
