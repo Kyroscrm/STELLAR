@@ -98,7 +98,10 @@ const EstimatesPage = () => {
         tax_rate: data.tax_rate || 0,
         status: data.status || 'draft',
         notes: data.notes || '',
-        terms: data.terms || ''
+        terms: data.terms || '',
+        subtotal: 0,
+        tax_amount: 0,
+        total_amount: 0
       };
 
       const result = await addEstimate(estimateData);
