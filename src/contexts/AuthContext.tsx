@@ -133,14 +133,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
-        // Create profile - Fix: Remove id from insert payload since it references auth.users
+        // Create profile - using upsert to handle existing profiles
         const { error: profileError } = await supabase
           .from('profiles')
-          .insert({
-            email: data.user.email!,
+          .upsert([{
+            id: data.user.id,
             first_name: firstName,
             last_name: lastName,
-            role: 'user'
+            role: 'user' as const
+          }], {
+            onConflict: 'id'
           });
 
         if (profileError) {
