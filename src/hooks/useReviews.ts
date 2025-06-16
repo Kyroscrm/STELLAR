@@ -17,6 +17,32 @@ export interface Review {
   updated_at: string;
 }
 
+// Type guard to validate review data
+const isValidReview = (data: any): boolean => {
+  return data && 
+    typeof data.name === 'string' &&
+    typeof data.rating === 'number' &&
+    data.rating >= 1 && data.rating <= 5 &&
+    typeof data.text_content === 'string' &&
+    typeof data.platform === 'string';
+};
+
+// Helper function to safely convert Supabase data to Review
+const convertToReview = (data: any): Review => {
+  return {
+    id: data.id,
+    name: data.name || '',
+    rating: Math.max(1, Math.min(5, data.rating || 1)),
+    review_date: data.review_date || new Date().toISOString().split('T')[0],
+    text_content: data.text_content || '',
+    platform: data.platform || 'website',
+    verified: typeof data.verified === 'boolean' ? data.verified : false,
+    helpful_count: typeof data.helpful_count === 'number' ? data.helpful_count : 0,
+    created_at: data.created_at,
+    updated_at: data.updated_at
+  };
+};
+
 export const useReviews = () => {
   const { user } = useAuth();
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -35,7 +61,12 @@ export const useReviews = () => {
 
       if (error) throw error;
 
-      setReviews(data || []);
+      // Safely convert and validate all reviews
+      const safeReviews = (data || [])
+        .filter(isValidReview)
+        .map(convertToReview);
+
+      setReviews(safeReviews);
     } catch (error: any) {
       console.error('Error fetching reviews:', error);
       toast.error('Failed to fetch reviews');
@@ -46,6 +77,12 @@ export const useReviews = () => {
 
   const createReview = async (reviewData: Omit<Review, 'id' | 'created_at' | 'updated_at'>) => {
     if (!user) return null;
+
+    // Validate input data
+    if (!isValidReview({ ...reviewData, id: 'temp' })) {
+      toast.error('Invalid review data');
+      return null;
+    }
 
     try {
       const { data, error } = await supabase
@@ -59,9 +96,10 @@ export const useReviews = () => {
 
       if (error) throw error;
 
-      setReviews(prev => [data, ...prev]);
+      const safeReview = convertToReview(data);
+      setReviews(prev => [safeReview, ...prev]);
       toast.success('Review created successfully');
-      return data;
+      return safeReview;
     } catch (error: any) {
       console.error('Error creating review:', error);
       toast.error('Failed to create review');
@@ -83,8 +121,9 @@ export const useReviews = () => {
 
       if (error) throw error;
 
+      const safeReview = convertToReview(data);
       setReviews(prev => prev.map(review => 
-        review.id === id ? data : review
+        review.id === id ? safeReview : review
       ));
       toast.success('Review updated successfully');
       return true;
@@ -115,6 +154,22 @@ export const useReviews = () => {
     }
   };
 
+  // Get average rating
+  const getAverageRating = () => {
+    if (reviews.length === 0) return 0;
+    const total = reviews.reduce((sum, review) => sum + review.rating, 0);
+    return Number((total / reviews.length).toFixed(1));
+  };
+
+  // Get rating distribution
+  const getRatingDistribution = () => {
+    const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    reviews.forEach(review => {
+      distribution[review.rating as keyof typeof distribution]++;
+    });
+    return distribution;
+  };
+
   useEffect(() => {
     fetchReviews();
   }, [user]);
@@ -125,6 +180,8 @@ export const useReviews = () => {
     createReview,
     updateReview,
     deleteReview,
-    fetchReviews
+    fetchReviews,
+    getAverageRating,
+    getRatingDistribution
   };
 };

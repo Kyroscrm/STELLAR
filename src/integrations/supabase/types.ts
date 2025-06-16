@@ -538,6 +538,72 @@ export type Database = {
         }
         Relationships: []
       }
+      dashboard_metrics_cache: {
+        Row: {
+          calculated_at: string
+          expires_at: string
+          id: string
+          metadata: Json
+          metric_type: string
+          period: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          calculated_at?: string
+          expires_at: string
+          id?: string
+          metadata?: Json
+          metric_type: string
+          period: string
+          user_id: string
+          value: number
+        }
+        Update: {
+          calculated_at?: string
+          expires_at?: string
+          id?: string
+          metadata?: Json
+          metric_type?: string
+          period?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: []
+      }
+      dashboard_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          layout: Json
+          theme_settings: Json
+          updated_at: string
+          user_id: string
+          visible_widgets: string[]
+          widget_positions: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          layout?: Json
+          theme_settings?: Json
+          updated_at?: string
+          user_id: string
+          visible_widgets?: string[]
+          widget_positions?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          layout?: Json
+          theme_settings?: Json
+          updated_at?: string
+          user_id?: string
+          visible_widgets?: string[]
+          widget_positions?: Json
+        }
+        Relationships: []
+      }
       dashboard_widgets: {
         Row: {
           config: Json
@@ -1299,6 +1365,42 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          email_notifications: boolean
+          frequency: string
+          id: string
+          notification_types: Json
+          push_notifications: boolean
+          quiet_hours: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_notifications?: boolean
+          frequency?: string
+          id?: string
+          notification_types?: Json
+          push_notifications?: boolean
+          quiet_hours?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_notifications?: boolean
+          frequency?: string
+          id?: string
+          notification_types?: Json
+          push_notifications?: boolean
+          quiet_hours?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ocr_docs: {
         Row: {
           confidence_score: number | null
@@ -1562,6 +1664,39 @@ export type Database = {
           updated_at?: string
           user_id?: string
           verified?: boolean
+        }
+        Relationships: []
+      }
+      saved_searches: {
+        Row: {
+          created_at: string
+          entity_types: string[]
+          filters: Json
+          id: string
+          name: string
+          query: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_types?: string[]
+          filters?: Json
+          id?: string
+          name: string
+          query: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_types?: string[]
+          filters?: Json
+          id?: string
+          name?: string
+          query?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1869,6 +2004,60 @@ export type Database = {
           synced_at?: string | null
           uploaded_offline?: boolean | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_notifications: {
+        Row: {
+          action_url: string | null
+          created_at: string
+          dismissed: boolean
+          dismissed_at: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          message: string
+          metadata: Json
+          priority: string
+          read: boolean
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          action_url?: string | null
+          created_at?: string
+          dismissed?: boolean
+          dismissed_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          message: string
+          metadata?: Json
+          priority?: string
+          read?: boolean
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          action_url?: string | null
+          created_at?: string
+          dismissed?: boolean
+          dismissed_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          message?: string
+          metadata?: Json
+          priority?: string
+          read?: boolean
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
         }
         Relationships: []
       }

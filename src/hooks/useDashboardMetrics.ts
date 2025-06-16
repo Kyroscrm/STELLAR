@@ -1,0 +1,199 @@
+
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+export interface DashboardMetric {
+  id: string;
+  user_id: string;
+  metric_type: string;
+  value: number;
+  metadata: any;
+  period: 'today' | 'week' | 'month' | 'quarter' | 'year';
+  calculated_at: string;
+  expires_at: string;
+}
+
+export const useDashboardMetrics = () => {
+  const { user } = useAuth();
+  const [metrics, setMetrics] = useState<DashboardMetric[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchMetrics = async (period: string = 'month') => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('dashboard_metrics_cache')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('period', period)
+        .gt('expires_at', new Date().toISOString());
+
+      if (error) throw error;
+
+      setMetrics(data || []);
+      
+      // If no cached metrics or they're expired, calculate fresh ones
+      if (!data || data.length === 0) {
+        await calculateMetrics(period);
+      }
+    } catch (error: any) {
+      console.error('Error fetching dashboard metrics:', error);
+      toast.error('Failed to fetch dashboard metrics');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateMetrics = async (period: string) => {
+    if (!user) return;
+
+    try {
+      // Calculate various metrics based on period
+      const endDate = new Date();
+      const startDate = new Date();
+      
+      switch (period) {
+        case 'today':
+          startDate.setHours(0, 0, 0, 0);
+          break;
+        case 'week':
+          startDate.setDate(startDate.getDate() - 7);
+          break;
+        case 'month':
+          startDate.setMonth(startDate.getMonth() - 1);
+          break;
+        case 'quarter':
+          startDate.setMonth(startDate.getMonth() - 3);
+          break;
+        case 'year':
+          startDate.setFullYear(startDate.getFullYear() - 1);
+          break;
+      }
+
+      // Calculate total revenue from invoices
+      const { data: invoiceData, error: invoiceError } = await supabase
+        .from('invoices')
+        .select('total_amount')
+        .eq('user_id', user.id)
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
+
+      if (invoiceError) throw invoiceError;
+
+      const totalRevenue = invoiceData?.reduce((sum, invoice) => sum + (invoice.total_amount || 0), 0) || 0;
+
+      // Calculate leads count
+      const { count: leadsCount, error: leadsError } = await supabase
+        .from('leads')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
+
+      if (leadsError) throw leadsError;
+
+      // Calculate customers count
+      const { count: customersCount, error: customersError } = await supabase
+        .from('customers')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
+
+      if (customersError) throw customersError;
+
+      // Calculate jobs count
+      const { count: jobsCount, error: jobsError } = await supabase
+        .from('jobs')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
+
+      if (jobsError) throw jobsError;
+
+      // Cache the calculated metrics
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 1); // Cache for 1 hour
+
+      const metricsToCache = [
+        {
+          user_id: user.id,
+          metric_type: 'total_revenue',
+          value: totalRevenue,
+          metadata: { currency: 'USD' },
+          period,
+          expires_at: expiresAt.toISOString()
+        },
+        {
+          user_id: user.id,
+          metric_type: 'leads_count',
+          value: leadsCount || 0,
+          metadata: {},
+          period,
+          expires_at: expiresAt.toISOString()
+        },
+        {
+          user_id: user.id,
+          metric_type: 'customers_count',
+          value: customersCount || 0,
+          metadata: {},
+          period,
+          expires_at: expiresAt.toISOString()
+        },
+        {
+          user_id: user.id,
+          metric_type: 'jobs_count',
+          value: jobsCount || 0,
+          metadata: {},
+          period,
+          expires_at: expiresAt.toISOString()
+        }
+      ];
+
+      // Insert or update cached metrics
+      for (const metric of metricsToCache) {
+        const { error } = await supabase
+          .from('dashboard_metrics_cache')
+          .upsert(metric, {
+            onConflict: 'user_id,metric_type,period'
+          });
+
+        if (error) {
+          console.error('Error caching metric:', error);
+        }
+      }
+
+      // Fetch the updated metrics
+      await fetchMetrics(period);
+    } catch (error: any) {
+      console.error('Error calculating metrics:', error);
+      toast.error('Failed to calculate metrics');
+    }
+  };
+
+  const getMetricValue = (metricType: string) => {
+    const metric = metrics.find(m => m.metric_type === metricType);
+    return metric?.value || 0;
+  };
+
+  const refreshMetrics = async (period: string = 'month') => {
+    await calculateMetrics(period);
+  };
+
+  useEffect(() => {
+    fetchMetrics();
+  }, [user]);
+
+  return {
+    metrics,
+    loading,
+    getMetricValue,
+    refreshMetrics,
+    fetchMetrics
+  };
+};
