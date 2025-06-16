@@ -81,7 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: authUser.id,
         email: authUser.email || '',
         name: profile ? `${profile.first_name} ${profile.last_name}`.trim() : authUser.email || '',
-        role: profile?.role || 'user'
+        role: profile?.role || 'client'
       });
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
@@ -133,15 +133,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
-        // Create profile - using upsert to handle existing profiles
+        // Create profile - Fix: Pass single object with required fields
         const { error: profileError } = await supabase
           .from('profiles')
-          .upsert([{
+          .upsert({
             id: data.user.id,
+            email: data.user.email || '',
             first_name: firstName,
             last_name: lastName,
-            role: 'user' as const
-          }], {
+            role: 'client' as const
+          }, {
             onConflict: 'id'
           });
 
