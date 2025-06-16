@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
@@ -41,32 +42,61 @@ export const useEstimates = () => {
     setLoading(true);
     setError(null);
     try {
-      const { data, error } = await supabase
+      console.log('Fetching estimates for user:', user.id);
+      
+      // First fetch estimates without customer join to avoid RLS issues
+      const { data: estimatesData, error: estimatesError } = await supabase
         .from('estimates')
-        .select(`
-          *,
-          customers (
-            id,
-            first_name,
-            last_name,
-            email,
-            phone,
-            company_name
-          ),
-          estimate_line_items (
-            id,
-            description,
-            quantity,
-            unit_price,
-            total
-          )
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setEstimates(data || []);
-      console.log(`Fetched ${data?.length || 0} estimates`);
+      if (estimatesError) throw estimatesError;
+
+      // Fetch line items separately
+      const estimateIds = estimatesData?.map(est => est.id) || [];
+      let lineItemsData: any[] = [];
+      
+      if (estimateIds.length > 0) {
+        const { data, error: lineItemsError } = await supabase
+          .from('estimate_line_items')
+          .select('*')
+          .in('estimate_id', estimateIds)
+          .order('sort_order', { ascending: true });
+
+        if (lineItemsError) throw lineItemsError;
+        lineItemsData = data || [];
+      }
+
+      // Fetch customers separately
+      const customerIds = estimatesData?.map(est => est.customer_id).filter(Boolean) || [];
+      let customersData: any[] = [];
+      
+      if (customerIds.length > 0) {
+        const { data, error: customersError } = await supabase
+          .from('customers')
+          .select('id, first_name, last_name, email, phone, company_name')
+          .in('id', customerIds)
+          .eq('user_id', user.id);
+
+        if (customersError) throw customersError;
+        customersData = data || [];
+      }
+
+      // Combine the data
+      const combinedEstimates = estimatesData?.map(estimate => {
+        const estimateLineItems = lineItemsData.filter(item => item.estimate_id === estimate.id);
+        const customer = customersData.find(c => c.id === estimate.customer_id);
+        
+        return {
+          ...estimate,
+          estimate_line_items: estimateLineItems,
+          customers: customer || undefined
+        };
+      }) || [];
+
+      setEstimates(combinedEstimates);
+      console.log(`Successfully fetched ${combinedEstimates.length} estimates`);
     } catch (error: any) {
       console.error('Error fetching estimates:', error);
       setError(error);
