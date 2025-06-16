@@ -144,6 +144,9 @@ export const useTasks = () => {
     }
   };
 
+  // Alias for addTask to match component expectations
+  const addTask = createTask;
+
   useEffect(() => {
     fetchTasks();
   }, [user]);
@@ -154,6 +157,7 @@ export const useTasks = () => {
     error,
     fetchTasks,
     createTask,
+    addTask,
     updateTask,
     deleteTask
   };

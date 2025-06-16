@@ -1,4 +1,5 @@
 
+
 import { z } from 'zod';
 
 // Customer validation schema
@@ -30,7 +31,7 @@ export const leadSchema = z.object({
   state: z.string().optional(),
   zip_code: z.string().optional(),
   source: z.enum(['website', 'referral', 'google_ads', 'facebook', 'direct_mail', 'cold_call', 'trade_show', 'other']).optional(),
-  status: z.enum(['new', 'contacted', 'qualified', 'proposal_sent', 'negotiating', 'won', 'lost']).optional(),
+  status: z.enum(['new', 'contacted', 'qualified', 'proposal_sent', 'negotiating', 'won', 'lost', 'converted']).optional(),
   score: z.number().min(0).max(100).optional(),
   notes: z.string().optional(),
   estimated_value: z.number().min(0).optional(),

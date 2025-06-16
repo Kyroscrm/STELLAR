@@ -9,8 +9,19 @@ export type Job = Tables<'jobs'>;
 type JobInsert = Omit<TablesInsert<'jobs'>, 'user_id'>;
 type JobUpdate = TablesUpdate<'jobs'>;
 
+// Extended Job type with customer data
+export type JobWithCustomer = Job & {
+  customers?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email?: string;
+    phone?: string;
+  };
+};
+
 export const useJobs = () => {
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobs, setJobs] = useState<JobWithCustomer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const { user } = useAuth();
@@ -26,7 +37,16 @@ export const useJobs = () => {
     try {
       const { data, error } = await supabase
         .from('jobs')
-        .select('*')
+        .select(`
+          *,
+          customers (
+            id,
+            first_name,
+            last_name,
+            email,
+            phone
+          )
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 

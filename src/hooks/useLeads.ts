@@ -177,7 +177,8 @@ export const useLeads = () => {
 
       if (customerError) throw customerError;
 
-      await updateLead(id, { status: 'converted' });
+      // Update lead status to "won" instead of "converted" to match enum
+      await updateLead(id, { status: 'won' });
       
       await supabase.from('activity_logs').insert({
         user_id: user.id,

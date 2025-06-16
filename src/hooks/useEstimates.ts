@@ -6,14 +6,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 export type Estimate = Tables<'estimates'>;
-export type EstimateLineItem = Tables<'estimate_line_items'>;
-export type EstimateWithLineItems = Estimate & {
-  estimate_line_items: EstimateLineItem[];
-  customers?: { first_name: string; last_name: string };
-};
-
 type EstimateInsert = Omit<TablesInsert<'estimates'>, 'user_id'>;
 type EstimateUpdate = TablesUpdate<'estimates'>;
+
+export type EstimateWithLineItems = Estimate & {
+  estimate_line_items: Array<{
+    id: string;
+    description: string;
+    quantity: number;
+    unit_price: number;
+    total: number;
+  }>;
+};
 
 export const useEstimates = () => {
   const [estimates, setEstimates] = useState<EstimateWithLineItems[]>([]);
@@ -34,8 +38,13 @@ export const useEstimates = () => {
         .from('estimates')
         .select(`
           *,
-          estimate_line_items(*),
-          customers(first_name, last_name)
+          estimate_line_items (
+            id,
+            description,
+            quantity,
+            unit_price,
+            total
+          )
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -53,51 +62,33 @@ export const useEstimates = () => {
     }
   };
 
-  const createEstimate = async (estimateData: EstimateInsert & { lineItems: any[] }) => {
+  const createEstimate = async (estimateData: EstimateInsert & { line_items?: any[] }) => {
     if (!user) {
       toast.error('You must be logged in to create estimates');
       return null;
     }
 
     try {
-      const { lineItems, ...estimateFields } = estimateData;
-      
-      const { data: estimate, error: estimateError } = await supabase
+      const { data, error } = await supabase
         .from('estimates')
-        .insert({ ...estimateFields, user_id: user.id })
+        .insert({ ...estimateData, user_id: user.id })
         .select()
         .single();
 
-      if (estimateError) throw estimateError;
-
-      if (lineItems && lineItems.length > 0) {
-        const lineItemsToInsert = lineItems.map(item => ({
-          estimate_id: estimate.id,
-          description: item.description,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          total: item.quantity * item.unit_price
-        }));
-
-        const { error: lineItemsError } = await supabase
-          .from('estimate_line_items')
-          .insert(lineItemsToInsert);
-
-        if (lineItemsError) throw lineItemsError;
-      }
+      if (error) throw error;
       
-      await fetchEstimates();
+      setEstimates(prev => [{ ...data, estimate_line_items: [] }, ...prev]);
       toast.success('Estimate created successfully');
       
       await supabase.from('activity_logs').insert({
         user_id: user.id,
         entity_type: 'estimate',
-        entity_id: estimate.id,
+        entity_id: data.id,
         action: 'created',
-        description: `Estimate created: ${estimate.title}`
+        description: `Estimate created: ${data.title}`
       });
 
-      return estimate;
+      return data;
     } catch (error: any) {
       console.error('Error creating estimate:', error);
       toast.error(error.message || 'Failed to create estimate');
@@ -122,7 +113,9 @@ export const useEstimates = () => {
 
       if (error) throw error;
       
-      await fetchEstimates();
+      setEstimates(prev => prev.map(estimate => 
+        estimate.id === id ? { ...estimate, ...data } : estimate
+      ));
       toast.success('Estimate updated successfully');
       
       await supabase.from('activity_logs').insert({
@@ -172,6 +165,9 @@ export const useEstimates = () => {
     }
   };
 
+  // Alias for addEstimate to match component expectations
+  const addEstimate = createEstimate;
+
   useEffect(() => {
     fetchEstimates();
   }, [user]);
@@ -182,6 +178,7 @@ export const useEstimates = () => {
     error,
     fetchEstimates,
     createEstimate,
+    addEstimate,
     updateEstimate,
     deleteEstimate
   };

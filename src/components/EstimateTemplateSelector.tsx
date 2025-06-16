@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,7 +44,14 @@ const EstimateTemplateSelector: React.FC<EstimateTemplateSelectorProps> = ({
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTemplates(data || []);
+      
+      // Cast line_items from Json to any[]
+      const templatesWithLineItems = (data || []).map(template => ({
+        ...template,
+        line_items: Array.isArray(template.line_items) ? template.line_items : []
+      }));
+      
+      setTemplates(templatesWithLineItems);
     } catch (error) {
       console.error('Error loading templates:', error);
       toast.error('Failed to load templates');

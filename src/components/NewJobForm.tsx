@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { jobSchema, type JobFormData } from '@/lib/validation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,21 +10,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useCustomers } from '@/hooks/useCustomers';
 import { useJobs } from '@/hooks/useJobs';
 import { toast } from 'sonner';
-
-const jobSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().optional(),
-  customer_id: z.string().min(1, 'Customer is required'),
-  status: z.enum(['quoted', 'approved', 'in_progress', 'completed', 'cancelled']),
-  start_date: z.string().optional(),
-  end_date: z.string().optional(),
-  estimated_hours: z.number().min(0).optional(),
-  budget: z.number().min(0).optional(),
-  address: z.string().optional(),
-  notes: z.string().optional(),
-});
-
-type JobFormData = z.infer<typeof jobSchema>;
 
 interface NewJobFormProps {
   onSuccess: () => void;
@@ -55,12 +39,18 @@ const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel, customerId
 
   const onSubmit = async (data: JobFormData) => {
     try {
+      // Ensure required fields are present
       const jobData = {
-        ...data,
-        estimated_hours: data.estimated_hours || null,
-        budget: data.budget || null,
+        title: data.title,
+        description: data.description || null,
+        customer_id: data.customer_id || null,
+        status: data.status || 'quoted',
         start_date: data.start_date || null,
         end_date: data.end_date || null,
+        estimated_hours: data.estimated_hours || null,
+        budget: data.budget || null,
+        address: data.address || null,
+        notes: data.notes || null,
       };
 
       const newJob = await createJob(jobData);
@@ -147,7 +137,7 @@ const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel, customerId
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="quoted">Quoted</SelectItem>
-                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="scheduled">Scheduled</SelectItem>
                     <SelectItem value="in_progress">In Progress</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>

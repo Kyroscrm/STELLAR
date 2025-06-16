@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { customerSchema, type CustomerFormData } from '@/lib/validation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,23 +13,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-
-const customerSchema = z.object({
-  first_name: z.string().min(1, 'First name is required'),
-  last_name: z.string().min(1, 'Last name is required'),
-  email: z.string().email('Invalid email').optional().or(z.literal('')),
-  phone: z.string().optional(),
-  company_name: z.string().optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  zip_code: z.string().optional(),
-  emergency_contact_name: z.string().optional(),
-  emergency_contact_phone: z.string().optional(),
-  notes: z.string().optional(),
-});
-
-type CustomerFormData = z.infer<typeof customerSchema>;
 
 interface NewCustomerFormProps {
   onClose: () => void;
@@ -60,9 +42,20 @@ const NewCustomerForm: React.FC<NewCustomerFormProps> = ({ onClose, onSuccess })
 
   const onSubmit = async (data: CustomerFormData) => {
     try {
+      // Ensure required fields are present
       const customerData = {
-        ...data,
+        first_name: data.first_name,
+        last_name: data.last_name,
         email: data.email || null,
+        phone: data.phone || null,
+        company_name: data.company_name || null,
+        address: data.address || null,
+        city: data.city || null,
+        state: data.state || null,
+        zip_code: data.zip_code || null,
+        emergency_contact_name: data.emergency_contact_name || null,
+        emergency_contact_phone: data.emergency_contact_phone || null,
+        notes: data.notes || null,
       };
 
       const newCustomer = await createCustomer(customerData);
