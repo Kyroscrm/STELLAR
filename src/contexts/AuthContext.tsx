@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -39,8 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     console.log('Auth Session:', session);
     console.log('Current User:', user);
-    console.log('Loading state:', loading);
-  }, [session, user, loading]);
+  }, [session, user]);
 
   useEffect(() => {
     // Get initial session
@@ -54,10 +54,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         if (session?.user) {
           await fetchUserProfile(session.user);
-        } else {
-          setLoading(false);
         }
       }
+      setLoading(false);
     };
 
     getInitialSession();
@@ -70,8 +69,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await fetchUserProfile(session.user);
       } else {
         setUser(null);
-        setLoading(false);
       }
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -80,18 +79,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUserProfile = async (authUser: User) => {
     try {
       console.log('Fetching profile for user:', authUser.id);
-      const { data: fetchedProfile, error: profileError } = await supabase
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('first_name, last_name, role')
         .eq('id', authUser.id)
         .single();
 
-      let profile = fetchedProfile;
-
-      if (profileError) {
-        console.error('Error fetching profile:', profileError);
+      if (error) {
+        console.error('Error fetching profile:', error);
         // If profile doesn't exist, create one with default values
-        if (profileError.code === 'PGRST116') {
+        if (error.code === 'PGRST116') {
           console.log('Profile not found, creating default profile...');
           
           // Determine if this is the admin user
@@ -112,14 +109,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           if (createError) {
             console.error('Error creating profile:', createError);
-            setLoading(false);
             return;
           } else {
             console.log('Profile created successfully:', newProfile);
+            // Use the newly created profile
             profile = newProfile;
           }
         } else {
-          setLoading(false);
           return;
         }
       }
@@ -135,12 +131,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('Setting user data:', authUserData);
         setUser(authUserData);
       }
-      
-      console.log('Profile fetch completed, setting loading to false');
-      setLoading(false);
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
-      setLoading(false);
     }
   };
 
@@ -167,6 +159,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(data.session);
         await fetchUserProfile(data.user);
         toast.success('Successfully logged in!');
+        setLoading(false);
         return true;
       }
 
