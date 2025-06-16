@@ -1,5 +1,7 @@
 USING THIS RULES:
 ⚙️ GLOBAL AI DEVELOPER RULES (FRONTEND + BACKEND)
+(DO NOT let it auto-clean the project):
+🔒 "Do not clean up or delete any files. I want to preserve all current components, styles, pages, and assets exactly as they are.
 🧠 GENERAL PRINCIPLES
 Never Guess. Always Derive From Schema or Codebase.
 Pull table names, fields, and types from Supabase schema or FastAPI models. Never assume structure.

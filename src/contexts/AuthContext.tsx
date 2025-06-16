@@ -69,25 +69,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('Loading profile for user:', authUser.email);
       
-      // First check if profile exists
+      // Use maybeSingle() instead of single() to handle cases where profile doesn't exist
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', authUser.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error loading profile:', error);
-        
-        // If profile doesn't exist, create a basic user object without inserting to DB
-        if (error.code === 'PGRST116') {
-          setUser({
-            id: authUser.id,
-            email: authUser.email || '',
-            name: authUser.email?.split('@')[0] || 'User',
-            role: authUser.email === 'nayib@finalroofingcompany.com' ? 'admin' : 'client'
-          });
-        }
+        // Create basic user object without inserting to DB
+        setUser({
+          id: authUser.id,
+          email: authUser.email || '',
+          name: authUser.email?.split('@')[0] || 'User',
+          role: authUser.email === 'nayib@finalroofingcompany.com' ? 'admin' : 'client'
+        });
         return;
       }
 
