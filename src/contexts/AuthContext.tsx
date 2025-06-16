@@ -90,34 +90,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // If profile doesn't exist, create one with default values
         if (error.code === 'PGRST116') {
           console.log('Profile not found, creating default profile...');
-          const { error: createError } = await supabase
+          
+          // Determine if this is the admin user
+          const isAdminUser = authUser.email === 'nayib@finalroofingcompany.com';
+          const defaultRole = isAdminUser ? 'admin' : 'client';
+          
+          const { data: newProfile, error: createError } = await supabase
             .from('profiles')
-            .insert({
+            .upsert({
               id: authUser.id,
-              email: authUser.email ?? '',
-              first_name: authUser.user_metadata?.first_name ?? '',
-              last_name: authUser.user_metadata?.last_name ?? '',
-              role: 'client'
-            });
+              email: authUser.email || '',
+              first_name: authUser.user_metadata?.first_name || '',
+              last_name: authUser.user_metadata?.last_name || '',
+              role: defaultRole
+            })
+            .select()
+            .single();
           
           if (createError) {
             console.error('Error creating profile:', createError);
+            return;
           } else {
-            console.log('Default profile created');
+            console.log('Profile created successfully:', newProfile);
+            // Use the newly created profile
+            profile = newProfile;
           }
+        } else {
+          return;
         }
-        return;
       }
 
-      const authUserData = {
-        id: authUser.id,
-        email: authUser.email || '',
-        name: profile ? `${profile.first_name} ${profile.last_name}`.trim() : authUser.email || '',
-        role: (profile?.role as 'admin' | 'manager' | 'staff' | 'client' | 'user') || 'client'
-      };
+      if (profile) {
+        const authUserData = {
+          id: authUser.id,
+          email: authUser.email || '',
+          name: profile ? `${profile.first_name} ${profile.last_name}`.trim() : authUser.email || '',
+          role: (profile?.role as 'admin' | 'manager' | 'staff' | 'client' | 'user') || 'client'
+        };
 
-      console.log('Setting user data:', authUserData);
-      setUser(authUserData);
+        console.log('Setting user data:', authUserData);
+        setUser(authUserData);
+      }
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
     }
