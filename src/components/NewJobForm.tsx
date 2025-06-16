@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,32 +9,34 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useCustomers } from '@/hooks/useCustomers';
-import { useJobs } from '@/hooks/useJobs';
+import { useJobs, type JobWithCustomer } from '@/hooks/useJobs';
 import { toast } from 'sonner';
 
 interface NewJobFormProps {
   onSuccess: () => void;
   onCancel: () => void;
   customerId?: string;
+  job?: JobWithCustomer; // For editing existing jobs
 }
 
-const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel, customerId }) => {
+const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel, customerId, job }) => {
   const { customers } = useCustomers();
-  const { createJob } = useJobs();
+  const { createJob, updateJob } = useJobs();
+  const isEditing = !!job;
 
   const form = useForm<JobFormData>({
     resolver: zodResolver(jobSchema),
     defaultValues: {
-      title: '',
-      description: '',
-      customer_id: customerId || '',
-      status: 'quoted',
-      start_date: '',
-      end_date: '',
-      estimated_hours: 0,
-      budget: 0,
-      address: '',
-      notes: '',
+      title: job?.title || '',
+      description: job?.description || '',
+      customer_id: job?.customer_id || customerId || '',
+      status: job?.status || 'quoted',
+      start_date: job?.start_date || '',
+      end_date: job?.end_date || '',
+      estimated_hours: job?.estimated_hours || 0,
+      budget: job?.budget || 0,
+      address: job?.address || '',
+      notes: job?.notes || '',
     },
   });
 
@@ -57,14 +60,22 @@ const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel, customerId
         notes: data.notes || null,
       };
 
-      const newJob = await createJob(jobData);
-      if (newJob) {
-        toast.success('Job created successfully');
-        onSuccess();
+      if (isEditing && job) {
+        const success = await updateJob(job.id, jobData);
+        if (success) {
+          toast.success('Job updated successfully');
+          onSuccess();
+        }
+      } else {
+        const newJob = await createJob(jobData);
+        if (newJob) {
+          toast.success('Job created successfully');
+          onSuccess();
+        }
       }
     } catch (error) {
-      console.error('Error creating job:', error);
-      toast.error('Failed to create job');
+      console.error('Error saving job:', error);
+      toast.error(`Failed to ${isEditing ? 'update' : 'create'} job`);
     }
   };
 
@@ -257,7 +268,9 @@ const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel, customerId
         />
 
         <div className="flex gap-2 pt-4">
-          <Button type="submit">Create Job</Button>
+          <Button type="submit">
+            {isEditing ? 'Update Job' : 'Create Job'}
+          </Button>
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>

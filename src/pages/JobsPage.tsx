@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useJobs } from '@/hooks/useJobs';
 import JobKanbanBoard from '@/components/JobKanbanBoard';
 import FileWorkflowManager from '@/components/FileWorkflowManager';
+import EditJobDialog from '@/components/EditJobDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,14 +34,17 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const JobsPage = () => {
-  const { jobs, loading, updateJob, deleteJob } = useJobs();
+  const { jobs, loading, updateJob, deleteJob, fetchJobs } = useJobs();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'files'>('kanban');
+  const [editingJob, setEditingJob] = useState<any>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'quoted': return 'bg-blue-100 text-blue-800';
+      case 'approved': return 'bg-green-100 text-green-800';
       case 'scheduled': return 'bg-purple-100 text-purple-800';
       case 'in_progress': return 'bg-yellow-100 text-yellow-800';
       case 'completed': return 'bg-green-100 text-green-800';
@@ -88,6 +92,15 @@ const JobsPage = () => {
     if (window.confirm('Are you sure you want to delete this job?')) {
       await deleteJob(jobId);
     }
+  };
+
+  const handleEditJob = (job: any) => {
+    setEditingJob(job);
+    setEditDialogOpen(true);
+  };
+
+  const handleEditSuccess = () => {
+    fetchJobs(); // Refresh the jobs list
   };
 
   if (loading) {
@@ -211,6 +224,7 @@ const JobsPage = () => {
             >
               <option value="all">All Status</option>
               <option value="quoted">Quoted</option>
+              <option value="approved">Approved</option>
               <option value="scheduled">Scheduled</option>
               <option value="in_progress">In Progress</option>
               <option value="completed">Completed</option>
@@ -248,6 +262,9 @@ const JobsPage = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEditJob(job)}>
+                          Edit Job
+                        </DropdownMenuItem>
                         <DropdownMenuItem>View Details</DropdownMenuItem>
                         <DropdownMenuItem>Create Estimate</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleStatusChange(job.id, 'in_progress')}>
@@ -334,6 +351,17 @@ const JobsPage = () => {
           )}
         </>
       )}
+
+      {/* Edit Job Dialog */}
+      <EditJobDialog
+        job={editingJob}
+        open={editDialogOpen}
+        onClose={() => {
+          setEditDialogOpen(false);
+          setEditingJob(null);
+        }}
+        onSuccess={handleEditSuccess}
+      />
     </div>
   );
 };
