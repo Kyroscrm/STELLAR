@@ -13,17 +13,26 @@ export const useCustomers = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const { user } = useAuth();
+  const { user, session } = useAuth();
+
+  const validateUserAndSession = () => {
+    if (!user || !session) {
+      const errorMsg = 'Authentication required. Please log in again.';
+      setError(new Error(errorMsg));
+      toast.error(errorMsg);
+      return false;
+    }
+    return true;
+  };
 
   const fetchCustomers = async () => {
-    if (!user) {
-      setCustomers([]);
-      return;
-    }
+    if (!validateUserAndSession()) return;
     
     setLoading(true);
     setError(null);
     try {
+      console.log('Fetching customers for user:', user.id);
+      
       const { data, error } = await supabase
         .from('customers')
         .select('*')
@@ -31,8 +40,9 @@ export const useCustomers = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      
       setCustomers(data || []);
-      console.log(`Fetched ${data?.length || 0} customers`);
+      console.log(`Successfully fetched ${data?.length || 0} customers`);
     } catch (error: any) {
       console.error('Error fetching customers:', error);
       setError(error);
@@ -43,13 +53,23 @@ export const useCustomers = () => {
     }
   };
 
-  const addCustomer = async (customerData: CustomerInsert) => {
-    if (!user) {
-      toast.error('You must be logged in to add customers');
-      return null;
-    }
+  const createCustomer = async (customerData: CustomerInsert) => {
+    if (!validateUserAndSession()) return null;
+
+    const optimisticCustomer: Customer = {
+      id: `temp-${Date.now()}`,
+      ...customerData,
+      user_id: user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    } as Customer;
+
+    // Optimistic update
+    setCustomers(prev => [optimisticCustomer, ...prev]);
 
     try {
+      console.log('Creating customer:', customerData);
+      
       const { data, error } = await supabase
         .from('customers')
         .insert({ ...customerData, user_id: user.id })
@@ -58,9 +78,10 @@ export const useCustomers = () => {
 
       if (error) throw error;
       
-      setCustomers(prev => [data, ...prev]);
-      toast.success('Customer added successfully');
+      // Replace optimistic with real data
+      setCustomers(prev => prev.map(c => c.id === optimisticCustomer.id ? data : c));
       
+      // Log activity
       await supabase.from('activity_logs').insert({
         user_id: user.id,
         entity_type: 'customer',
@@ -69,23 +90,35 @@ export const useCustomers = () => {
         description: `Customer created: ${data.first_name} ${data.last_name}`
       });
 
+      toast.success('Customer created successfully');
+      console.log('Customer created successfully:', data);
       return data;
     } catch (error: any) {
-      console.error('Error adding customer:', error);
-      toast.error(error.message || 'Failed to add customer');
+      console.error('Error creating customer:', error);
+      // Rollback optimistic update
+      setCustomers(prev => prev.filter(c => c.id !== optimisticCustomer.id));
+      toast.error(error.message || 'Failed to create customer');
       return null;
     }
   };
 
-  const createCustomer = addCustomer; // Alias for compatibility
-
   const updateCustomer = async (id: string, updates: CustomerUpdate) => {
-    if (!user) {
-      toast.error('You must be logged in to update customers');
+    if (!validateUserAndSession()) return false;
+
+    // Store original for rollback
+    const originalCustomer = customers.find(c => c.id === id);
+    if (!originalCustomer) {
+      toast.error('Customer not found');
       return false;
     }
 
+    // Optimistic update
+    const optimisticCustomer = { ...originalCustomer, ...updates, updated_at: new Date().toISOString() };
+    setCustomers(prev => prev.map(c => c.id === id ? optimisticCustomer : c));
+
     try {
+      console.log('Updating customer:', id, updates);
+      
       const { data, error } = await supabase
         .from('customers')
         .update(updates)
@@ -96,32 +129,46 @@ export const useCustomers = () => {
 
       if (error) throw error;
       
-      setCustomers(prev => prev.map(customer => customer.id === id ? data : customer));
-      toast.success('Customer updated successfully');
+      // Update with real data
+      setCustomers(prev => prev.map(c => c.id === id ? data : c));
       
+      // Log activity
       await supabase.from('activity_logs').insert({
         user_id: user.id,
         entity_type: 'customer',
         entity_id: id,
         action: 'updated',
-        description: `Customer updated`
+        description: `Customer updated: ${data.first_name} ${data.last_name}`
       });
 
+      toast.success('Customer updated successfully');
+      console.log('Customer updated successfully:', data);
       return true;
     } catch (error: any) {
       console.error('Error updating customer:', error);
+      // Rollback optimistic update
+      setCustomers(prev => prev.map(c => c.id === id ? originalCustomer : c));
       toast.error(error.message || 'Failed to update customer');
       return false;
     }
   };
 
   const deleteCustomer = async (id: string) => {
-    if (!user) {
-      toast.error('You must be logged in to delete customers');
+    if (!validateUserAndSession()) return;
+
+    // Store original for rollback
+    const originalCustomer = customers.find(c => c.id === id);
+    if (!originalCustomer) {
+      toast.error('Customer not found');
       return;
     }
 
+    // Optimistic update
+    setCustomers(prev => prev.filter(c => c.id !== id));
+
     try {
+      console.log('Deleting customer:', id);
+      
       const { error } = await supabase
         .from('customers')
         .delete()
@@ -130,32 +177,36 @@ export const useCustomers = () => {
 
       if (error) throw error;
       
-      setCustomers(prev => prev.filter(customer => customer.id !== id));
-      toast.success('Customer deleted successfully');
-      
+      // Log activity
       await supabase.from('activity_logs').insert({
         user_id: user.id,
         entity_type: 'customer',
         entity_id: id,
         action: 'deleted',
-        description: `Customer deleted`
+        description: `Customer deleted: ${originalCustomer.first_name} ${originalCustomer.last_name}`
       });
+
+      toast.success('Customer deleted successfully');
+      console.log('Customer deleted successfully');
     } catch (error: any) {
       console.error('Error deleting customer:', error);
+      // Rollback optimistic update
+      setCustomers(prev => [...prev, originalCustomer].sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      ));
       toast.error(error.message || 'Failed to delete customer');
     }
   };
 
   useEffect(() => {
     fetchCustomers();
-  }, [user]);
+  }, [user, session]);
 
   return {
     customers,
     loading,
     error,
     fetchCustomers,
-    addCustomer,
     createCustomer,
     updateCustomer,
     deleteCustomer

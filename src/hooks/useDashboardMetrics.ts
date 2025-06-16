@@ -27,15 +27,25 @@ const convertToDashboardMetric = (dbData: any): DashboardMetric => ({
 });
 
 export const useDashboardMetrics = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [metrics, setMetrics] = useState<DashboardMetric[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const validateUserAndSession = () => {
+    if (!user || !session) {
+      toast.error('Authentication required. Please log in again.');
+      return false;
+    }
+    return true;
+  };
+
   const fetchMetrics = async (period: string = 'month') => {
-    if (!user) return;
+    if (!validateUserAndSession()) return;
 
     setLoading(true);
     try {
+      console.log('Fetching dashboard metrics for user:', user.id, 'period:', period);
+      
       const { data, error } = await supabase
         .from('dashboard_metrics_cache')
         .select('*')
@@ -51,6 +61,8 @@ export const useDashboardMetrics = () => {
       // If no cached metrics or they're expired, calculate fresh ones
       if (!data || data.length === 0) {
         await calculateMetrics(period);
+      } else {
+        console.log(`Successfully fetched ${convertedMetrics.length} cached metrics`);
       }
     } catch (error: any) {
       console.error('Error fetching dashboard metrics:', error);
@@ -61,9 +73,11 @@ export const useDashboardMetrics = () => {
   };
 
   const calculateMetrics = async (period: string) => {
-    if (!user) return;
+    if (!validateUserAndSession()) return;
 
     try {
+      console.log('Calculating metrics for period:', period);
+      
       // Calculate various metrics based on period
       const endDate = new Date();
       const startDate = new Date();
@@ -98,34 +112,34 @@ export const useDashboardMetrics = () => {
 
       const totalRevenue = invoiceData?.reduce((sum, invoice) => sum + (invoice.total_amount || 0), 0) || 0;
 
-      // Calculate leads count
-      const { count: leadsCount, error: leadsError } = await supabase
-        .from('leads')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString());
+      // Calculate other metrics
+      const [
+        { count: leadsCount, error: leadsError },
+        { count: customersCount, error: customersError },
+        { count: jobsCount, error: jobsError }
+      ] = await Promise.all([
+        supabase
+          .from('leads')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString()),
+        supabase
+          .from('customers')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString()),
+        supabase
+          .from('jobs')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString())
+      ]);
 
       if (leadsError) throw leadsError;
-
-      // Calculate customers count
-      const { count: customersCount, error: customersError } = await supabase
-        .from('customers')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString());
-
       if (customersError) throw customersError;
-
-      // Calculate jobs count
-      const { count: jobsCount, error: jobsError } = await supabase
-        .from('jobs')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString());
-
       if (jobsError) throw jobsError;
 
       // Cache the calculated metrics
@@ -184,6 +198,7 @@ export const useDashboardMetrics = () => {
 
       // Fetch the updated metrics
       await fetchMetrics(validPeriod);
+      console.log('Metrics calculated and cached successfully');
     } catch (error: any) {
       console.error('Error calculating metrics:', error);
       toast.error('Failed to calculate metrics');
@@ -201,7 +216,7 @@ export const useDashboardMetrics = () => {
 
   useEffect(() => {
     fetchMetrics();
-  }, [user]);
+  }, [user, session]);
 
   return {
     metrics,

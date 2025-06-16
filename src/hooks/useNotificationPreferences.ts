@@ -28,15 +28,25 @@ const convertToNotificationPreferences = (dbData: any): NotificationPreferences 
 });
 
 export const useNotificationPreferences = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const validateUserAndSession = () => {
+    if (!user || !session) {
+      toast.error('Authentication required. Please log in again.');
+      return false;
+    }
+    return true;
+  };
+
   const fetchPreferences = async () => {
-    if (!user) return;
+    if (!validateUserAndSession()) return;
 
     setLoading(true);
     try {
+      console.log('Fetching notification preferences for user:', user.id);
+      
       const { data, error } = await supabase
         .from('notification_preferences')
         .select('*')
@@ -47,6 +57,7 @@ export const useNotificationPreferences = () => {
 
       if (data) {
         setPreferences(convertToNotificationPreferences(data));
+        console.log('Notification preferences fetched successfully');
       } else {
         await createDefaultPreferences();
       }
@@ -59,9 +70,11 @@ export const useNotificationPreferences = () => {
   };
 
   const createDefaultPreferences = async () => {
-    if (!user) return;
+    if (!validateUserAndSession()) return;
 
     try {
+      console.log('Creating default notification preferences');
+      
       const { data, error } = await supabase
         .from('notification_preferences')
         .insert({
@@ -86,7 +99,9 @@ export const useNotificationPreferences = () => {
         .single();
 
       if (error) throw error;
+      
       setPreferences(convertToNotificationPreferences(data));
+      console.log('Default notification preferences created successfully');
       return data;
     } catch (error: any) {
       console.error('Error creating default notification preferences:', error);
@@ -95,9 +110,15 @@ export const useNotificationPreferences = () => {
   };
 
   const updatePreferences = async (updates: Partial<Omit<NotificationPreferences, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => {
-    if (!user || !preferences) return false;
+    if (!validateUserAndSession() || !preferences) return false;
+
+    // Optimistic update
+    const optimisticPreferences = { ...preferences, ...updates, updated_at: new Date().toISOString() };
+    setPreferences(optimisticPreferences);
 
     try {
+      console.log('Updating notification preferences:', updates);
+      
       const { data, error } = await supabase
         .from('notification_preferences')
         .update(updates)
@@ -106,11 +127,17 @@ export const useNotificationPreferences = () => {
         .single();
 
       if (error) throw error;
+      
+      // Update with real data
       setPreferences(convertToNotificationPreferences(data));
+      
       toast.success('Notification preferences updated');
+      console.log('Notification preferences updated successfully');
       return true;
     } catch (error: any) {
       console.error('Error updating notification preferences:', error);
+      // Rollback optimistic update
+      setPreferences(preferences);
       toast.error('Failed to update notification preferences');
       return false;
     }
@@ -118,7 +145,7 @@ export const useNotificationPreferences = () => {
 
   useEffect(() => {
     fetchPreferences();
-  }, [user]);
+  }, [user, session]);
 
   return {
     preferences,

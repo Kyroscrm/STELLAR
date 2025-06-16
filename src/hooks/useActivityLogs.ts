@@ -16,15 +16,25 @@ export interface ActivityLog {
 }
 
 export const useActivityLogs = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const validateUserAndSession = () => {
+    if (!user || !session) {
+      toast.error('Authentication required. Please log in again.');
+      return false;
+    }
+    return true;
+  };
+
   const fetchLogs = async (limit: number = 50) => {
-    if (!user) return;
+    if (!validateUserAndSession()) return;
 
     setLoading(true);
     try {
+      console.log('Fetching activity logs for user:', user.id);
+      
       const { data, error } = await supabase
         .from('activity_logs')
         .select('*')
@@ -33,7 +43,9 @@ export const useActivityLogs = () => {
         .limit(limit);
 
       if (error) throw error;
+      
       setLogs(data || []);
+      console.log(`Successfully fetched ${data?.length || 0} activity logs`);
     } catch (error: any) {
       console.error('Error fetching activity logs:', error);
       toast.error('Failed to fetch activity logs');
@@ -43,9 +55,11 @@ export const useActivityLogs = () => {
   };
 
   const logActivity = async (action: string, entityType: string, entityId: string, description?: string, metadata?: any) => {
-    if (!user) return;
+    if (!validateUserAndSession()) return;
 
     try {
+      console.log('Logging activity:', { action, entityType, entityId, description });
+      
       const { data, error } = await supabase
         .from('activity_logs')
         .insert({
@@ -62,6 +76,7 @@ export const useActivityLogs = () => {
       if (error) throw error;
 
       setLogs(prev => [data, ...prev.slice(0, 49)]); // Keep only latest 50
+      console.log('Activity logged successfully:', data);
       return data;
     } catch (error: any) {
       console.error('Error logging activity:', error);
@@ -71,7 +86,7 @@ export const useActivityLogs = () => {
 
   useEffect(() => {
     fetchLogs();
-  }, [user]);
+  }, [user, session]);
 
   return {
     logs,
