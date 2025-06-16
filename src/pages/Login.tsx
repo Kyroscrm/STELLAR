@@ -25,6 +25,7 @@ const Login = () => {
   useEffect(() => {
     if (!loading && user) {
       console.log('User already logged in, redirecting...', user);
+      // Determine redirect based on role
       if (user.role === 'admin' || user.role === 'staff') {
         navigate('/admin', { replace: true });
       } else {
@@ -66,22 +67,17 @@ const Login = () => {
       const success = await login(formData.email, formData.password);
       
       if (success) {
+        console.log('Login successful, preparing to redirect...');
         toast({
           title: "Login Successful",
           description: "Welcome back! Redirecting to your dashboard..."
         });
         
-        // Navigation will happen automatically via useEffect when user state updates
-        // But we can also navigate immediately since we know login was successful
+        // Wait a moment for auth state to update, then navigate
         setTimeout(() => {
-          // Check user role and navigate accordingly
-          // This will be overridden by useEffect if user state updates faster
-          if (formData.email.includes('admin') || formData.email.includes('staff')) {
-            navigate('/admin', { replace: true });
-          } else {
-            navigate('/client', { replace: true });
-          }
-        }, 100);
+          // The useEffect will handle the redirect based on user role
+          console.log('Login timeout completed, auth should redirect automatically');
+        }, 500);
       }
     } catch (error) {
       console.error('Login form error:', error);
@@ -103,6 +99,7 @@ const Login = () => {
   };
 
   const fillAdminCredentials = () => {
+    console.log('Filling admin credentials...');
     setFormData({
       email: 'nayib@finalroofingcompany.com',
       password: 'Final1234@'
