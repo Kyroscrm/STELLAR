@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,6 +12,7 @@ import { useJobNumberGenerator } from '@/hooks/useJobNumberGenerator';
 import { invoiceSchema, InvoiceFormData } from '@/lib/validation';
 import { RefreshCw, Plus, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from 'sonner';
 
 interface InvoiceFormProps {
   onSubmit: (data: InvoiceFormData & { lineItems: LineItem[] }) => Promise<void>;
