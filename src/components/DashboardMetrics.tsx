@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
@@ -13,6 +14,7 @@ import {
 import ConversionMetrics from '@/components/ConversionMetrics';
 import AdvancedAnalyticsDashboard from '@/components/AdvancedAnalyticsDashboard';
 import FollowUpReminders from '@/components/FollowUpReminders';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
 
 interface MetricCardProps {
   title: string;
@@ -55,33 +57,51 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, change, icon, col
 };
 
 const DashboardMetrics: React.FC = () => {
-  // Mock data - in real app, this would come from your hooks/API
+  const { stats, loading } = useDashboardStats();
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-6">
+                <div className="h-20 bg-gray-200 rounded"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate actual metrics from real data
   const metrics = [
     {
       title: 'Total Revenue',
-      value: '$124,500',
-      change: 12.5,
+      value: `$${stats.totalRevenue.toLocaleString()}`,
+      change: 0, // Real change calculation would need historical data
       icon: <DollarSign className="h-6 w-6" />,
       color: 'green' as const
     },
     {
       title: 'Active Projects',
-      value: 28,
-      change: 8.2,
+      value: stats.totalJobs,
+      change: 0, // Real change calculation would need historical data
       icon: <ClipboardList className="h-6 w-6" />,
       color: 'blue' as const
     },
     {
       title: 'New Leads',
-      value: 156,
-      change: 15.3,
+      value: stats.totalLeads,
+      change: 0, // Real change calculation would need historical data
       icon: <Users className="h-6 w-6" />,
       color: 'purple' as const
     },
     {
       title: 'Customer Rating',
-      value: '4.9',
-      change: 2.1,
+      value: '4.9', // This can remain as it comes from website
+      change: 0,
       icon: <Star className="h-6 w-6" />,
       color: 'orange' as const
     }
@@ -119,23 +139,23 @@ const DashboardMetrics: React.FC = () => {
               <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                 <div>
                   <p className="font-medium text-green-800">Completed Projects</p>
-                  <p className="text-sm text-green-600">5 projects finished ahead of schedule</p>
+                  <p className="text-sm text-green-600">Projects finished this week</p>
                 </div>
-                <div className="text-2xl font-bold text-green-600">5</div>
+                <div className="text-2xl font-bold text-green-600">{stats.totalJobs}</div>
               </div>
               <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
                 <div>
                   <p className="font-medium text-blue-800">New Estimates</p>
-                  <p className="text-sm text-blue-600">12 estimates sent to clients</p>
+                  <p className="text-sm text-blue-600">Estimates sent to clients</p>
                 </div>
-                <div className="text-2xl font-bold text-blue-600">12</div>
+                <div className="text-2xl font-bold text-blue-600">{stats.totalEstimates}</div>
               </div>
               <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
                 <div>
-                  <p className="font-medium text-purple-800">Team Productivity</p>
-                  <p className="text-sm text-purple-600">15% increase from last week</p>
+                  <p className="font-medium text-purple-800">New Customers</p>
+                  <p className="text-sm text-purple-600">Added this week</p>
                 </div>
-                <div className="text-2xl font-bold text-purple-600">+15%</div>
+                <div className="text-2xl font-bold text-purple-600">{stats.totalCustomers}</div>
               </div>
             </div>
           </CardContent>
@@ -156,9 +176,14 @@ const DashboardMetrics: React.FC = () => {
                   <span className="text-sm text-gray-600">$150,000</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-green-500 h-2 rounded-full" style={{ width: '83%' }}></div>
+                  <div 
+                    className="bg-green-500 h-2 rounded-full" 
+                    style={{ width: `${Math.min((stats.totalRevenue / 150000) * 100, 100)}%` }}
+                  ></div>
                 </div>
-                <p className="text-xs text-gray-600 mt-1">83% completed ($124,500)</p>
+                <p className="text-xs text-gray-600 mt-1">
+                  {Math.round((stats.totalRevenue / 150000) * 100)}% completed (${stats.totalRevenue.toLocaleString()})
+                </p>
               </div>
               
               <div>
@@ -167,9 +192,14 @@ const DashboardMetrics: React.FC = () => {
                   <span className="text-sm text-gray-600">25</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: '72%' }}></div>
+                  <div 
+                    className="bg-blue-500 h-2 rounded-full" 
+                    style={{ width: `${Math.min((stats.totalCustomers / 25) * 100, 100)}%` }}
+                  ></div>
                 </div>
-                <p className="text-xs text-gray-600 mt-1">72% completed (18 customers)</p>
+                <p className="text-xs text-gray-600 mt-1">
+                  {Math.round((stats.totalCustomers / 25) * 100)}% completed ({stats.totalCustomers} customers)
+                </p>
               </div>
               
               <div>
@@ -178,9 +208,14 @@ const DashboardMetrics: React.FC = () => {
                   <span className="text-sm text-gray-600">30</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-purple-500 h-2 rounded-full" style={{ width: '93%' }}></div>
+                  <div 
+                    className="bg-purple-500 h-2 rounded-full" 
+                    style={{ width: `${Math.min((stats.totalJobs / 30) * 100, 100)}%` }}
+                  ></div>
                 </div>
-                <p className="text-xs text-gray-600 mt-1">93% completed (28 projects)</p>
+                <p className="text-xs text-gray-600 mt-1">
+                  {Math.round((stats.totalJobs / 30) * 100)}% completed ({stats.totalJobs} projects)
+                </p>
               </div>
             </div>
           </CardContent>

@@ -4,6 +4,7 @@ import { useJobs, JobWithCustomer } from '@/hooks/useJobs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   Plus, 
   MoreHorizontal, 
@@ -19,9 +20,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import NewJobForm from '@/components/NewJobForm';
 
 const JobKanbanBoard = () => {
   const { jobs, loading, updateJob } = useJobs();
+  const [showNewJobDialog, setShowNewJobDialog] = useState(false);
   const [columns, setColumns] = useState({
     quoted: { title: 'Quoted', jobs: [] as JobWithCustomer[] },
     scheduled: { title: 'Scheduled', jobs: [] as JobWithCustomer[] },
@@ -113,7 +116,7 @@ const JobKanbanBoard = () => {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold">Jobs Kanban Board</h2>
-        <Button>
+        <Button onClick={() => setShowNewJobDialog(true)}>
           <Plus className="h-4 w-4 mr-2" />
           New Job
         </Button>
@@ -223,6 +226,21 @@ const JobKanbanBoard = () => {
           ))}
         </div>
       </DragDropContext>
+
+      {/* New Job Dialog */}
+      {showNewJobDialog && (
+        <Dialog open={showNewJobDialog} onOpenChange={setShowNewJobDialog}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Create New Job</DialogTitle>
+            </DialogHeader>
+            <NewJobForm
+              onSuccess={() => setShowNewJobDialog(false)}
+              onCancel={() => setShowNewJobDialog(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
