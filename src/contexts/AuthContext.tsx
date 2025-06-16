@@ -102,6 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     const getInitialSession = async () => {
       try {
+        console.log('Getting initial session...');
         const { data: { session } } = await supabase.auth.getSession();
         console.log('Initial session:', session ? 'Found' : 'Not found');
         
@@ -111,9 +112,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (session?.user) {
           try {
+            console.log('Fetching profile for initial session user...');
             const userData = await fetchUserProfile(session.user);
             if (mounted) {
               setUser(userData);
+              console.log('User state set from initial session:', userData);
             }
           } catch (error) {
             console.error('Error fetching profile on initial load:', error);
@@ -134,7 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } finally {
         if (mounted) {
-          console.log('Setting loading to false');
+          console.log('Setting loading to false from getInitialSession');
           setLoading(false);
         }
       }
@@ -151,17 +154,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (session?.user && event !== 'TOKEN_REFRESHED') {
         try {
+          console.log('Fetching profile for auth state change user...');
           const userData = await fetchUserProfile(session.user);
-          setUser(userData);
+          if (mounted) {
+            setUser(userData);
+            console.log('User state updated from auth change:', userData);
+          }
         } catch (error) {
           console.error('Error fetching profile on auth change:', error);
-          setUser(null);
+          if (mounted) {
+            setUser(null);
+          }
         } finally {
-          setLoading(false); // ✅ ENSURE it always runs
+          if (mounted) {
+            console.log('Setting loading to false from auth state change (with user)');
+            setLoading(false);
+          }
         }
       } else {
-        setUser(null);
-        setLoading(false); // ✅ fallback
+        if (mounted) {
+          setUser(null);
+          console.log('Setting loading to false from auth state change (no user)');
+          setLoading(false);
+        }
       }
     });
 
@@ -193,6 +208,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Immediately fetch profile and update user state
         try {
+          console.log('Fetching profile immediately after login...');
           const userData = await fetchUserProfile(data.user);
           setUser(userData);
           setSession(data.session);
@@ -213,6 +229,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.error('An unexpected error occurred');
       return false;
     } finally {
+      console.log('Setting loading to false from login function');
       setLoading(false);
     }
   };
