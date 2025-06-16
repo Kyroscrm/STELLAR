@@ -15,25 +15,20 @@ const Login = () => {
     password: ''
   });
   const [errors, setErrors] = useState<{email?: string; password?: string}>({});
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { login, user, loading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   // Redirect if already logged in
   useEffect(() => {
-    console.log('Login page - user state changed:', user ? `User: ${user.email} (${user.role})` : 'No user');
-    console.log('Login page - auth loading:', loading);
+    console.log('Login page - checking auth state:', { user: user?.email, loading });
     
     if (!loading && user) {
       console.log('User already logged in, redirecting...');
-      if (user.role === 'admin' || user.role === 'staff') {
-        console.log('Redirecting to admin dashboard');
-        navigate('/admin', { replace: true });
-      } else {
-        console.log('Redirecting to client dashboard');
-        navigate('/client', { replace: true });
-      }
+      const redirectPath = user.role === 'admin' || user.role === 'staff' ? '/admin' : '/client';
+      console.log('Redirecting to:', redirectPath);
+      navigate(redirectPath, { replace: true });
     }
   }, [user, loading, navigate]);
 
@@ -59,27 +54,18 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) {
+    if (!validateForm() || isSubmitting) {
       return;
     }
 
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     try {
       console.log('Submitting login form...');
       const success = await login(formData.email, formData.password);
       console.log('Login result:', success);
       
-      if (success) {
-        toast({
-          title: "Login Successful",
-          description: "Welcome back! Redirecting to your dashboard..."
-        });
-        
-        // The redirect will happen automatically via the useEffect above
-        // when the user state updates
-      } else {
-        console.log('Login failed');
+      if (!success) {
         toast({
           title: "Login Failed",
           description: "Please check your email and password and try again.",
@@ -94,7 +80,7 @@ const Login = () => {
         variant: "destructive"
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -156,7 +142,7 @@ const Login = () => {
                     value={formData.email}
                     onChange={(e) => handleChange('email', e.target.value)}
                     className="pl-10"
-                    disabled={isLoading}
+                    disabled={isSubmitting}
                   />
                 </div>
                 <FormFieldError error={errors.email} />
@@ -173,7 +159,7 @@ const Login = () => {
                     value={formData.password}
                     onChange={(e) => handleChange('password', e.target.value)}
                     className="pl-10"
-                    disabled={isLoading}
+                    disabled={isSubmitting}
                   />
                 </div>
                 <FormFieldError error={errors.password} />
@@ -191,9 +177,9 @@ const Login = () => {
               <Button 
                 type="submit" 
                 className="w-full bg-primary text-white hover:bg-primary/90"
-                disabled={isLoading}
+                disabled={isSubmitting}
               >
-                {isLoading ? "Signing In..." : "Sign In"}
+                {isSubmitting ? "Signing In..." : "Sign In"}
               </Button>
             </form>
 
@@ -212,7 +198,7 @@ const Login = () => {
                 onClick={fillAdminCredentials}
                 className="w-full"
                 type="button"
-                disabled={isLoading}
+                disabled={isSubmitting}
               >
                 Fill Admin Credentials
               </Button>
