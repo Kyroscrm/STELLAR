@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
@@ -17,6 +16,14 @@ export type EstimateWithLineItems = Estimate & {
     unit_price: number;
     total: number;
   }>;
+  customers?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email?: string;
+    phone?: string;
+    company_name?: string;
+  };
 };
 
 export const useEstimates = () => {
@@ -38,6 +45,14 @@ export const useEstimates = () => {
         .from('estimates')
         .select(`
           *,
+          customers (
+            id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            company_name
+          ),
           estimate_line_items (
             id,
             description,
@@ -77,7 +92,7 @@ export const useEstimates = () => {
 
       if (error) throw error;
       
-      setEstimates(prev => [{ ...data, estimate_line_items: [] }, ...prev]);
+      setEstimates(prev => [{ ...data, estimate_line_items: [], customers: undefined }, ...prev]);
       toast.success('Estimate created successfully');
       
       await supabase.from('activity_logs').insert({
