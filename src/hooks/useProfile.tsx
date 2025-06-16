@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesUpdate } from '@/integrations/supabase/types';
@@ -14,8 +13,13 @@ export const useProfile = () => {
   const { user, session } = useAuth();
 
   const fetchProfile = async () => {
-    if (!user || !session) return;
-    
+    if (!user || !session) {
+      console.warn('[useProfile] No user or session present. Skipping fetch.');
+      return;
+    }
+
+    console.log('[useProfile] Fetching profile for user ID:', user.id);
+
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -25,9 +29,11 @@ export const useProfile = () => {
         .maybeSingle();
 
       if (error) throw error;
+
+      console.log('[useProfile] Profile fetch result:', data);
       setProfile(data || null);
     } catch (error: any) {
-      console.error('Error fetching profile:', error);
+      console.error('[useProfile] Error fetching profile:', error);
     } finally {
       setLoading(false);
     }
@@ -45,12 +51,12 @@ export const useProfile = () => {
         .single();
 
       if (error) throw error;
-      
+
       setProfile(data);
       toast.success('Profile updated successfully');
       return data;
     } catch (error: any) {
-      console.error('Error updating profile:', error);
+      console.error('[useProfile] Error updating profile:', error);
       toast.error('Failed to update profile');
       return null;
     }
@@ -67,12 +73,12 @@ export const useProfile = () => {
         .single();
 
       if (error) throw error;
-      
+
       setProfile(data);
       toast.success('Profile created successfully');
       return data;
     } catch (error: any) {
-      console.error('Error creating profile:', error);
+      console.error('[useProfile] Error creating profile:', error);
       toast.error('Failed to create profile');
       return null;
     }
