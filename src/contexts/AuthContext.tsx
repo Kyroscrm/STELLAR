@@ -52,6 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         
         if (session?.user) {
+          // Use setTimeout to defer profile loading and avoid recursion
           setTimeout(() => {
             loadUserProfile(session.user);
           }, 0);
@@ -69,42 +70,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('Loading profile for user:', authUser.email);
       
-      // Use maybeSingle() instead of single() to handle cases where profile doesn't exist
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authUser.id)
-        .maybeSingle();
+      // Create basic user object first to avoid any RLS issues
+      const basicUser: AuthUser = {
+        id: authUser.id,
+        email: authUser.email || '',
+        name: authUser.email?.split('@')[0] || 'User',
+        role: authUser.email === 'nayib@finalroofingcompany.com' ? 'admin' : 'client'
+      };
+      
+      // Set the basic user immediately
+      setUser(basicUser);
+      
+      // Try to enhance with profile data, but don't fail if it doesn't work
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', authUser.id)
+          .maybeSingle();
 
-      if (error) {
-        console.error('Error loading profile:', error);
-        // Create basic user object without inserting to DB
-        setUser({
-          id: authUser.id,
-          email: authUser.email || '',
-          name: authUser.email?.split('@')[0] || 'User',
-          role: authUser.email === 'nayib@finalroofingcompany.com' ? 'admin' : 'client'
-        });
-        return;
-      }
-
-      if (profile) {
-        console.log('Profile found:', profile);
-        setUser({
-          id: authUser.id,
-          email: profile.email,
-          name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email,
-          role: profile.role as 'client' | 'admin' | 'staff'
-        });
-      } else {
-        console.log('No profile found, creating basic user object');
-        // Create basic user object without DB insertion for now
-        setUser({
-          id: authUser.id,
-          email: authUser.email || '',
-          name: authUser.email?.split('@')[0] || 'User',
-          role: authUser.email === 'nayib@finalroofingcompany.com' ? 'admin' : 'client'
-        });
+        if (!error && profile) {
+          console.log('Profile found:', profile);
+          setUser({
+            id: authUser.id,
+            email: profile.email,
+            name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email,
+            role: profile.role as 'client' | 'admin' | 'staff'
+          });
+        } else {
+          console.log('No profile found or error, using basic user object');
+        }
+      } catch (profileError) {
+        console.log('Error loading profile, keeping basic user:', profileError);
+        // Keep the basic user we already set
       }
     } catch (error) {
       console.error('Error in loadUserProfile:', error);

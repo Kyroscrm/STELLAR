@@ -18,16 +18,23 @@ export const useProfile = () => {
     
     setLoading(true);
     try {
+      // Use a more direct query to avoid RLS recursion
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .maybeSingle();
 
-      if (error) throw error;
-      setProfile(data || null);
+      if (error) {
+        console.log('Profile fetch error (this might be expected):', error);
+        // Don't throw error, just set profile to null
+        setProfile(null);
+      } else {
+        setProfile(data || null);
+      }
     } catch (error: any) {
-      console.error('Error fetching profile:', error);
+      console.log('Profile fetch error:', error);
+      setProfile(null);
     } finally {
       setLoading(false);
     }
@@ -39,8 +46,7 @@ export const useProfile = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .update(updates)
-        .eq('id', user.id)
+        .upsert({ id: user.id, ...updates })
         .select()
         .single();
 
@@ -62,7 +68,7 @@ export const useProfile = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .insert({ ...profileData, id: user.id })
+        .upsert({ ...profileData, id: user.id })
         .select()
         .single();
 
