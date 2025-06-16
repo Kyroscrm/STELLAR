@@ -39,9 +39,13 @@ const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel, customerId
 
   const onSubmit = async (data: JobFormData) => {
     try {
-      // Ensure required fields are present
+      // Ensure required title field is present and validate
+      if (!data.title || data.title.trim() === '') {
+        throw new Error('Job title is required');
+      }
+
       const jobData = {
-        title: data.title,
+        title: data.title.trim(),
         description: data.description || null,
         customer_id: data.customer_id || null,
         status: data.status || 'quoted',

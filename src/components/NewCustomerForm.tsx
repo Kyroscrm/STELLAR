@@ -42,7 +42,11 @@ const NewCustomerForm: React.FC<NewCustomerFormProps> = ({ onClose, onSuccess })
 
   const onSubmit = async (data: CustomerFormData) => {
     try {
-      // Ensure required fields are present
+      // Ensure required fields are present and validate
+      if (!data.first_name || !data.last_name) {
+        throw new Error('First name and last name are required');
+      }
+
       const customerData = {
         first_name: data.first_name,
         last_name: data.last_name,

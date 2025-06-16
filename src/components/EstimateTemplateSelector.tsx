@@ -48,7 +48,7 @@ const EstimateTemplateSelector: React.FC<EstimateTemplateSelectorProps> = ({
       // Cast line_items from Json to any[]
       const templatesWithLineItems = (data || []).map(template => ({
         ...template,
-        line_items: Array.isArray(template.line_items) ? template.line_items : []
+        line_items: template.line_items as any[]
       }));
       
       setTemplates(templatesWithLineItems);
