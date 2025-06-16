@@ -4,88 +4,22 @@ import { Star, Quote, ThumbsUp, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useReviews } from '@/hooks/useReviews';
 
 interface Review {
   id: string;
   name: string;
   rating: number;
-  date: string;
-  text: string;
-  platform: 'google' | 'yelp' | 'bbb' | 'angi';
+  review_date: string;
+  text_content: string;
+  platform: string;
   verified: boolean;
-  helpful: number;
+  helpful_count: number;
 }
 
 const ReviewsSection = () => {
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const { reviews, loading } = useReviews();
   const [selectedPlatform, setSelectedPlatform] = useState<string>('all');
-
-  const mockReviews: Review[] = [
-    {
-      id: '1',
-      name: 'Sarah M.',
-      rating: 5,
-      date: '2024-01-15',
-      text: 'Final Roofing & Retro-Fit completely transformed our roof! The team was professional, on time, and the quality exceeded our expectations. They handled every detail and kept us informed throughout the process.',
-      platform: 'google',
-      verified: true,
-      helpful: 12
-    },
-    {
-      id: '2',
-      name: 'Michael R.',
-      rating: 5,
-      date: '2024-01-10',
-      text: 'Outstanding work on our roofing project. The project was completed on schedule and within budget. The crew was respectful of our home and cleaned up thoroughly each day.',
-      platform: 'yelp',
-      verified: true,
-      helpful: 8
-    },
-    {
-      id: '3',
-      name: 'Jennifer L.',
-      rating: 5,
-      date: '2024-01-05',
-      text: 'We hired Final Roofing & Retro-Fit for a complete roof replacement and couldn\'t be happier. The attention to detail is incredible and they helped us make design decisions that perfectly matched our vision.',
-      platform: 'bbb',
-      verified: true,
-      helpful: 15
-    },
-    {
-      id: '4',
-      name: 'David K.',
-      rating: 5,
-      date: '2023-12-28',
-      text: 'Excellent experience from start to finish. The estimate was detailed and fair, the timeline was realistic, and the final result is beautiful. Highly recommend for any roofing project.',
-      platform: 'angi',
-      verified: true,
-      helpful: 6
-    },
-    {
-      id: '5',
-      name: 'Amanda T.',
-      rating: 5,
-      date: '2023-12-20',
-      text: 'Final Roofing & Retro-Fit installed a new roof on our home and the process was seamless. They coordinated all permits and inspections, and their communication was excellent throughout the entire project.',
-      platform: 'google',
-      verified: true,
-      helpful: 11
-    },
-    {
-      id: '6',
-      name: 'Robert H.',
-      rating: 4,
-      date: '2023-12-15',
-      text: 'Great work on our roof repair. The team was skilled and efficient. Only minor delay due to weather, but they kept us informed and made up the time. Very satisfied with the results.',
-      platform: 'yelp',
-      verified: true,
-      helpful: 4
-    }
-  ];
-
-  useEffect(() => {
-    setReviews(mockReviews);
-  }, []);
 
   const platforms = [
     { id: 'all', label: 'All Reviews', logo: '⭐' },
@@ -99,7 +33,9 @@ const ReviewsSection = () => {
     ? reviews 
     : reviews.filter(review => review.platform === selectedPlatform);
 
-  const averageRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
+  const averageRating = reviews.length > 0 
+    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length 
+    : 4.9;
   const totalReviews = reviews.length;
 
   const StarRating = ({ rating, size = 'sm' }: { rating: number; size?: 'sm' | 'lg' }) => {
@@ -118,12 +54,12 @@ const ReviewsSection = () => {
   };
 
   const handleReviewButtonClick = () => {
-    window.open('https://www.google.com/search?q=final+roofing+%26+Retro-fit+google+reviews&sca_esv=f066f66756e41e74&sxsrf=AE3TifOQx5rqHZNuc-RmjORG4-GuvDPGHw%3A1750003218656&source=hp&ei=Eu5OaITuJdOJptQPgabJoQM&iflsig=AOw8s4IAAAAAaE78Ipa2GMRTPrlFp9jsOfAL8eKHm4zH&ved=0ahUKEwiEv86B5vONAxXThIkEHQFTMjQQ4dUDCCs&uact=5&oq=final+roofing+%26+Retro-fit+google+reviews&gs_lp=Egdnd3Mtd2l6IihmaW5hbCByb29maW5nICYgUmV0cm8tZml0IGdvb2dsZSByZXZpZXdzMgQQIxgnMgUQABjvBTIFEAAY7wUyBRAAGO8FMggQABiABBiiBDIIEAAYgAQYogRI0hBQoQNYoQNwAXgAkAEAmAF7oAF7qgEDMC4xuAEDyAEA-AEC-AEBmAICoAJ_qAIKwgIHECMYJxjqAsICChAjGCcYyQIY6gKYAwPxBd1f6Q2trDLckgcDMS4xoAf7BbIHAzAuMbgHfMIHAzAuMsgHAw&sclient=gws-wiz', '_blank');
+    window.open('https://g.co/kgs/Autr3zW', '_blank');
   };
 
   const handlePlatformButtonClick = (platform: string) => {
     const urls: Record<string, string> = {
-      google: 'https://www.google.com/search?q=final+roofing+%26+Retro-fit+google+reviews',
+      google: 'https://g.co/kgs/Autr3zW',
       yelp: 'https://www.yelp.com/biz/final-roofing-retro-fit',
       bbb: 'https://www.bbb.org/us/ca/final-roofing-retro-fit',
       angi: 'https://www.angi.com/companyprofile/final-roofing-retro-fit'
@@ -134,6 +70,19 @@ const ReviewsSection = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <section id="reviews" className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading reviews...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section id="reviews" className="py-16 bg-white">
       <div className="container mx-auto px-4">
@@ -142,9 +91,8 @@ const ReviewsSection = () => {
             What Our Clients Say
           </h2>
           <div className="flex items-center justify-center gap-4 mb-4">
-            <StarRating rating={Math.round(averageRating)} size="lg" />
-            <span className="text-2xl font-bold text-primary">{averageRating.toFixed(1)}</span>
-            <span className="text-gray-600">({totalReviews} reviews)</span>
+            <StarRating rating={Math.round(4.9)} size="lg" />
+            <span className="text-2xl font-bold text-primary">4.9</span>
           </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Don't just take our word for it. Here's what our satisfied clients have to say about their experience with Final Roofing & Retro-Fit.
@@ -181,7 +129,7 @@ const ReviewsSection = () => {
                     <div>
                       <div className="font-semibold text-primary">{review.name}</div>
                       <div className="text-xs text-gray-500">
-                        {new Date(review.date).toLocaleDateString()}
+                        {new Date(review.review_date).toLocaleDateString()}
                       </div>
                     </div>
                   </div>
@@ -198,7 +146,7 @@ const ReviewsSection = () => {
                 <div className="relative mb-4">
                   <Quote className="absolute -top-2 -left-1 h-6 w-6 text-primary/20" />
                   <p className="text-gray-700 italic pl-5">
-                    {review.text}
+                    {review.text_content}
                   </p>
                 </div>
 
@@ -210,7 +158,7 @@ const ReviewsSection = () => {
                   </div>
                   <div className="flex items-center gap-1 text-gray-500">
                     <ThumbsUp className="h-3 w-3" />
-                    <span>{review.helpful}</span>
+                    <span>{review.helpful_count}</span>
                   </div>
                 </div>
               </CardContent>
