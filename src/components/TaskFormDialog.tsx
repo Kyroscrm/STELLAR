@@ -125,12 +125,12 @@ const TaskFormDialog: React.FC<TaskFormDialogProps> = ({ task, trigger }) => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Job</Label>
-              <Select value={formData.job_id} onValueChange={(value) => setFormData(prev => ({ ...prev, job_id: value }))}>
+              <Select value={formData.job_id || 'none'} onValueChange={(value) => setFormData(prev => ({ ...prev, job_id: value === 'none' ? '' : value }))}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a job" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No Job</SelectItem>
+                  <SelectItem value="none">No Job</SelectItem>
                   {jobs.map((job) => (
                     <SelectItem key={job.id} value={job.id}>
                       {job.title}

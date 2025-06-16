@@ -79,6 +79,12 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
   };
 
   const handleEstimateSelect = (estimateId: string) => {
+    if (estimateId === 'none') {
+      setSelectedEstimate(null);
+      form.setValue('estimate_id', undefined);
+      return;
+    }
+    
     const estimate = estimates.find(e => e.id === estimateId);
     if (estimate) {
       setSelectedEstimate(estimate);
@@ -188,14 +194,14 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
         <div>
           <Label htmlFor="job_id">Job (Optional)</Label>
           <Select
-            value={form.watch('job_id') || ''}
-            onValueChange={(value) => form.setValue('job_id', value || undefined)}
+            value={form.watch('job_id') || 'none'}
+            onValueChange={(value) => form.setValue('job_id', value === 'none' ? undefined : value)}
           >
             <SelectTrigger className="mt-1">
               <SelectValue placeholder="Select job" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">No Job</SelectItem>
+              <SelectItem value="none">No Job</SelectItem>
               {jobs.map((job) => (
                 <SelectItem key={job.id} value={job.id}>
                   {job.title}
@@ -210,14 +216,14 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
         <div>
           <Label htmlFor="estimate_id">Create from Estimate (Optional)</Label>
           <Select
-            value={form.watch('estimate_id') || ''}
+            value={form.watch('estimate_id') || 'none'}
             onValueChange={handleEstimateSelect}
           >
             <SelectTrigger className="mt-1">
               <SelectValue placeholder="Select estimate" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">No Estimate</SelectItem>
+              <SelectItem value="none">No Estimate</SelectItem>
               {estimates.filter(e => e.status === 'approved').map((estimate) => (
                 <SelectItem key={estimate.id} value={estimate.id}>
                   {estimate.estimate_number} - {estimate.title}
@@ -272,13 +278,14 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
         <div>
           <Label htmlFor="payment_terms">Payment Terms</Label>
           <Select
-            value={form.watch('payment_terms') || ''}
-            onValueChange={(value) => form.setValue('payment_terms', value)}
+            value={form.watch('payment_terms') || 'none'}
+            onValueChange={(value) => form.setValue('payment_terms', value === 'none' ? undefined : value)}
           >
             <SelectTrigger className="mt-1">
               <SelectValue placeholder="Select terms" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="none">No Terms</SelectItem>
               <SelectItem value="net_15">Net 15</SelectItem>
               <SelectItem value="net_30">Net 30</SelectItem>
               <SelectItem value="net_60">Net 60</SelectItem>
