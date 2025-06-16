@@ -15,6 +15,17 @@ export interface DashboardMetric {
   expires_at: string;
 }
 
+// Type guard function
+const isValidPeriod = (period: string): period is 'today' | 'week' | 'month' | 'quarter' | 'year' => {
+  return ['today', 'week', 'month', 'quarter', 'year'].includes(period);
+};
+
+// Safe conversion function
+const convertToDashboardMetric = (dbData: any): DashboardMetric => ({
+  ...dbData,
+  period: isValidPeriod(dbData.period) ? dbData.period : 'month'
+});
+
 export const useDashboardMetrics = () => {
   const { user } = useAuth();
   const [metrics, setMetrics] = useState<DashboardMetric[]>([]);
@@ -34,7 +45,8 @@ export const useDashboardMetrics = () => {
 
       if (error) throw error;
 
-      setMetrics(data || []);
+      const convertedMetrics = data ? data.map(convertToDashboardMetric) : [];
+      setMetrics(convertedMetrics);
       
       // If no cached metrics or they're expired, calculate fresh ones
       if (!data || data.length === 0) {
@@ -120,13 +132,15 @@ export const useDashboardMetrics = () => {
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 1); // Cache for 1 hour
 
+      const validPeriod = isValidPeriod(period) ? period : 'month';
+
       const metricsToCache = [
         {
           user_id: user.id,
           metric_type: 'total_revenue',
           value: totalRevenue,
           metadata: { currency: 'USD' },
-          period,
+          period: validPeriod,
           expires_at: expiresAt.toISOString()
         },
         {
@@ -134,7 +148,7 @@ export const useDashboardMetrics = () => {
           metric_type: 'leads_count',
           value: leadsCount || 0,
           metadata: {},
-          period,
+          period: validPeriod,
           expires_at: expiresAt.toISOString()
         },
         {
@@ -142,7 +156,7 @@ export const useDashboardMetrics = () => {
           metric_type: 'customers_count',
           value: customersCount || 0,
           metadata: {},
-          period,
+          period: validPeriod,
           expires_at: expiresAt.toISOString()
         },
         {
@@ -150,7 +164,7 @@ export const useDashboardMetrics = () => {
           metric_type: 'jobs_count',
           value: jobsCount || 0,
           metadata: {},
-          period,
+          period: validPeriod,
           expires_at: expiresAt.toISOString()
         }
       ];
@@ -169,7 +183,7 @@ export const useDashboardMetrics = () => {
       }
 
       // Fetch the updated metrics
-      await fetchMetrics(period);
+      await fetchMetrics(validPeriod);
     } catch (error: any) {
       console.error('Error calculating metrics:', error);
       toast.error('Failed to calculate metrics');

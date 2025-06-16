@@ -16,6 +16,17 @@ export interface NotificationPreferences {
   updated_at: string;
 }
 
+// Type guard function
+const isValidFrequency = (frequency: string): frequency is 'immediate' | 'hourly' | 'daily' | 'weekly' => {
+  return ['immediate', 'hourly', 'daily', 'weekly'].includes(frequency);
+};
+
+// Safe conversion function
+const convertToNotificationPreferences = (dbData: any): NotificationPreferences => ({
+  ...dbData,
+  frequency: isValidFrequency(dbData.frequency) ? dbData.frequency : 'immediate'
+});
+
 export const useNotificationPreferences = () => {
   const { user } = useAuth();
   const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
@@ -35,7 +46,7 @@ export const useNotificationPreferences = () => {
       if (error) throw error;
 
       if (data) {
-        setPreferences(data);
+        setPreferences(convertToNotificationPreferences(data));
       } else {
         await createDefaultPreferences();
       }
@@ -75,7 +86,7 @@ export const useNotificationPreferences = () => {
         .single();
 
       if (error) throw error;
-      setPreferences(data);
+      setPreferences(convertToNotificationPreferences(data));
       return data;
     } catch (error: any) {
       console.error('Error creating default notification preferences:', error);
@@ -95,7 +106,7 @@ export const useNotificationPreferences = () => {
         .single();
 
       if (error) throw error;
-      setPreferences(data);
+      setPreferences(convertToNotificationPreferences(data));
       toast.success('Notification preferences updated');
       return true;
     } catch (error: any) {

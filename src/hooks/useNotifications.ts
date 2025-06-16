@@ -22,6 +22,21 @@ export interface UserNotification {
   dismissed_at?: string;
 }
 
+// Type guard function
+const isValidPriority = (priority: string): priority is 'low' | 'medium' | 'high' | 'urgent' => {
+  return ['low', 'medium', 'high', 'urgent'].includes(priority);
+};
+
+// Safe conversion functions
+const convertToUserNotification = (dbData: any): UserNotification => ({
+  ...dbData,
+  priority: isValidPriority(dbData.priority) ? dbData.priority : 'medium'
+});
+
+const convertToUserNotificationArray = (dbDataArray: any[]): UserNotification[] => {
+  return dbDataArray.map(convertToUserNotification);
+};
+
 export const useNotifications = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
@@ -41,8 +56,9 @@ export const useNotifications = () => {
 
       if (error) throw error;
 
-      setNotifications(data || []);
-      setUnreadCount(data?.filter(n => !n.read).length || 0);
+      const convertedNotifications = convertToUserNotificationArray(data || []);
+      setNotifications(convertedNotifications);
+      setUnreadCount(convertedNotifications.filter(n => !n.read).length);
     } catch (error: any) {
       console.error('Error fetching notifications:', error);
       toast.error('Failed to fetch notifications');
@@ -66,11 +82,12 @@ export const useNotifications = () => {
 
       if (error) throw error;
 
-      setNotifications(prev => [data, ...prev]);
-      if (!data.read) {
+      const convertedNotification = convertToUserNotification(data);
+      setNotifications(prev => [convertedNotification, ...prev]);
+      if (!convertedNotification.read) {
         setUnreadCount(prev => prev + 1);
       }
-      return data;
+      return convertedNotification;
     } catch (error: any) {
       console.error('Error creating notification:', error);
       return null;
@@ -94,8 +111,9 @@ export const useNotifications = () => {
 
       if (error) throw error;
 
+      const convertedNotification = convertToUserNotification(data);
       setNotifications(prev => prev.map(notification => 
-        notification.id === id ? data : notification
+        notification.id === id ? convertedNotification : notification
       ));
       setUnreadCount(prev => Math.max(0, prev - 1));
       return true;
@@ -149,8 +167,9 @@ export const useNotifications = () => {
 
       if (error) throw error;
 
+      const convertedNotification = convertToUserNotification(data);
       setNotifications(prev => prev.map(notification => 
-        notification.id === id ? data : notification
+        notification.id === id ? convertedNotification : notification
       ));
       return true;
     } catch (error: any) {
