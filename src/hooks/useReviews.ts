@@ -49,12 +49,14 @@ export const useReviews = () => {
   const [loading, setLoading] = useState(false);
 
   const fetchReviews = async () => {
+    if (!user) return;
+
     setLoading(true);
     try {
-      // Fetch all reviews (public data) - no user restriction needed for viewing
       const { data, error } = await supabase
         .from('reviews')
         .select('*')
+        .eq('user_id', user.id)
         .order('review_date', { ascending: false });
 
       if (error) throw error;
@@ -170,7 +172,7 @@ export const useReviews = () => {
 
   useEffect(() => {
     fetchReviews();
-  }, []); // Removed user dependency since we're fetching public data
+  }, [user]);
 
   return {
     reviews,

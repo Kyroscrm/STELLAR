@@ -4,14 +4,8 @@ import Header from '@/components/Header';
 import ReviewsSection from '@/components/ReviewsSection';
 import { Button } from '@/components/ui/button';
 import { Star } from 'lucide-react';
-import { useReviews } from '@/hooks/useReviews';
 
 const ReviewsPage = () => {
-  const { reviews, getAverageRating } = useReviews();
-  
-  const averageRating = getAverageRating();
-  const totalReviews = reviews.length;
-
   return (
     <div className="min-h-screen bg-white">
       <Header />
@@ -31,13 +25,9 @@ const ReviewsPage = () => {
             Don't just take our word for it. Read what our satisfied customers have to say about their experience with Final Roofing & Retro-Fit.
           </p>
           <div className="bg-white rounded-lg p-6 inline-block shadow-lg">
-            <div className="text-4xl font-bold text-primary">
-              {averageRating.toFixed(1)}/5
-            </div>
+            <div className="text-4xl font-bold text-primary">4.9/5</div>
             <div className="text-gray-600">Average Rating</div>
-            <div className="text-sm text-gray-500">
-              Based on {totalReviews} reviews
-            </div>
+            <div className="text-sm text-gray-500">Based on 247 reviews</div>
           </div>
         </div>
       </section>
@@ -71,9 +61,7 @@ const ReviewsPage = () => {
               <div className="text-gray-600">Years Experience</div>
             </div>
             <div className="p-6">
-              <div className="text-4xl font-bold text-primary mb-2">
-                {totalReviews}
-              </div>
+              <div className="text-4xl font-bold text-primary mb-2">247</div>
               <div className="text-gray-600">Customer Reviews</div>
             </div>
             <div className="p-6">
