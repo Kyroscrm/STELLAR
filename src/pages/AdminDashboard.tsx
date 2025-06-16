@@ -2,6 +2,7 @@
 import React from 'react';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import DashboardMetrics from '@/components/DashboardMetrics';
+import DashboardControls from '@/components/DashboardControls';
 
 const AdminDashboard = () => {
   const { stats, loading } = useDashboardStats();
@@ -19,9 +20,12 @@ const AdminDashboard = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-gray-600">Overview of your CRM performance</p>
+          <p className="text-gray-600">Welcome to your CRM overview</p>
         </div>
       </div>
+
+      {/* Dashboard Controls (Search, Overview, Security, Activity, Settings) */}
+      <DashboardControls />
 
       {/* All the dashboard metrics and analytics */}
       <DashboardMetrics />
