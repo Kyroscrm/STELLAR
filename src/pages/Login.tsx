@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -17,21 +16,26 @@ const Login = () => {
   });
   const [errors, setErrors] = useState<{email?: string; password?: string}>({});
   const [isLoading, setIsLoading] = useState(false);
-  const { login, user } = useAuth();
+  const { login, user, loading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user) {
+    console.log('Login page - user state changed:', user ? `User: ${user.email} (${user.role})` : 'No user');
+    console.log('Login page - auth loading:', loading);
+    
+    if (!loading && user) {
       console.log('User already logged in, redirecting...');
       if (user.role === 'admin' || user.role === 'staff') {
+        console.log('Redirecting to admin dashboard');
         navigate('/admin', { replace: true });
       } else {
+        console.log('Redirecting to client dashboard');
         navigate('/client', { replace: true });
       }
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
 
   const validateForm = () => {
     const newErrors: {email?: string; password?: string} = {};
@@ -64,6 +68,8 @@ const Login = () => {
     try {
       console.log('Submitting login form...');
       const success = await login(formData.email, formData.password);
+      console.log('Login result:', success);
+      
       if (success) {
         toast({
           title: "Login Successful",
@@ -72,6 +78,13 @@ const Login = () => {
         
         // The redirect will happen automatically via the useEffect above
         // when the user state updates
+      } else {
+        console.log('Login failed');
+        toast({
+          title: "Login Failed",
+          description: "Please check your email and password and try again.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('Login form error:', error);
@@ -99,6 +112,15 @@ const Login = () => {
     });
     setErrors({});
   };
+
+  // Show loading spinner while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 flex items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 flex items-center justify-center p-4">
