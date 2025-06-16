@@ -1938,6 +1938,7 @@ export type Database = {
         | "on_hold"
         | "completed"
         | "cancelled"
+        | "approved"
       lead_source:
         | "website"
         | "referral"
@@ -2105,6 +2106,7 @@ export const Constants = {
         "on_hold",
         "completed",
         "cancelled",
+        "approved",
       ],
       lead_source: [
         "website",

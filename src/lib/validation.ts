@@ -1,5 +1,4 @@
 
-
 import { z } from 'zod';
 
 // Customer validation schema
@@ -45,7 +44,7 @@ export const jobSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
   customer_id: z.string().optional(),
-  status: z.enum(['quoted', 'scheduled', 'in_progress', 'on_hold', 'completed', 'cancelled']).optional(),
+  status: z.enum(['quoted', 'approved', 'scheduled', 'in_progress', 'on_hold', 'completed', 'cancelled']).optional(),
   start_date: z.string().optional(),
   end_date: z.string().optional(),
   estimated_hours: z.number().min(0).optional(),

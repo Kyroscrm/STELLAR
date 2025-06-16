@@ -141,6 +141,7 @@ const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel, customerId
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="quoted">Quoted</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
                     <SelectItem value="scheduled">Scheduled</SelectItem>
                     <SelectItem value="in_progress">In Progress</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
