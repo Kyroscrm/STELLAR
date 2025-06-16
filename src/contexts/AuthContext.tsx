@@ -41,6 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Get initial session
     const getInitialSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('Initial session:', session);
       setSession(session);
       if (session?.user) {
         await fetchUserProfile(session.user);
@@ -52,6 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state change:', event, session);
       setSession(session);
       if (session?.user) {
         await fetchUserProfile(session.user);
@@ -77,12 +79,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      setUser({
+      const authUserData = {
         id: authUser.id,
         email: authUser.email || '',
         name: profile ? `${profile.first_name} ${profile.last_name}`.trim() : authUser.email || '',
-        role: profile?.role || 'client'
-      });
+        role: (profile?.role as 'admin' | 'manager' | 'staff' | 'client' | 'user') || 'client'
+      };
+
+      console.log('Setting user data:', authUserData);
+      setUser(authUserData);
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
     }
@@ -90,17 +95,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      console.log('Starting login process...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        console.error('Login error:', error);
         toast.error(error.message);
         return false;
       }
 
-      if (data.user) {
+      if (data.user && data.session) {
+        console.log('Login successful, user:', data.user);
+        setSession(data.session);
         await fetchUserProfile(data.user);
         toast.success('Successfully logged in!');
         return true;
@@ -133,17 +142,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
-        // Create profile - Fix: Pass single object with required fields
+        // Create profile
         const { error: profileError } = await supabase
           .from('profiles')
           .upsert({
             id: data.user.id,
-            email: data.user.email || '',
+            email: data.user.email ?? '',
             first_name: firstName,
             last_name: lastName,
-            role: 'client' as const
-          }, {
-            onConflict: 'id'
+            role: 'client'
           });
 
         if (profileError) {

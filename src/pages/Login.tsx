@@ -17,21 +17,21 @@ const Login = () => {
   });
   const [errors, setErrors] = useState<{email?: string; password?: string}>({});
   const [isLoading, setIsLoading] = useState(false);
-  const { login, user } = useAuth();
+  const { login, user, loading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Redirect if already logged in
+  // Redirect if already logged in - wait for auth to finish loading
   useEffect(() => {
-    if (user) {
-      console.log('User already logged in, redirecting...');
+    if (!loading && user) {
+      console.log('User already logged in, redirecting...', user);
       if (user.role === 'admin' || user.role === 'staff') {
         navigate('/admin', { replace: true });
       } else {
         navigate('/client', { replace: true });
       }
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
 
   const validateForm = () => {
     const newErrors: {email?: string; password?: string} = {};
@@ -64,14 +64,24 @@ const Login = () => {
     try {
       console.log('Submitting login form...');
       const success = await login(formData.email, formData.password);
+      
       if (success) {
         toast({
           title: "Login Successful",
           description: "Welcome back! Redirecting to your dashboard..."
         });
         
-        // The redirect will happen automatically via the useEffect above
-        // when the user state updates
+        // Navigation will happen automatically via useEffect when user state updates
+        // But we can also navigate immediately since we know login was successful
+        setTimeout(() => {
+          // Check user role and navigate accordingly
+          // This will be overridden by useEffect if user state updates faster
+          if (formData.email.includes('admin') || formData.email.includes('staff')) {
+            navigate('/admin', { replace: true });
+          } else {
+            navigate('/client', { replace: true });
+          }
+        }, 100);
       }
     } catch (error) {
       console.error('Login form error:', error);
@@ -99,6 +109,24 @@ const Login = () => {
     });
     setErrors({});
   };
+
+  // Show loading spinner while auth is initializing
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Don't render the form if user is already logged in (prevents flash)
+  if (user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 flex items-center justify-center p-4">
