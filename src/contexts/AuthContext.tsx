@@ -66,23 +66,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserProfile = async (authUser: User) => {
     try {
-      const { data: profile, error } = await supabase
+      const { data: fetchedProfile, error: profileError } = await supabase
         .from('profiles')
         .select('first_name, last_name, role')
         .eq('id', authUser.id)
         .single();
 
-      if (error) {
-        console.error('Error fetching profile:', error);
+      let profile = fetchedProfile;
+
+      if (profileError?.code === 'PGRST116') {
+        // Profile doesn't exist, create it
+        const { data: newProfile } = await supabase
+          .from('profiles')
+          .upsert({
+            id: authUser.id,
+            email: authUser.email!,
+            first_name: authUser.user_metadata.first_name ?? '',
+            last_name: authUser.user_metadata.last_name ?? '',
+            role: 'admin' as const
+          })
+          .select()
+          .single();
+
+        if (newProfile) {
+          profile = newProfile;
+        }
+      } else if (profileError) {
+        console.error('Error fetching profile:', profileError);
         return;
       }
 
-      setUser({
-        id: authUser.id,
-        email: authUser.email || '',
-        name: profile ? `${profile.first_name} ${profile.last_name}`.trim() : authUser.email || '',
-        role: profile?.role || 'user'
-      });
+      if (profile) {
+        setUser({
+          id: authUser.id,
+          email: authUser.email || '',
+          name: profile ? `${profile.first_name} ${profile.last_name}`.trim() : authUser.email || '',
+          role: profile?.role || 'user'
+        });
+      }
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
     }
