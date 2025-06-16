@@ -1,5 +1,71 @@
-
 import { z } from 'zod';
+
+export const customerSchema = z.object({
+  first_name: z.string().min(1, 'First name is required'),
+  last_name: z.string().min(1, 'Last name is required'),
+  email: z.string().email('Valid email is required').optional(),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zip_code: z.string().optional(),
+  company_name: z.string().optional(),
+  notes: z.string().optional(),
+  emergency_contact_name: z.string().optional(),
+  emergency_contact_phone: z.string().optional(),
+});
+
+export type CustomerFormData = z.infer<typeof customerSchema>;
+
+export const leadSchema = z.object({
+  first_name: z.string().min(1, 'First name is required'),
+  last_name: z.string().min(1, 'Last name is required'),
+  email: z.string().email('Valid email is required').optional(),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zip_code: z.string().optional(),
+  source: z.enum(['website', 'referral', 'google_ads', 'facebook', 'direct_mail', 'cold_call', 'trade_show', 'other']).optional(),
+  status: z.enum(['new', 'contacted', 'qualified', 'proposal_sent', 'negotiating', 'won', 'lost']).optional(),
+  score: z.number().min(0).max(100).optional(),
+  notes: z.string().optional(),
+  estimated_value: z.number().min(0).optional(),
+  expected_close_date: z.string().optional(),
+});
+
+export type LeadFormData = z.infer<typeof leadSchema>;
+
+export const jobSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().optional(),
+  customer_id: z.string().optional(),
+  status: z.enum(['quoted', 'scheduled', 'in_progress', 'on_hold', 'completed', 'cancelled']).optional(),
+  start_date: z.string().optional(),
+  end_date: z.string().optional(),
+  estimated_hours: z.number().min(0).optional(),
+  actual_hours: z.number().min(0).optional(),
+  budget: z.number().min(0).optional(),
+  total_cost: z.number().min(0).optional(),
+  address: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+export type JobFormData = z.infer<typeof jobSchema>;
+
+export const taskSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().optional(),
+  job_id: z.string().optional(),
+  assigned_to: z.string().optional(),
+  status: z.enum(['pending', 'in_progress', 'completed', 'cancelled']).optional(),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
+  due_date: z.string().optional(),
+  estimated_hours: z.number().min(0).optional(),
+  actual_hours: z.number().min(0).optional(),
+});
+
+export type TaskFormData = z.infer<typeof taskSchema>;
 
 export const estimateSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -9,7 +75,7 @@ export const estimateSchema = z.object({
   job_id: z.string().optional(),
   valid_until: z.string().optional(),
   tax_rate: z.number().min(0).max(1).optional(),
-  status: z.enum(['draft', 'sent', 'approved', 'rejected', 'expired']),
+  status: z.enum(['draft', 'sent', 'viewed', 'approved', 'rejected', 'expired']).optional(),
   notes: z.string().optional(),
   terms: z.string().optional(),
 });
@@ -25,7 +91,7 @@ export const invoiceSchema = z.object({
   estimate_id: z.string().optional(),
   due_date: z.string().optional(),
   tax_rate: z.number().min(0).max(1).optional(),
-  status: z.enum(['draft', 'sent', 'paid', 'overdue', 'cancelled']),
+  status: z.enum(['draft', 'sent', 'viewed', 'paid', 'overdue', 'cancelled']).optional(),
   notes: z.string().optional(),
   payment_terms: z.string().optional(),
 });
