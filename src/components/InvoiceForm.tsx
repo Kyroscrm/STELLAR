@@ -94,9 +94,22 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
 
   const handleSubmit = async (data: InvoiceFormData) => {
     try {
+      // Additional validation
+      if (!data.customer_id || data.customer_id.trim() === '') {
+        toast.error('Please select a customer for this invoice');
+        return;
+      }
+
+      if (lineItems.length === 0) {
+        toast.error('Please add at least one line item to the invoice');
+        return;
+      }
+
+      console.log('Submitting invoice with data:', data);
       await onSubmit({ ...data, lineItems });
     } catch (error) {
       console.error('Error submitting invoice:', error);
+      toast.error('Failed to submit invoice');
     }
   };
 
@@ -154,14 +167,18 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
             name="customer_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Customer</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormLabel>Customer *</FormLabel>
+                <Select 
+                  onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} 
+                  value={field.value || ''}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a customer" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
+                    <SelectItem value="none">No Customer</SelectItem>
                     {customers.map((customer) => (
                       <SelectItem key={customer.id} value={customer.id}>
                         {customer.first_name} {customer.last_name}
@@ -180,13 +197,17 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Job (Optional)</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select 
+                  onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} 
+                  value={field.value || ''}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a job" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
+                    <SelectItem value="none">No Job</SelectItem>
                     {jobs.map((job) => (
                       <SelectItem key={job.id} value={job.id}>
                         {job.title}
