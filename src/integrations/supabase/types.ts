@@ -1909,24 +1909,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_user_role: {
-        Args: { user_id: string }
-        Returns: string
-      }
-      is_admin: {
-        Args: { user_id: string }
-        Returns: boolean
-      }
-      log_activity: {
-        Args: {
-          p_action: string
-          p_entity_type: string
-          p_entity_id: string
-          p_description?: string
-          p_metadata?: Json
-        }
-        Returns: undefined
-      }
+      [_ in never]: never
     }
     Enums: {
       backup_status: "pending" | "completed" | "failed"

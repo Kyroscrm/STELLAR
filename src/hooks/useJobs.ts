@@ -1,29 +1,16 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { useActivityLogging } from '@/hooks/useActivityLogging';
+import { toast } from 'sonner';
 
-export interface Job {
-  id: string;
-  title: string;
-  description?: string;
-  customer_id?: string;
-  status?: 'quoted' | 'approved' | 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-  start_date?: string;
-  end_date?: string;
-  estimated_hours?: number;
-  actual_hours?: number;
-  budget?: number;
-  total_cost?: number;
-  address?: string;
-  notes?: string;
-  user_id?: string;
-  created_at?: string;
-  updated_at?: string;
-}
+export type Job = Tables<'jobs'>;
+type JobInsert = Omit<TablesInsert<'jobs'>, 'user_id'>;
+type JobUpdate = TablesUpdate<'jobs'>;
 
-export interface JobWithCustomer extends Job {
+// Extended Job type with customer data
+export type JobWithCustomer = Job & {
   customers?: {
     id: string;
     first_name: string;
@@ -31,24 +18,23 @@ export interface JobWithCustomer extends Job {
     email?: string;
     phone?: string;
   };
-}
+};
 
 export const useJobs = () => {
   const [jobs, setJobs] = useState<JobWithCustomer[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   const { user } = useAuth();
-  const { logActivity } = useActivityLogging();
 
   const fetchJobs = async () => {
     if (!user) {
       setJobs([]);
-      setLoading(false);
       return;
     }
-
+    
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
       const { data, error } = await supabase
         .from('jobs')
         .select(`
@@ -61,80 +47,120 @@ export const useJobs = () => {
             phone
           )
         `)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-
       setJobs(data || []);
       console.log(`Fetched ${data?.length || 0} jobs`);
-    } catch (err) {
-      console.error('Error fetching jobs:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch jobs');
+    } catch (error: any) {
+      console.error('Error fetching jobs:', error);
+      setError(error);
+      toast.error('Failed to fetch jobs');
+      setJobs([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const createJob = async (jobData: Omit<Job, 'id' | 'created_at' | 'updated_at'>) => {
-    if (!user) throw new Error('User not authenticated');
+  const createJob = async (jobData: JobInsert) => {
+    if (!user) {
+      toast.error('You must be logged in to create jobs');
+      return null;
+    }
 
     try {
       const { data, error } = await supabase
         .from('jobs')
-        .insert([{ ...jobData, user_id: user.id }])
+        .insert({ ...jobData, user_id: user.id })
         .select()
         .single();
 
       if (error) throw error;
+      
+      setJobs(prev => [data, ...prev]);
+      toast.success('Job created successfully');
+      
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        entity_type: 'job',
+        entity_id: data.id,
+        action: 'created',
+        description: `Job created: ${data.title}`
+      });
 
-      await logActivity('create', 'job', data.id, `Created job: ${data.title}`);
-      await fetchJobs();
       return data;
-    } catch (err) {
-      console.error('Error creating job:', err);
-      throw err;
+    } catch (error: any) {
+      console.error('Error creating job:', error);
+      toast.error(error.message || 'Failed to create job');
+      return null;
     }
   };
 
-  const updateJob = async (id: string, updates: Partial<Job>) => {
-    if (!user) throw new Error('User not authenticated');
+  const updateJob = async (id: string, updates: JobUpdate) => {
+    if (!user) {
+      toast.error('You must be logged in to update jobs');
+      return false;
+    }
 
     try {
       const { data, error } = await supabase
         .from('jobs')
         .update(updates)
         .eq('id', id)
+        .eq('user_id', user.id)
         .select()
         .single();
 
       if (error) throw error;
+      
+      setJobs(prev => prev.map(job => job.id === id ? data : job));
+      toast.success('Job updated successfully');
+      
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        entity_type: 'job',
+        entity_id: id,
+        action: 'updated',
+        description: `Job updated`
+      });
 
-      await logActivity('update', 'job', id, `Updated job: ${data.title}`);
-      await fetchJobs();
       return true;
-    } catch (err) {
-      console.error('Error updating job:', err);
+    } catch (error: any) {
+      console.error('Error updating job:', error);
+      toast.error(error.message || 'Failed to update job');
       return false;
     }
   };
 
   const deleteJob = async (id: string) => {
-    if (!user) throw new Error('User not authenticated');
+    if (!user) {
+      toast.error('You must be logged in to delete jobs');
+      return;
+    }
 
     try {
       const { error } = await supabase
         .from('jobs')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', user.id);
 
       if (error) throw error;
-
-      await logActivity('delete', 'job', id, 'Deleted job');
-      await fetchJobs();
-      return true;
-    } catch (err) {
-      console.error('Error deleting job:', err);
-      return false;
+      
+      setJobs(prev => prev.filter(job => job.id !== id));
+      toast.success('Job deleted successfully');
+      
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        entity_type: 'job',
+        entity_id: id,
+        action: 'deleted',
+        description: `Job deleted`
+      });
+    } catch (error: any) {
+      console.error('Error deleting job:', error);
+      toast.error(error.message || 'Failed to delete job');
     }
   };
 
@@ -149,6 +175,6 @@ export const useJobs = () => {
     fetchJobs,
     createJob,
     updateJob,
-    deleteJob,
+    deleteJob
   };
 };

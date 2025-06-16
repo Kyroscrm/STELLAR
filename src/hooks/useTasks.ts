@@ -1,120 +1,151 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { useActivityLogging } from '@/hooks/useActivityLogging';
+import { toast } from 'sonner';
 
-export interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  status?: 'pending' | 'in_progress' | 'completed' | 'cancelled';
-  priority?: 'low' | 'medium' | 'high' | 'urgent';
-  due_date?: string;
-  estimated_hours?: number;
-  actual_hours?: number;
-  job_id?: string;
-  assigned_to?: string;
-  user_id?: string;
-  created_at?: string;
-  updated_at?: string;
-}
+export type Task = Tables<'tasks'>;
+type TaskInsert = Omit<TablesInsert<'tasks'>, 'user_id'>;
+type TaskUpdate = TablesUpdate<'tasks'>;
 
 export const useTasks = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   const { user } = useAuth();
-  const { logActivity } = useActivityLogging();
 
   const fetchTasks = async () => {
     if (!user) {
       setTasks([]);
-      setLoading(false);
       return;
     }
-
+    
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-
       setTasks(data || []);
       console.log(`Fetched ${data?.length || 0} tasks`);
-    } catch (err) {
-      console.error('Error fetching tasks:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch tasks');
+    } catch (error: any) {
+      console.error('Error fetching tasks:', error);
+      setError(error);
+      toast.error('Failed to fetch tasks');
+      setTasks([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const createTask = async (taskData: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => {
-    if (!user) throw new Error('User not authenticated');
+  const createTask = async (taskData: TaskInsert) => {
+    if (!user) {
+      toast.error('You must be logged in to create tasks');
+      return null;
+    }
 
     try {
       const { data, error } = await supabase
         .from('tasks')
-        .insert([{ ...taskData, user_id: user.id }])
+        .insert({ ...taskData, user_id: user.id })
         .select()
         .single();
 
       if (error) throw error;
+      
+      setTasks(prev => [data, ...prev]);
+      toast.success('Task created successfully');
+      
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        entity_type: 'task',
+        entity_id: data.id,
+        action: 'created',
+        description: `Task created: ${data.title}`
+      });
 
-      await logActivity('create', 'task', data.id, `Created task: ${data.title}`);
-      await fetchTasks();
       return data;
-    } catch (err) {
-      console.error('Error creating task:', err);
-      throw err;
+    } catch (error: any) {
+      console.error('Error creating task:', error);
+      toast.error(error.message || 'Failed to create task');
+      return null;
     }
   };
 
-  const updateTask = async (id: string, updates: Partial<Task>) => {
-    if (!user) throw new Error('User not authenticated');
+  const updateTask = async (id: string, updates: TaskUpdate) => {
+    if (!user) {
+      toast.error('You must be logged in to update tasks');
+      return false;
+    }
 
     try {
       const { data, error } = await supabase
         .from('tasks')
         .update(updates)
         .eq('id', id)
+        .eq('user_id', user.id)
         .select()
         .single();
 
       if (error) throw error;
+      
+      setTasks(prev => prev.map(task => task.id === id ? data : task));
+      toast.success('Task updated successfully');
+      
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        entity_type: 'task',
+        entity_id: id,
+        action: 'updated',
+        description: `Task updated`
+      });
 
-      await logActivity('update', 'task', id, `Updated task: ${data.title}`);
-      await fetchTasks();
       return true;
-    } catch (err) {
-      console.error('Error updating task:', err);
+    } catch (error: any) {
+      console.error('Error updating task:', error);
+      toast.error(error.message || 'Failed to update task');
       return false;
     }
   };
 
   const deleteTask = async (id: string) => {
-    if (!user) throw new Error('User not authenticated');
+    if (!user) {
+      toast.error('You must be logged in to delete tasks');
+      return;
+    }
 
     try {
       const { error } = await supabase
         .from('tasks')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', user.id);
 
       if (error) throw error;
-
-      await logActivity('delete', 'task', id, 'Deleted task');
-      await fetchTasks();
-      return true;
-    } catch (err) {
-      console.error('Error deleting task:', err);
-      return false;
+      
+      setTasks(prev => prev.filter(task => task.id !== id));
+      toast.success('Task deleted successfully');
+      
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        entity_type: 'task',
+        entity_id: id,
+        action: 'deleted',
+        description: `Task deleted`
+      });
+    } catch (error: any) {
+      console.error('Error deleting task:', error);
+      toast.error(error.message || 'Failed to delete task');
     }
   };
+
+  // Alias for addTask to match component expectations
+  const addTask = createTask;
 
   useEffect(() => {
     fetchTasks();
@@ -126,7 +157,8 @@ export const useTasks = () => {
     error,
     fetchTasks,
     createTask,
+    addTask,
     updateTask,
-    deleteTask,
+    deleteTask
   };
 };

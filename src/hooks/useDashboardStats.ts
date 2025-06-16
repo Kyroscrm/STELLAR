@@ -3,99 +3,88 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-export interface DashboardStats {
-  totalJobs: number;
-  totalRevenue: number;
+interface DashboardStats {
+  totalCustomers: number;
   totalLeads: number;
+  totalJobs: number;
+  totalEstimates: number;
+  totalInvoices: number;
   totalTasks: number;
-  completedJobs: number;
-  activeJobs: number;
-  conversionRate: number;
-  avgJobValue: number;
+  pendingTasks: number;
+  draftEstimates: number;
+  paidInvoices: number;
+  totalRevenue: number;
 }
 
 export const useDashboardStats = () => {
   const [stats, setStats] = useState<DashboardStats>({
-    totalJobs: 0,
-    totalRevenue: 0,
+    totalCustomers: 0,
     totalLeads: 0,
+    totalJobs: 0,
+    totalEstimates: 0,
+    totalInvoices: 0,
     totalTasks: 0,
-    completedJobs: 0,
-    activeJobs: 0,
-    conversionRate: 0,
-    avgJobValue: 0,
+    pendingTasks: 0,
+    draftEstimates: 0,
+    paidInvoices: 0,
+    totalRevenue: 0
   });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { user, isAdmin } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+
+  const fetchStats = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const [
+        { count: totalCustomers },
+        { count: totalLeads },
+        { count: totalJobs },
+        { count: totalEstimates },
+        { count: totalInvoices },
+        { count: totalTasks },
+        { count: pendingTasks },
+        { count: draftEstimates },
+        { count: paidInvoices },
+        { data: revenueData }
+      ] = await Promise.all([
+        supabase.from('customers').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('leads').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('jobs').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('estimates').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('invoices').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'pending'),
+        supabase.from('estimates').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'draft'),
+        supabase.from('invoices').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'paid'),
+        supabase.from('invoices').select('total_amount').eq('user_id', user.id).eq('status', 'paid')
+      ]);
+
+      const totalRevenue = revenueData?.reduce((sum, invoice) => sum + (Number(invoice.total_amount) || 0), 0) || 0;
+
+      setStats({
+        totalCustomers: totalCustomers || 0,
+        totalLeads: totalLeads || 0,
+        totalJobs: totalJobs || 0,
+        totalEstimates: totalEstimates || 0,
+        totalInvoices: totalInvoices || 0,
+        totalTasks: totalTasks || 0,
+        pendingTasks: pendingTasks || 0,
+        draftEstimates: draftEstimates || 0,
+        paidInvoices: paidInvoices || 0,
+        totalRevenue
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchStats = async () => {
-      if (!user) return;
-
-      try {
-        setLoading(true);
-
-        // Fetch jobs with RLS (admin sees all, users see their own)
-        const { data: jobs, error: jobsError } = await supabase
-          .from('jobs')
-          .select('status, budget, total_cost');
-
-        if (jobsError) throw jobsError;
-
-        // Fetch leads with RLS
-        const { data: leads, error: leadsError } = await supabase
-          .from('leads')
-          .select('id, status');
-
-        if (leadsError) throw leadsError;
-
-        // Fetch tasks with RLS
-        const { data: tasks, error: tasksError } = await supabase
-          .from('tasks')
-          .select('id, status');
-
-        if (tasksError) throw tasksError;
-
-        const totalJobs = jobs?.length || 0;
-        const totalLeads = leads?.length || 0;
-        const totalTasks = tasks?.length || 0;
-        
-        const completedJobs = jobs?.filter(job => job.status === 'completed').length || 0;
-        const activeJobs = jobs?.filter(job => ['scheduled', 'in_progress'].includes(job.status || '')).length || 0;
-        
-        const totalRevenue = jobs?.reduce((sum, job) => sum + (job.total_cost || 0), 0) || 0;
-        const avgJobValue = totalJobs > 0 ? totalRevenue / totalJobs : 0;
-        const conversionRate = totalLeads > 0 ? (totalJobs / totalLeads) * 100 : 0;
-
-        setStats({
-          totalJobs,
-          totalRevenue,
-          totalLeads,
-          totalTasks,
-          completedJobs,
-          activeJobs,
-          conversionRate,
-          avgJobValue,
-        });
-
-        console.log(`Fetched stats for ${isAdmin ? 'admin' : 'user'}:`, {
-          totalJobs,
-          totalLeads,
-          totalTasks,
-          totalRevenue
-        });
-
-      } catch (err) {
-        console.error('Error fetching dashboard stats:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch stats');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchStats();
-  }, [user, isAdmin]);
+  }, [user]);
 
-  return { stats, loading, error };
+  return { stats, loading, refetch: fetchStats };
 };
