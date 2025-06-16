@@ -18,6 +18,11 @@ export interface LogoSettings {
   updated_at: string;
 }
 
+// Type-safe logo position validator
+const safeLogoPosition = (pos: string): "top-center" | "watermark" | "both" => {
+  return ["top-center", "watermark", "both"].includes(pos) ? (pos as "top-center" | "watermark" | "both") : "top-center";
+};
+
 export const useLogoSettings = () => {
   const { user, session } = useAuth();
   const [settings, setSettings] = useState<LogoSettings | null>(null);
@@ -47,7 +52,10 @@ export const useLogoSettings = () => {
       if (error) throw error;
 
       if (data) {
-        setSettings(data);
+        setSettings({
+          ...data,
+          logo_position: safeLogoPosition(data.logo_position)
+        });
         console.log('Logo settings fetched successfully');
       } else {
         await createDefaultSettings();
@@ -82,7 +90,10 @@ export const useLogoSettings = () => {
 
       if (error) throw error;
       
-      setSettings(data);
+      setSettings({
+        ...data,
+        logo_position: safeLogoPosition(data.logo_position)
+      });
       console.log('Default logo settings created successfully');
       return data;
     } catch (error: any) {
@@ -111,7 +122,10 @@ export const useLogoSettings = () => {
       if (error) throw error;
       
       // Update with real data
-      setSettings(data);
+      setSettings({
+        ...data,
+        logo_position: safeLogoPosition(data.logo_position)
+      });
       
       console.log('Logo settings updated successfully');
       return true;

@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { UserProfile } from '@/components/UserProfile';
-import { SecuritySettings } from '@/components/SecuritySettings';
+import UserProfile from '@/components/UserProfile';
+import SecuritySettings from '@/components/SecuritySettings';
 import LogoUploadSettings from '@/components/LogoUploadSettings';
 import { Settings, User, Shield, Image } from 'lucide-react';
 
@@ -15,7 +15,7 @@ const SettingsPage = () => {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             Profile
