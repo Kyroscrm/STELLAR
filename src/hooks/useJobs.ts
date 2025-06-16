@@ -9,7 +9,7 @@ export interface Job {
   title: string;
   description?: string;
   customer_id?: string;
-  status?: 'quoted' | 'approved' | 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'on_hold';
+  status?: 'quoted' | 'approved' | 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
   start_date?: string;
   end_date?: string;
   estimated_hours?: number;

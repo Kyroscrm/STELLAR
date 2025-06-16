@@ -12,8 +12,6 @@ export interface DashboardStats {
   activeJobs: number;
   conversionRate: number;
   avgJobValue: number;
-  totalEstimates: number;
-  totalCustomers: number;
 }
 
 export const useDashboardStats = () => {
@@ -26,8 +24,6 @@ export const useDashboardStats = () => {
     activeJobs: 0,
     conversionRate: 0,
     avgJobValue: 0,
-    totalEstimates: 0,
-    totalCustomers: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,25 +57,9 @@ export const useDashboardStats = () => {
 
         if (tasksError) throw tasksError;
 
-        // Fetch estimates with RLS
-        const { data: estimates, error: estimatesError } = await supabase
-          .from('estimates')
-          .select('id');
-
-        if (estimatesError) throw estimatesError;
-
-        // Fetch customers with RLS
-        const { data: customers, error: customersError } = await supabase
-          .from('customers')
-          .select('id');
-
-        if (customersError) throw customersError;
-
         const totalJobs = jobs?.length || 0;
         const totalLeads = leads?.length || 0;
         const totalTasks = tasks?.length || 0;
-        const totalEstimates = estimates?.length || 0;
-        const totalCustomers = customers?.length || 0;
         
         const completedJobs = jobs?.filter(job => job.status === 'completed').length || 0;
         const activeJobs = jobs?.filter(job => ['scheduled', 'in_progress'].includes(job.status || '')).length || 0;
@@ -97,17 +77,13 @@ export const useDashboardStats = () => {
           activeJobs,
           conversionRate,
           avgJobValue,
-          totalEstimates,
-          totalCustomers,
         });
 
         console.log(`Fetched stats for ${isAdmin ? 'admin' : 'user'}:`, {
           totalJobs,
           totalLeads,
           totalTasks,
-          totalRevenue,
-          totalEstimates,
-          totalCustomers
+          totalRevenue
         });
 
       } catch (err) {

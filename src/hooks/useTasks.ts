@@ -116,9 +116,6 @@ export const useTasks = () => {
     }
   };
 
-  // Alias for createTask to match expected API
-  const addTask = createTask;
-
   useEffect(() => {
     fetchTasks();
   }, [user]);
@@ -129,7 +126,6 @@ export const useTasks = () => {
     error,
     fetchTasks,
     createTask,
-    addTask,
     updateTask,
     deleteTask,
   };

@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { User, Mail, Lock, ArrowLeft } from 'lucide-react';
+import FormFieldError from '@/components/FormFieldError';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -17,13 +18,18 @@ const Login = () => {
   const [errors, setErrors] = useState<{email?: string; password?: string}>({});
   const [isLoading, setIsLoading] = useState(false);
   const { login, user } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
       console.log('User already logged in, redirecting...');
-      navigate('/', { replace: true });
+      if (user.role === 'admin' || user.role === 'staff') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/client', { replace: true });
+      }
     }
   }, [user, navigate]);
 
@@ -59,14 +65,21 @@ const Login = () => {
       console.log('Submitting login form...');
       const success = await login(formData.email, formData.password);
       if (success) {
-        toast.success('Login successful! Redirecting...');
-        navigate('/', { replace: true });
-      } else {
-        toast.error('Invalid email or password. Please try again.');
+        toast({
+          title: "Login Successful",
+          description: "Welcome back! Redirecting to your dashboard..."
+        });
+        
+        // The redirect will happen automatically via the useEffect above
+        // when the user state updates
       }
     } catch (error) {
       console.error('Login form error:', error);
-      toast.error('An error occurred during login. Please try again.');
+      toast({
+        title: "Login Error",
+        description: "An error occurred during login. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -124,7 +137,7 @@ const Login = () => {
                     disabled={isLoading}
                   />
                 </div>
-                {errors.email && <p className="text-sm text-red-600">{errors.email}</p>}
+                <FormFieldError error={errors.email} />
               </div>
 
               <div className="space-y-2">
@@ -141,7 +154,7 @@ const Login = () => {
                     disabled={isLoading}
                   />
                 </div>
-                {errors.password && <p className="text-sm text-red-600">{errors.password}</p>}
+                <FormFieldError error={errors.password} />
               </div>
 
               <div className="text-right">

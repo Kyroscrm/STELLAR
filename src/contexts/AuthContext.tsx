@@ -5,7 +5,6 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface AuthUser extends User {
   role?: string;
-  name?: string;
 }
 
 interface AuthContextType {
@@ -14,9 +13,6 @@ interface AuthContextType {
   isLoading: boolean;
   isAdmin: boolean;
   signOut: () => Promise<void>;
-  logout: () => Promise<void>;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (email: string, password: string, name: string, role: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,28 +38,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         
         if (session?.user) {
-          // Fetch user profile to get role and name
+          // Fetch user profile to get role
           console.log('Loading profile for user:', session.user.email);
           const { data: profile } = await supabase
             .from('profiles')
-            .select('role, first_name, last_name')
+            .select('role')
             .eq('id', session.user.id)
             .single();
           
           if (profile) {
-            const name = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || session.user.email;
-            setUser({ 
-              ...session.user, 
-              role: profile.role,
-              name: name
-            });
+            setUser({ ...session.user, role: profile.role });
           } else {
             console.log('No profile found, creating basic user object');
-            setUser({ 
-              ...session.user, 
-              role: 'user',
-              name: session.user.email || 'User'
-            });
+            setUser({ ...session.user, role: 'user' });
           }
         } else {
           setUser(null);
@@ -84,57 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      if (error) {
-        console.error('Login error:', error);
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Login error:', error);
-      return false;
-    }
-  };
-
-  const register = async (email: string, password: string, name: string, role: string = 'user'): Promise<boolean> => {
-    try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            first_name: name.split(' ')[0] || '',
-            last_name: name.split(' ').slice(1).join(' ') || '',
-            role: role
-          }
-        }
-      });
-      
-      if (error) {
-        console.error('Registration error:', error);
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Registration error:', error);
-      return false;
-    }
-  };
-
   const signOut = async () => {
-    await supabase.auth.signOut();
-  };
-
-  // Alias for signOut to match component usage
-  const logout = async () => {
     await supabase.auth.signOut();
   };
 
@@ -146,10 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       session,
       isLoading,
       isAdmin,
-      signOut,
-      logout,
-      login,
-      register
+      signOut
     }}>
       {children}
     </AuthContext.Provider>
