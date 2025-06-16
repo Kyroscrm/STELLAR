@@ -39,7 +39,7 @@ export const leadSchema = z.object({
 
 export type LeadFormData = z.infer<typeof leadSchema>;
 
-// Job validation schema - Updated to include 'on_hold'
+// Job validation schema
 export const jobSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
