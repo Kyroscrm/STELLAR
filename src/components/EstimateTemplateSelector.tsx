@@ -3,7 +3,6 @@
 // Individual estimates should be created with actual customer/job data only
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
 

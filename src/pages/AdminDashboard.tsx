@@ -1,8 +1,11 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import DashboardMetrics from '@/components/DashboardMetrics';
 import DashboardControls from '@/components/DashboardControls';
+import { Button } from '@/components/ui/button';
+import { Settings } from 'lucide-react';
 
 const AdminDashboard = () => {
   const { stats, loading } = useDashboardStats();
@@ -22,6 +25,12 @@ const AdminDashboard = () => {
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-gray-600">Welcome to your CRM overview</p>
         </div>
+        <Button asChild>
+          <Link to="/admin/settings">
+            <Settings className="h-4 w-4 mr-2" />
+            Settings
+          </Link>
+        </Button>
       </div>
 
       {/* Dashboard Controls (Search, Overview, Security, Activity, Settings) */}

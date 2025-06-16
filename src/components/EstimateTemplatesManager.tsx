@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useEstimateTemplates } from '@/hooks/useEstimateTemplates';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,8 +47,10 @@ interface TemplateFormData {
 }
 
 const EstimateTemplatesManager = () => {
-  const { templates, loading, createTemplate, deleteTemplate } = useEstimateTemplates();
+  const { templates, loading, createTemplate, updateTemplate, deleteTemplate } = useEstimateTemplates();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<any>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [formData, setFormData] = useState<TemplateFormData>({
     name: '',
@@ -59,6 +60,30 @@ const EstimateTemplatesManager = () => {
     notes: '',
     line_items: [{ description: '', quantity: 1, unit_price: 0 }]
   });
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      tax_rate: 0.08,
+      terms: '',
+      notes: '',
+      line_items: [{ description: '', quantity: 1, unit_price: 0 }]
+    });
+  };
+
+  const handleEdit = (template: any) => {
+    setEditingTemplate(template);
+    setFormData({
+      name: template.name,
+      description: template.description || '',
+      tax_rate: template.tax_rate,
+      terms: template.terms || '',
+      notes: template.notes || '',
+      line_items: template.line_items?.length > 0 ? template.line_items : [{ description: '', quantity: 1, unit_price: 0 }]
+    });
+    setIsEditModalOpen(true);
+  };
 
   const handleAddLineItem = () => {
     setFormData(prev => ({
@@ -103,23 +128,28 @@ const EstimateTemplatesManager = () => {
       line_items: validLineItems
     };
 
-    const result = await createTemplate(templateData);
+    const result = editingTemplate 
+      ? await updateTemplate(editingTemplate.id, templateData)
+      : await createTemplate(templateData);
+      
     if (result) {
       setIsCreateModalOpen(false);
-      setFormData({
-        name: '',
-        description: '',
-        tax_rate: 0.08,
-        terms: '',
-        notes: '',
-        line_items: [{ description: '', quantity: 1, unit_price: 0 }]
-      });
+      setIsEditModalOpen(false);
+      setEditingTemplate(null);
+      resetForm();
     }
   };
 
   const handleDelete = async (id: string) => {
     await deleteTemplate(id);
     setDeleteConfirmId(null);
+  };
+
+  const handleCloseModal = () => {
+    setIsCreateModalOpen(false);
+    setIsEditModalOpen(false);
+    setEditingTemplate(null);
+    resetForm();
   };
 
   if (loading) {
@@ -141,7 +171,7 @@ const EstimateTemplatesManager = () => {
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Create From Scratch
+              Create Template
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -261,7 +291,7 @@ const EstimateTemplatesManager = () => {
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setIsCreateModalOpen(false)}>
+                <Button type="button" variant="outline" onClick={handleCloseModal}>
                   Cancel
                 </Button>
                 <Button type="submit">
@@ -272,6 +302,136 @@ const EstimateTemplatesManager = () => {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Edit Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={(open) => !open && handleCloseModal()}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Template</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit_name">Template Name *</Label>
+                <Input
+                  id="edit_name"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g., Basic Service Package"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit_tax_rate">Tax Rate (%)</Label>
+                <Input
+                  id="edit_tax_rate"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="1"
+                  value={formData.tax_rate}
+                  onChange={(e) => setFormData(prev => ({ ...prev, tax_rate: Number(e.target.value) }))}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit_description">Description</Label>
+              <Textarea
+                id="edit_description"
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Brief description of this template"
+              />
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>Line Items</Label>
+                <Button type="button" variant="outline" size="sm" onClick={handleAddLineItem}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Item
+                </Button>
+              </div>
+              
+              <div className="space-y-3">
+                {formData.line_items.map((item, index) => (
+                  <div key={index} className="grid grid-cols-12 gap-2 items-end">
+                    <div className="col-span-6">
+                      <Input
+                        placeholder="Description"
+                        value={item.description}
+                        onChange={(e) => handleLineItemChange(index, 'description', e.target.value)}
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <Input
+                        type="number"
+                        placeholder="Qty"
+                        step="0.01"
+                        min="0"
+                        value={item.quantity}
+                        onChange={(e) => handleLineItemChange(index, 'quantity', Number(e.target.value))}
+                      />
+                    </div>
+                    <div className="col-span-3">
+                      <Input
+                        type="number"
+                        placeholder="Unit Price"
+                        step="0.01"
+                        min="0"
+                        value={item.unit_price}
+                        onChange={(e) => handleLineItemChange(index, 'unit_price', Number(e.target.value))}
+                      />
+                    </div>
+                    <div className="col-span-1">
+                      {formData.line_items.length > 1 && (
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleRemoveLineItem(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit_terms">Terms & Conditions</Label>
+              <Textarea
+                id="edit_terms"
+                value={formData.terms}
+                onChange={(e) => setFormData(prev => ({ ...prev, terms: e.target.value }))}
+                placeholder="Payment terms, warranty information, etc."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit_notes">Notes</Label>
+              <Textarea
+                id="edit_notes"
+                value={formData.notes}
+                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Additional notes or instructions"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={handleCloseModal}>
+                Cancel
+              </Button>
+              <Button type="submit">
+                Update Template
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Card>
         <CardHeader>
@@ -310,7 +470,11 @@ const EstimateTemplatesManager = () => {
                     <TableCell>{(template.tax_rate * 100).toFixed(1)}%</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleEdit(template)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button 
