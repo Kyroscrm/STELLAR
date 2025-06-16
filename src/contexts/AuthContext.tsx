@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -153,8 +152,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       
       if (session?.user && event !== 'TOKEN_REFRESHED') {
+        // Keep loading true while fetching profile
+        console.log('Fetching profile for auth state change user...');
         try {
-          console.log('Fetching profile for auth state change user...');
           const userData = await fetchUserProfile(session.user);
           if (mounted) {
             setUser(userData);
@@ -206,20 +206,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data.user && data.session) {
         console.log('Login successful, user:', data.user.id);
         
-        // Immediately fetch profile and update user state
-        try {
-          console.log('Fetching profile immediately after login...');
-          const userData = await fetchUserProfile(data.user);
-          setUser(userData);
-          setSession(data.session);
-          console.log('User state updated after login:', userData);
-          toast.success('Successfully logged in!');
-          return true;
-        } catch (profileError) {
-          console.error('Error fetching profile after login:', profileError);
-          toast.error('Login successful but failed to load profile');
-          return false;
-        }
+        // The auth state change handler will handle profile fetching and loading state
+        toast.success('Successfully logged in!');
+        return true;
       }
 
       console.error('Login failed: no user or session returned');
@@ -228,10 +217,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Login error:', error);
       toast.error('An unexpected error occurred');
       return false;
-    } finally {
-      console.log('Setting loading to false from login function');
-      setLoading(false);
     }
+    // Note: Don't set loading to false here, let the auth state change handler do it
   };
 
   const register = async (email: string, password: string, firstName: string, lastName: string): Promise<boolean> => {
