@@ -16,6 +16,10 @@ import {
   Settings
 } from 'lucide-react';
 import SecurityDashboard from '@/components/SecurityDashboard';
+import SecuritySettings from '@/components/SecuritySettings';
+import RecentActivity from '@/components/RecentActivity';
+import UserProfile from '@/components/UserProfile';
+import DashboardMetrics from '@/components/DashboardMetrics';
 
 const DashboardControls: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -87,52 +91,48 @@ const DashboardControls: React.FC = () => {
         </div>
       </div>
 
-      {/* Overview Dialog */}
+      {/* Overview Dialog - Shows the actual dashboard metrics */}
       <Dialog open={showOverview} onOpenChange={setShowOverview}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>CRM Overview</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <p>Comprehensive overview of your CRM performance and metrics.</p>
-            {/* Add overview content here */}
+          <div className="space-y-6">
+            <DashboardMetrics />
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Security Dialog */}
+      {/* Security Dialog - Full security dashboard */}
       <Dialog open={showSecurity} onOpenChange={setShowSecurity}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Security Dashboard</DialogTitle>
           </DialogHeader>
-          <SecurityDashboard />
+          <div className="space-y-6">
+            <SecurityDashboard />
+            <SecuritySettings />
+          </div>
         </DialogContent>
       </Dialog>
 
-      {/* Activity Dialog */}
+      {/* Activity Dialog - Shows recent activity from Supabase */}
       <Dialog open={showActivity} onOpenChange={setShowActivity}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Recent Activity</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <p>Recent activities and system logs will be displayed here.</p>
-            {/* Add activity content here */}
-          </div>
+          <RecentActivity />
         </DialogContent>
       </Dialog>
 
-      {/* Settings Dialog */}
+      {/* Settings Dialog - User profile and system settings */}
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Settings</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <p>User and system settings configuration.</p>
-            {/* Add settings content here */}
-          </div>
+          <UserProfile />
         </DialogContent>
       </Dialog>
     </div>
