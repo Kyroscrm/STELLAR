@@ -44,9 +44,16 @@ export const useProfile = () => {
     if (!user || !session) return null;
 
     try {
+      // Ensure we have the required email field for upsert
+      const profileData = {
+        id: user.id,
+        email: user.email, // Use email from auth user
+        ...updates
+      };
+
       const { data, error } = await supabase
         .from('profiles')
-        .upsert({ id: user.id, ...updates })
+        .upsert(profileData)
         .select()
         .single();
 
@@ -66,9 +73,16 @@ export const useProfile = () => {
     if (!user || !session) return null;
 
     try {
+      // Ensure we have all required fields for insert
+      const completeProfileData = {
+        id: user.id,
+        email: user.email, // Use email from auth user
+        ...profileData
+      };
+
       const { data, error } = await supabase
         .from('profiles')
-        .upsert({ ...profileData, id: user.id })
+        .upsert(completeProfileData)
         .select()
         .single();
 
