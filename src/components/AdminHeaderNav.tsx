@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { GlobalSearch } from '@/components/ui/global-search';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -14,10 +14,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { 
-  Search, 
   Bell, 
   Settings, 
   Activity, 
@@ -29,34 +27,18 @@ import SecurityDashboard from '@/components/SecurityDashboard';
 import { useAuth } from '@/contexts/AuthContext';
 
 const AdminHeaderNav: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState('');
   const [showOverview, setShowOverview] = useState(false);
   const [showSecurity, setShowSecurity] = useState(false);
   const [showActivity, setShowActivity] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const { user } = useAuth();
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Search query:', searchQuery);
-    // Implement search functionality
-  };
-
   return (
     <div className="flex items-center space-x-4">
-      {/* Search Bar */}
-      <form onSubmit={handleSearch} className="flex items-center space-x-2">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            type="text"
-            placeholder="Search CRM..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 w-64"
-          />
-        </div>
-      </form>
+      {/* Global Search */}
+      <div className="w-64">
+        <GlobalSearch />
+      </div>
 
       {/* Overview Button */}
       <Button
@@ -118,7 +100,7 @@ const AdminHeaderNav: React.FC = () => {
         <Badge variant="destructive" className="ml-1">2</Badge>
       </Button>
 
-      {/* Overview Dialog */}
+      {/* Dialogs */}
       <Dialog open={showOverview} onOpenChange={setShowOverview}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -126,12 +108,10 @@ const AdminHeaderNav: React.FC = () => {
           </DialogHeader>
           <div className="space-y-4">
             <p>Comprehensive overview of your CRM performance and metrics.</p>
-            {/* Add overview content here */}
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Security Dialog */}
       <Dialog open={showSecurity} onOpenChange={setShowSecurity}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -141,7 +121,6 @@ const AdminHeaderNav: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Activity Dialog */}
       <Dialog open={showActivity} onOpenChange={setShowActivity}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -149,12 +128,10 @@ const AdminHeaderNav: React.FC = () => {
           </DialogHeader>
           <div className="space-y-4">
             <p>Recent activities and system logs will be displayed here.</p>
-            {/* Add activity content here */}
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Settings Dialog */}
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -162,7 +139,6 @@ const AdminHeaderNav: React.FC = () => {
           </DialogHeader>
           <div className="space-y-4">
             <p>User and system settings configuration.</p>
-            {/* Add settings content here */}
           </div>
         </DialogContent>
       </Dialog>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useLeads } from '@/hooks/useLeads';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,12 +42,28 @@ const LeadsPage = () => {
     lead?: any;
   }>({ open: false });
 
-  const filteredLeads = leads.filter(lead => {
-    return !searchTerm || 
-      `${lead.first_name} ${lead.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (lead.email && lead.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (lead.phone && lead.phone.includes(searchTerm));
-  });
+  const filteredLeads = useMemo(() => {
+    if (!searchTerm.trim()) return leads;
+    
+    const searchLower = searchTerm.toLowerCase();
+    return leads.filter(lead => {
+      const fullName = `${lead.first_name} ${lead.last_name}`.toLowerCase();
+      const email = (lead.email || '').toLowerCase();
+      const phone = lead.phone || '';
+      const address = (lead.address || '').toLowerCase();
+      const city = (lead.city || '').toLowerCase();
+      const state = (lead.state || '').toLowerCase();
+      const notes = (lead.notes || '').toLowerCase();
+      
+      return fullName.includes(searchLower) ||
+             email.includes(searchLower) ||
+             phone.includes(searchTerm) ||
+             address.includes(searchLower) ||
+             city.includes(searchLower) ||
+             state.includes(searchLower) ||
+             notes.includes(searchLower);
+    });
+  }, [leads, searchTerm]);
 
   const leadStats = {
     total: leads.length,
@@ -182,7 +198,7 @@ const LeadsPage = () => {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input 
-            placeholder="Search leads..." 
+            placeholder="Search leads by name, email, phone, address, or notes..." 
             className="pl-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -295,11 +311,20 @@ const LeadsPage = () => {
 
       {filteredLeads.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-gray-500">No leads found matching your search.</p>
-          <Button className="mt-4" onClick={() => setShowNewLeadForm(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Your First Lead
-          </Button>
+          {searchTerm ? (
+            <div>
+              <p className="text-gray-500 mb-2">No leads found matching "{searchTerm}"</p>
+              <p className="text-sm text-gray-400">Try adjusting your search terms</p>
+            </div>
+          ) : (
+            <div>
+              <p className="text-gray-500">No leads found.</p>
+              <Button className="mt-4" onClick={() => setShowNewLeadForm(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Your First Lead
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

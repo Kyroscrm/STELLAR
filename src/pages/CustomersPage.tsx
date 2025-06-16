@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useCustomers } from '@/hooks/useCustomers';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -46,16 +45,28 @@ const CustomersPage = () => {
     customer?: any;
   }>({ open: false });
 
-  const filteredCustomers = customers.filter(customer => {
-    if (!searchTerm) return true;
+  const filteredCustomers = useMemo(() => {
+    if (!searchTerm.trim()) return customers;
+    
     const searchLower = searchTerm.toLowerCase();
-    return (
-      `${customer.first_name} ${customer.last_name}`.toLowerCase().includes(searchLower) ||
-      (customer.email && customer.email.toLowerCase().includes(searchLower)) ||
-      (customer.phone && customer.phone.includes(searchTerm)) ||
-      (customer.company_name && customer.company_name.toLowerCase().includes(searchLower))
-    );
-  });
+    return customers.filter(customer => {
+      const fullName = `${customer.first_name} ${customer.last_name}`.toLowerCase();
+      const email = (customer.email || '').toLowerCase();
+      const phone = customer.phone || '';
+      const company = (customer.company_name || '').toLowerCase();
+      const address = (customer.address || '').toLowerCase();
+      const city = (customer.city || '').toLowerCase();
+      const state = (customer.state || '').toLowerCase();
+      
+      return fullName.includes(searchLower) ||
+             email.includes(searchLower) ||
+             phone.includes(searchTerm) ||
+             company.includes(searchLower) ||
+             address.includes(searchLower) ||
+             city.includes(searchLower) ||
+             state.includes(searchLower);
+    });
+  }, [customers, searchTerm]);
 
   const customerStats = {
     total: customers.length,
@@ -158,7 +169,7 @@ const CustomersPage = () => {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input 
-            placeholder="Search customers..." 
+            placeholder="Search customers by name, email, phone, company, or address..." 
             className="pl-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -264,11 +275,20 @@ const CustomersPage = () => {
 
       {filteredCustomers.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-gray-500">No customers found matching your search.</p>
-          <Button className="mt-4" onClick={() => setShowNewCustomerForm(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Your First Customer
-          </Button>
+          {searchTerm ? (
+            <div>
+              <p className="text-gray-500 mb-2">No customers found matching "{searchTerm}"</p>
+              <p className="text-sm text-gray-400">Try adjusting your search terms</p>
+            </div>
+          ) : (
+            <div>
+              <p className="text-gray-500">No customers found.</p>
+              <Button className="mt-4" onClick={() => setShowNewCustomerForm(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Your First Customer
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

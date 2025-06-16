@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ChevronUp, ChevronDown, MoreHorizontal, Search } from 'lucide-react';
 import { Button } from './button';
 import { Input } from './input';
@@ -48,20 +48,23 @@ export function DataTable<T extends { id: string }>({
   } | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
-  // Filter data based on search term
-  const filteredData = data.filter(item => {
-    if (!searchTerm) return true;
+  // Filter data based on search term with real-time search
+  const filteredData = useMemo(() => {
+    if (!searchTerm.trim()) return data;
     
-    return columns.some(column => {
-      if (column.searchable === false) return false;
-      
-      const value = column.key === 'id' ? item.id : (item as any)[column.key];
-      return String(value || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const searchLower = searchTerm.toLowerCase();
+    return data.filter(item => {
+      return columns.some(column => {
+        if (column.searchable === false) return false;
+        
+        const value = column.key === 'id' ? item.id : (item as any)[column.key];
+        return String(value || '').toLowerCase().includes(searchLower);
+      });
     });
-  });
+  }, [data, searchTerm, columns]);
 
   // Sort data
-  const sortedData = React.useMemo(() => {
+  const sortedData = useMemo(() => {
     if (!sortConfig) return filteredData;
 
     return [...filteredData].sort((a, b) => {
@@ -195,7 +198,14 @@ export function DataTable<T extends { id: string }>({
                   colSpan={columns.length + (onEdit || onDelete || actions.length > 0 ? 1 : 0) + (onBulkAction ? 1 : 0)} 
                   className="text-center py-8 text-muted-foreground"
                 >
-                  {emptyMessage}
+                  {searchTerm ? (
+                    <div>
+                      <p className="mb-1">No results found for "{searchTerm}"</p>
+                      <p className="text-sm">Try adjusting your search terms</p>
+                    </div>
+                  ) : (
+                    emptyMessage
+                  )}
                 </TableCell>
               </TableRow>
             ) : (

@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import TaskKanbanBoard from '@/components/TaskKanbanBoard';
 import TaskFormDialog from '@/components/TaskFormDialog';
@@ -43,10 +42,22 @@ const TasksPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
 
-  const filteredTasks = tasks.filter(task => 
-    task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredTasks = useMemo(() => {
+    if (!searchTerm.trim()) return tasks;
+    
+    const searchLower = searchTerm.toLowerCase();
+    return tasks.filter(task => {
+      const title = task.title.toLowerCase();
+      const description = (task.description || '').toLowerCase();
+      const status = (task.status || '').toLowerCase();
+      const priority = (task.priority || '').toLowerCase();
+      
+      return title.includes(searchLower) ||
+             description.includes(searchLower) ||
+             status.includes(searchLower) ||
+             priority.includes(searchLower);
+    });
+  }, [tasks, searchTerm]);
 
   const taskStats = {
     total: tasks.length,
@@ -128,7 +139,7 @@ const TasksPage = () => {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input 
-                placeholder="Search tasks..." 
+                placeholder="Search tasks by title, description, status, or priority..." 
                 className="pl-10 w-80"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -227,13 +238,22 @@ const TasksPage = () => {
                     alt="Empty state"
                     className="mx-auto w-48 h-32 object-cover rounded-lg mb-6 opacity-60"
                   />
-                  <p className="text-gray-500 text-lg mb-4">No tasks found.</p>
-                  <TaskFormDialog trigger={
-                    <Button className="bg-gradient-to-r from-blue-500 to-indigo-600">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Your First Task
-                    </Button>
-                  } />
+                  {searchTerm ? (
+                    <div>
+                      <p className="text-gray-500 text-lg mb-2">No tasks found matching "{searchTerm}"</p>
+                      <p className="text-sm text-gray-400">Try adjusting your search terms</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-gray-500 text-lg mb-4">No tasks found.</p>
+                      <TaskFormDialog trigger={
+                        <Button className="bg-gradient-to-r from-blue-500 to-indigo-600">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create Your First Task
+                        </Button>
+                      } />
+                    </div>
+                  )}
                 </div>
               ) : (
                 <Table>

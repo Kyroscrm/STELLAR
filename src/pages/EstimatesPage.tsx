@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useEstimates } from '@/hooks/useEstimates';
 import { useCustomers } from '@/hooks/useCustomers';
 import { usePDFGeneration } from '@/hooks/usePDFGeneration';
@@ -70,11 +70,25 @@ const EstimatesPage = () => {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const filteredEstimates = estimates.filter(estimate => 
-    estimate.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    estimate.estimate_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (estimate.customers && `${estimate.customers.first_name} ${estimate.customers.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredEstimates = useMemo(() => {
+    if (!searchTerm.trim()) return estimates;
+    
+    const searchLower = searchTerm.toLowerCase();
+    return estimates.filter(estimate => {
+      const title = estimate.title.toLowerCase();
+      const number = estimate.estimate_number.toLowerCase();
+      const description = (estimate.description || '').toLowerCase();
+      const customerName = estimate.customers ? 
+        `${estimate.customers.first_name} ${estimate.customers.last_name}`.toLowerCase() : '';
+      const notes = (estimate.notes || '').toLowerCase();
+      
+      return title.includes(searchLower) ||
+             number.includes(searchLower) ||
+             description.includes(searchLower) ||
+             customerName.includes(searchLower) ||
+             notes.includes(searchLower);
+    });
+  }, [estimates, searchTerm]);
   
   const estimateStats = {
     total: estimates.length,
@@ -289,7 +303,7 @@ const EstimatesPage = () => {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input 
-            placeholder="Search estimates by title, number, or customer..." 
+            placeholder="Search estimates by title, number, customer, or description..." 
             className="pl-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -402,11 +416,20 @@ const EstimatesPage = () => {
           </Table>
           {filteredEstimates.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-500">No estimates found.</p>
-              <Button className="mt-4" onClick={() => setIsCreateModalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Your First Estimate
-              </Button>
+              {searchTerm ? (
+                <div>
+                  <p className="text-gray-500 mb-2">No estimates found matching "{searchTerm}"</p>
+                  <p className="text-sm text-gray-400">Try adjusting your search terms</p>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-gray-500">No estimates found.</p>
+                  <Button className="mt-4" onClick={() => setIsCreateModalOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Your First Estimate
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
