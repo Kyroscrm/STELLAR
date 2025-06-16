@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Star, Quote, ThumbsUp, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useReviews } from '@/hooks/useReviews';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 const ReviewsSection = () => {
   const { reviews, loading, getAverageRating } = useReviews();
