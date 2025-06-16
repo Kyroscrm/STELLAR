@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useJobs, JobWithCustomer } from '@/hooks/useJobs';
 import { useCustomers } from '@/hooks/useCustomers';
@@ -30,7 +29,7 @@ const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel, job }) => 
     estimated_hours: '',
     start_date: '',
     end_date: '',
-    status: 'quoted' as 'quoted' | 'approved' | 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
+    status: 'quoted' as 'quoted' | 'approved' | 'scheduled' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled',
     notes: ''
   });
 
@@ -199,6 +198,7 @@ const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel, job }) => 
                   <SelectItem value="approved">Approved</SelectItem>
                   <SelectItem value="scheduled">Scheduled</SelectItem>
                   <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="on_hold">On Hold</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>

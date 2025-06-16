@@ -8,7 +8,7 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'staff' | 'client' | 'user';
+  role: 'admin' | 'manager' | 'staff' | 'client';
 }
 
 export interface AuthContextType {
@@ -76,14 +76,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (profileError?.code === 'PGRST116') {
         // Profile doesn't exist, create it
+        const defaultRole = authUser.email === 'nayib@finalroofingcompany.com' ? 'admin' : 'client';
+        
         const { data: newProfile } = await supabase
           .from('profiles')
-          .upsert({
+          .insert({
             id: authUser.id,
             email: authUser.email!,
             first_name: authUser.user_metadata.first_name ?? '',
             last_name: authUser.user_metadata.last_name ?? '',
-            role: 'admin' as const
+            role: defaultRole
           })
           .select()
           .single();
@@ -101,7 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: authUser.id,
           email: authUser.email || '',
           name: profile ? `${profile.first_name} ${profile.last_name}`.trim() : authUser.email || '',
-          role: profile?.role || 'user'
+          role: profile?.role || 'client'
         });
       }
     } catch (error) {
@@ -162,7 +164,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             email: data.user.email!,
             first_name: firstName,
             last_name: lastName,
-            role: 'user' as const
+            role: 'client' as const
           });
 
         if (profileError) {
