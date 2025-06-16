@@ -22,6 +22,50 @@ interface EstimateTemplate {
   updated_at: string;
 }
 
+// Type guard to validate line items structure
+const isValidLineItems = (data: any): data is EstimateTemplateLineItem[] => {
+  if (!Array.isArray(data)) return false;
+  return data.every(item => 
+    typeof item === 'object' &&
+    typeof item.description === 'string' &&
+    typeof item.quantity === 'number' &&
+    typeof item.unit_price === 'number'
+  );
+};
+
+// Convert database row to EstimateTemplate
+const convertDbRowToTemplate = (row: any): EstimateTemplate => {
+  let lineItems: EstimateTemplateLineItem[] = [];
+  
+  // Parse line_items from Json to typed array
+  if (row.line_items) {
+    try {
+      const parsed = typeof row.line_items === 'string' 
+        ? JSON.parse(row.line_items) 
+        : row.line_items;
+      
+      if (isValidLineItems(parsed)) {
+        lineItems = parsed;
+      }
+    } catch (error) {
+      console.error('Error parsing line_items:', error);
+      lineItems = [];
+    }
+  }
+
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    line_items: lineItems,
+    tax_rate: row.tax_rate,
+    terms: row.terms,
+    notes: row.notes,
+    created_at: row.created_at,
+    updated_at: row.updated_at
+  };
+};
+
 export const useEstimateTemplates = () => {
   const { user } = useAuth();
   const [templates, setTemplates] = useState<EstimateTemplate[]>([]);
@@ -40,7 +84,8 @@ export const useEstimateTemplates = () => {
 
       if (error) throw error;
 
-      setTemplates(data || []);
+      const convertedTemplates = (data || []).map(convertDbRowToTemplate);
+      setTemplates(convertedTemplates);
     } catch (error: any) {
       console.error('Error fetching estimate templates:', error);
       toast.error('Failed to fetch estimate templates');
@@ -53,20 +98,29 @@ export const useEstimateTemplates = () => {
     if (!user) return null;
 
     try {
+      // Convert line_items to Json for database storage
+      const dbData = {
+        name: templateData.name,
+        description: templateData.description,
+        line_items: templateData.line_items as any, // Cast to Json type
+        tax_rate: templateData.tax_rate,
+        terms: templateData.terms,
+        notes: templateData.notes,
+        user_id: user.id
+      };
+
       const { data, error } = await supabase
         .from('estimate_templates')
-        .insert({
-          ...templateData,
-          user_id: user.id
-        })
+        .insert(dbData)
         .select()
         .single();
 
       if (error) throw error;
 
-      setTemplates(prev => [data, ...prev]);
+      const convertedTemplate = convertDbRowToTemplate(data);
+      setTemplates(prev => [convertedTemplate, ...prev]);
       toast.success('Estimate template created successfully');
-      return data;
+      return convertedTemplate;
     } catch (error: any) {
       console.error('Error creating estimate template:', error);
       toast.error('Failed to create estimate template');
@@ -78,9 +132,15 @@ export const useEstimateTemplates = () => {
     if (!user) return null;
 
     try {
+      // Convert line_items to Json for database storage if present
+      const dbData: any = { ...templateData };
+      if (templateData.line_items) {
+        dbData.line_items = templateData.line_items as any; // Cast to Json type
+      }
+
       const { data, error } = await supabase
         .from('estimate_templates')
-        .update(templateData)
+        .update(dbData)
         .eq('id', id)
         .eq('user_id', user.id)
         .select()
@@ -88,11 +148,12 @@ export const useEstimateTemplates = () => {
 
       if (error) throw error;
 
+      const convertedTemplate = convertDbRowToTemplate(data);
       setTemplates(prev => prev.map(template => 
-        template.id === id ? data : template
+        template.id === id ? convertedTemplate : template
       ));
       toast.success('Template updated successfully');
-      return data;
+      return convertedTemplate;
     } catch (error: any) {
       console.error('Error updating estimate template:', error);
       toast.error('Failed to update estimate template');
