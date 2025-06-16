@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useEstimates } from '@/hooks/useEstimates';
 import { useCustomers } from '@/hooks/useCustomers';
@@ -20,7 +19,8 @@ import {
   Download,
   Send,
   Check,
-  X
+  X,
+  Edit
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -54,7 +54,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import EstimateForm from '@/components/EstimateForm';
-import AdvancedLineItemManager from '@/components/AdvancedLineItemManager';
+import EstimateLineItemsDisplay from '@/components/EstimateLineItemsDisplay';
 import { toast } from 'sonner';
 
 const EstimatesPage = () => {
@@ -66,6 +66,7 @@ const EstimatesPage = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedEstimate, setSelectedEstimate] = useState<any>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -148,6 +149,23 @@ const EstimatesPage = () => {
     }
   };
 
+  const handleUpdateEstimate = async (data: any) => {
+    if (!selectedEstimate) return;
+    
+    setIsSubmitting(true);
+    try {
+      await updateEstimate(selectedEstimate.id, data);
+      setIsEditModalOpen(false);
+      setSelectedEstimate(null);
+      toast.success('Estimate updated successfully');
+    } catch (error) {
+      console.error('Error updating estimate:', error);
+      toast.error('Failed to update estimate');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleDeleteEstimate = async (estimateId: string) => {
     await deleteEstimate(estimateId);
     setDeleteConfirmId(null);
@@ -168,6 +186,12 @@ const EstimatesPage = () => {
   const handleViewEstimate = (estimate: any) => {
     setSelectedEstimate(estimate);
     setIsViewModalOpen(true);
+  };
+
+  const handleEditEstimate = (estimate: any) => {
+    setSelectedEstimate(estimate);
+    setIsEditModalOpen(true);
+    setIsViewModalOpen(false);
   };
 
   if (loading) {
@@ -336,6 +360,10 @@ const EstimatesPage = () => {
                           <Eye className="h-4 w-4 mr-2" />
                           View Details
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEditEstimate(estimate)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit Estimate
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleGeneratePDF(estimate)} disabled={generating}>
                           <Download className="h-4 w-4 mr-2" />
                           Download PDF
@@ -384,6 +412,7 @@ const EstimatesPage = () => {
         </CardContent>
       </Card>
 
+      {/* Read-only View Modal */}
       <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
         <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -421,10 +450,14 @@ const EstimatesPage = () => {
                 </div>
               )}
 
-              <AdvancedLineItemManager estimateId={selectedEstimate.id} />
+              <EstimateLineItemsDisplay estimateId={selectedEstimate.id} />
 
               <div className="flex justify-between items-center pt-4 border-t">
                 <div className="flex gap-2">
+                  <Button onClick={() => handleEditEstimate(selectedEstimate)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Estimate
+                  </Button>
                   <Button onClick={() => handleGeneratePDF(selectedEstimate)} disabled={generating}>
                     <Download className="h-4 w-4 mr-2" />
                     {generating ? 'Generating...' : 'Download PDF'}
@@ -455,6 +488,23 @@ const EstimatesPage = () => {
                 </div>
               </div>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Estimate - {selectedEstimate?.estimate_number}</DialogTitle>
+          </DialogHeader>
+          {selectedEstimate && (
+            <EstimateForm
+              onSubmit={handleUpdateEstimate}
+              onCancel={() => setIsEditModalOpen(false)}
+              initialData={selectedEstimate}
+              isSubmitting={isSubmitting}
+            />
           )}
         </DialogContent>
       </Dialog>
