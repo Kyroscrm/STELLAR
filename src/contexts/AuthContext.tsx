@@ -14,6 +14,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAdmin: boolean;
   signOut: () => Promise<void>;
+  logout: () => Promise<void>;
   login: (email: string, password: string) => Promise<boolean>;
   register: (email: string, password: string, name: string, role: string) => Promise<boolean>;
 }
@@ -132,6 +133,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
   };
 
+  // Alias for signOut to match component usage
+  const logout = async () => {
+    await supabase.auth.signOut();
+  };
+
   const isAdmin = user?.role === 'admin';
 
   return (
@@ -141,6 +147,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isLoading,
       isAdmin,
       signOut,
+      logout,
       login,
       register
     }}>
