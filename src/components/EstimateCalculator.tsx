@@ -8,8 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useCalculatorSubmissions } from '@/hooks/useCalculatorSubmissions';
 
 const EstimateCalculator = () => {
+  const { createSubmission } = useCalculatorSubmissions();
   const [formData, setFormData] = useState({
     projectType: '',
     squareFootage: '',
@@ -67,7 +69,7 @@ const EstimateCalculator = () => {
     setEstimate(Math.round(baseEstimate));
   };
 
-  const submitEstimate = () => {
+  const submitEstimate = async () => {
     if (!formData.name || !formData.email || !formData.phone) {
       toast({
         title: "Contact Information Required",
@@ -77,27 +79,49 @@ const EstimateCalculator = () => {
       return;
     }
 
-    // In a real app, this would submit to the CRM
-    console.log('Estimate submitted:', { ...formData, estimate });
-    
-    toast({
-      title: "Estimate Submitted!",
-      description: "We'll contact you within 24 hours with your detailed estimate and to schedule a consultation."
+    if (!estimate) {
+      toast({
+        title: "Calculate Estimate First",
+        description: "Please calculate an estimate before submitting.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Save to database
+    const result = await createSubmission({
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      project_type: formData.projectType,
+      square_footage: parseInt(formData.squareFootage) || undefined,
+      bathrooms: parseInt(formData.bathrooms) || undefined,
+      timeline: formData.timeline || undefined,
+      budget: formData.budget || undefined,
+      description: formData.description || undefined,
+      estimate_amount: estimate
     });
 
-    // Reset form
-    setFormData({
-      projectType: '',
-      squareFootage: '',
-      bathrooms: '',
-      timeline: '',
-      budget: '',
-      description: '',
-      name: '',
-      email: '',
-      phone: ''
-    });
-    setEstimate(null);
+    if (result) {
+      toast({
+        title: "Estimate Submitted!",
+        description: "We'll contact you within 24 hours with your detailed estimate and to schedule a consultation."
+      });
+
+      // Reset form
+      setFormData({
+        projectType: '',
+        squareFootage: '',
+        bathrooms: '',
+        timeline: '',
+        budget: '',
+        description: '',
+        name: '',
+        email: '',
+        phone: ''
+      });
+      setEstimate(null);
+    }
   };
 
   return (

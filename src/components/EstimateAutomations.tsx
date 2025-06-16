@@ -9,50 +9,21 @@ import {
   Plus, 
   Trash2, 
   Clock, 
-  Mail, 
-  Calendar, 
-  Zap,
-  Settings
+  Zap
 } from 'lucide-react';
-import { toast } from 'sonner';
-
-interface AutomationRule {
-  id: string;
-  name: string;
-  trigger: string;
-  action: string;
-  enabled: boolean;
-  conditions: any;
-}
+import { useEstimateAutomations } from '@/hooks/useEstimateAutomations';
 
 interface EstimateAutomationsProps {
   estimateId: string;
 }
 
 const EstimateAutomations: React.FC<EstimateAutomationsProps> = ({ estimateId }) => {
-  const [automations, setAutomations] = useState<AutomationRule[]>([
-    {
-      id: '1',
-      name: 'Auto-follow up after 3 days',
-      trigger: 'estimate_sent',
-      action: 'send_email',
-      enabled: true,
-      conditions: { days: 3 }
-    },
-    {
-      id: '2',
-      name: 'Mark expired after 30 days',
-      trigger: 'time_based',
-      action: 'update_status',
-      enabled: true,
-      conditions: { days: 30, status: 'expired' }
-    }
-  ]);
-
+  const { automations, loading, createAutomation, updateAutomation, deleteAutomation } = useEstimateAutomations(estimateId);
+  
   const [newAutomation, setNewAutomation] = useState({
     name: '',
-    trigger: '',
-    action: '',
+    trigger_type: '',
+    action_type: '',
     days: 1
   });
 
@@ -71,36 +42,49 @@ const EstimateAutomations: React.FC<EstimateAutomationsProps> = ({ estimateId })
   ];
 
   const toggleAutomation = (id: string) => {
-    setAutomations(prev => prev.map(auto => 
-      auto.id === id ? { ...auto, enabled: !auto.enabled } : auto
-    ));
-    toast.success('Automation updated');
+    const automation = automations.find(auto => auto.id === id);
+    if (automation) {
+      updateAutomation(id, { enabled: !automation.enabled });
+    }
   };
 
-  const addAutomation = () => {
-    if (!newAutomation.name || !newAutomation.trigger || !newAutomation.action) {
-      toast.error('Please fill in all fields');
+  const addAutomation = async () => {
+    if (!newAutomation.name || !newAutomation.trigger_type || !newAutomation.action_type) {
       return;
     }
 
-    const automation: AutomationRule = {
-      id: Date.now().toString(),
+    const result = await createAutomation({
       name: newAutomation.name,
-      trigger: newAutomation.trigger,
-      action: newAutomation.action,
+      trigger_type: newAutomation.trigger_type,
+      action_type: newAutomation.action_type,
       enabled: true,
       conditions: { days: newAutomation.days }
-    };
+    });
 
-    setAutomations(prev => [...prev, automation]);
-    setNewAutomation({ name: '', trigger: '', action: '', days: 1 });
-    toast.success('Automation added');
+    if (result) {
+      setNewAutomation({ name: '', trigger_type: '', action_type: '', days: 1 });
+    }
   };
 
-  const deleteAutomation = (id: string) => {
-    setAutomations(prev => prev.filter(auto => auto.id !== id));
-    toast.success('Automation deleted');
+  const handleDeleteAutomation = (id: string) => {
+    deleteAutomation(id);
   };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5" />
+            Estimate Automations
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse">Loading automations...</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -124,15 +108,15 @@ const EstimateAutomations: React.FC<EstimateAutomationsProps> = ({ estimateId })
                   <p className="font-medium">{automation.name}</p>
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     <Clock className="h-3 w-3" />
-                    <span>Trigger: {automation.trigger.replace('_', ' ')}</span>
-                    <Badge variant="outline">{automation.action.replace('_', ' ')}</Badge>
+                    <span>Trigger: {automation.trigger_type.replace('_', ' ')}</span>
+                    <Badge variant="outline">{automation.action_type.replace('_', ' ')}</Badge>
                   </div>
                 </div>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => deleteAutomation(automation.id)}
+                onClick={() => handleDeleteAutomation(automation.id)}
                 className="text-red-600 hover:text-red-700"
               >
                 <Trash2 className="h-4 w-4" />
@@ -150,7 +134,7 @@ const EstimateAutomations: React.FC<EstimateAutomationsProps> = ({ estimateId })
               value={newAutomation.name}
               onChange={(e) => setNewAutomation(prev => ({ ...prev, name: e.target.value }))}
             />
-            <Select onValueChange={(value) => setNewAutomation(prev => ({ ...prev, trigger: value }))}>
+            <Select onValueChange={(value) => setNewAutomation(prev => ({ ...prev, trigger_type: value }))}>
               <SelectTrigger>
                 <SelectValue placeholder="Select trigger" />
               </SelectTrigger>
@@ -162,7 +146,7 @@ const EstimateAutomations: React.FC<EstimateAutomationsProps> = ({ estimateId })
                 ))}
               </SelectContent>
             </Select>
-            <Select onValueChange={(value) => setNewAutomation(prev => ({ ...prev, action: value }))}>
+            <Select onValueChange={(value) => setNewAutomation(prev => ({ ...prev, action_type: value }))}>
               <SelectTrigger>
                 <SelectValue placeholder="Select action" />
               </SelectTrigger>

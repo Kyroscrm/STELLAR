@@ -203,6 +203,54 @@ export type Database = {
           },
         ]
       }
+      calculator_submissions: {
+        Row: {
+          bathrooms: number | null
+          budget: string | null
+          created_at: string
+          description: string | null
+          email: string
+          estimate_amount: number | null
+          id: string
+          name: string
+          phone: string
+          project_type: string
+          square_footage: number | null
+          timeline: string | null
+          user_id: string | null
+        }
+        Insert: {
+          bathrooms?: number | null
+          budget?: string | null
+          created_at?: string
+          description?: string | null
+          email: string
+          estimate_amount?: number | null
+          id?: string
+          name: string
+          phone: string
+          project_type: string
+          square_footage?: number | null
+          timeline?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          bathrooms?: number | null
+          budget?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string
+          estimate_amount?: number | null
+          id?: string
+          name?: string
+          phone?: string
+          project_type?: string
+          square_footage?: number | null
+          timeline?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       calendar_events: {
         Row: {
           all_day: boolean | null
@@ -570,6 +618,53 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      estimate_automations: {
+        Row: {
+          action_type: string
+          conditions: Json
+          created_at: string
+          enabled: boolean
+          estimate_id: string | null
+          id: string
+          name: string
+          trigger_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          conditions?: Json
+          created_at?: string
+          enabled?: boolean
+          estimate_id?: string | null
+          id?: string
+          name: string
+          trigger_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          conditions?: Json
+          created_at?: string
+          enabled?: boolean
+          estimate_id?: string | null
+          id?: string
+          name?: string
+          trigger_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estimate_automations_estimate_id_fkey"
+            columns: ["estimate_id"]
+            isOneToOne: false
+            referencedRelation: "estimates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       estimate_line_items: {
         Row: {
@@ -1127,6 +1222,39 @@ export type Database = {
         }
         Relationships: []
       }
+      line_item_templates: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string
+          id: string
+          name: string
+          unit_price: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          name: string
+          unit_price?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          name?: string
+          unit_price?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       media_files: {
         Row: {
           created_at: string | null
@@ -1392,6 +1520,48 @@ export type Database = {
           type?: string
           updated_at?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          created_at: string
+          helpful_count: number
+          id: string
+          name: string
+          platform: string
+          rating: number
+          review_date: string
+          text_content: string
+          updated_at: string
+          user_id: string
+          verified: boolean
+        }
+        Insert: {
+          created_at?: string
+          helpful_count?: number
+          id?: string
+          name: string
+          platform: string
+          rating: number
+          review_date: string
+          text_content: string
+          updated_at?: string
+          user_id: string
+          verified?: boolean
+        }
+        Update: {
+          created_at?: string
+          helpful_count?: number
+          id?: string
+          name?: string
+          platform?: string
+          rating?: number
+          review_date?: string
+          text_content?: string
+          updated_at?: string
+          user_id?: string
+          verified?: boolean
         }
         Relationships: []
       }
@@ -1699,6 +1869,39 @@ export type Database = {
           synced_at?: string | null
           uploaded_offline?: boolean | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          created_at: string
+          default_discount_value: number | null
+          discount_type: string | null
+          id: string
+          preferences: Json
+          show_templates: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          default_discount_value?: number | null
+          discount_type?: string | null
+          id?: string
+          preferences?: Json
+          show_templates?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          default_discount_value?: number | null
+          discount_type?: string | null
+          id?: string
+          preferences?: Json
+          show_templates?: boolean | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

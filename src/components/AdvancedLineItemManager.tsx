@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,13 +11,13 @@ import {
   Trash2, 
   GripVertical, 
   Copy, 
-  Package, 
-  Calculator,
+  Package,
   Percent,
-  DollarSign,
-  Clock
+  Settings
 } from 'lucide-react';
 import { useEstimateLineItems, EstimateLineItem } from '@/hooks/useEstimateLineItems';
+import { useLineItemTemplates } from '@/hooks/useLineItemTemplates';
+import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { toast } from 'sonner';
 
 interface AdvancedLineItemManagerProps {
@@ -24,49 +25,44 @@ interface AdvancedLineItemManagerProps {
   onTotalChange?: (total: number) => void;
 }
 
-interface LineItemTemplate {
-  id: string;
-  name: string;
-  description: string;
-  unit_price: number;
-}
-
 const AdvancedLineItemManager: React.FC<AdvancedLineItemManagerProps> = ({
   estimateId,
   onTotalChange
 }) => {
   const { lineItems, loading, addLineItem, updateLineItem, deleteLineItem } = useEstimateLineItems(estimateId);
-  const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage');
-  const [discountValue, setDiscountValue] = useState(0);
-  const [showTemplates, setShowTemplates] = useState(false);
-
-  // Sample templates - in a real app, these would come from a database
-  const [templates] = useState<LineItemTemplate[]>([
-    {
-      id: '1',
-      name: 'Basic Consultation',
-      description: 'Initial consultation and assessment',
-      unit_price: 150
-    },
-    {
-      id: '2',
-      name: 'Material Package A',
-      description: 'Standard material package including tools and supplies',
-      unit_price: 500
-    },
-    {
-      id: '3',
-      name: 'Labor - Skilled Technician',
-      description: 'Hourly rate for skilled technical work',
-      unit_price: 85
-    }
-  ]);
+  const { templates, createTemplate } = useLineItemTemplates();
+  const { preferences, updatePreference } = useUserPreferences();
+  
+  const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>(preferences?.discount_type || 'percentage');
+  const [discountValue, setDiscountValue] = useState(preferences?.default_discount_value || 0);
+  const [showTemplates, setShowTemplates] = useState(preferences?.show_templates || false);
 
   const [newItem, setNewItem] = useState({
     description: '',
     quantity: 1,
     unit_price: 0
   });
+
+  // Update preferences when discount type changes
+  React.useEffect(() => {
+    if (preferences && discountType !== preferences.discount_type) {
+      updatePreference('discount_type', discountType);
+    }
+  }, [discountType, preferences, updatePreference]);
+
+  // Update preferences when discount value changes
+  React.useEffect(() => {
+    if (preferences && discountValue !== preferences.default_discount_value) {
+      updatePreference('default_discount_value', discountValue);
+    }
+  }, [discountValue, preferences, updatePreference]);
+
+  // Update preferences when show templates changes
+  React.useEffect(() => {
+    if (preferences && showTemplates !== preferences.show_templates) {
+      updatePreference('show_templates', showTemplates);
+    }
+  }, [showTemplates, preferences, updatePreference]);
 
   const calculateSubtotal = () => {
     return lineItems.reduce((sum, item) => sum + (item.total || 0), 0);
@@ -101,7 +97,7 @@ const AdvancedLineItemManager: React.FC<AdvancedLineItemManagerProps> = ({
     }
   };
 
-  const handleAddFromTemplate = async (template: LineItemTemplate) => {
+  const handleAddFromTemplate = async (template: any) => {
     const result = await addLineItem({
       description: template.description,
       quantity: 1,
@@ -110,6 +106,22 @@ const AdvancedLineItemManager: React.FC<AdvancedLineItemManagerProps> = ({
     
     if (result) {
       toast.success(`Added ${template.name} to estimate`);
+    }
+  };
+
+  const handleCreateTemplateFromItem = async (item: EstimateLineItem) => {
+    const templateName = prompt('Enter template name:');
+    if (!templateName) return;
+
+    const result = await createTemplate({
+      name: templateName,
+      description: item.description,
+      unit_price: item.unit_price,
+      category: 'General'
+    });
+
+    if (result) {
+      toast.success('Template created from line item');
     }
   };
 
@@ -247,6 +259,14 @@ const AdvancedLineItemManager: React.FC<AdvancedLineItemManagerProps> = ({
                   title="Duplicate"
                 >
                   <Copy className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleCreateTemplateFromItem(item)}
+                  title="Save as template"
+                >
+                  <Settings className="h-3 w-3" />
                 </Button>
                 <Button
                   variant="ghost"
