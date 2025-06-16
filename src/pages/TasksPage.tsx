@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import TaskKanbanBoard from '@/components/TaskKanbanBoard';
@@ -98,12 +99,13 @@ const TasksPage = () => {
   }
 
   if (error) {
+    const errorMessage = typeof error === 'string' ? error : error;
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center">
         <div className="text-center bg-white p-8 rounded-lg shadow-lg">
           <AlertTriangle className="mx-auto h-16 w-16 text-red-500 mb-4" />
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Oops! Something went wrong</h2>
-          <p className="text-gray-600 mb-4">Error loading tasks: {error.message}</p>
+          <p className="text-gray-600 mb-4">Error loading tasks: {errorMessage}</p>
           <Button onClick={() => window.location.reload()}>Try Again</Button>
         </div>
       </div>
