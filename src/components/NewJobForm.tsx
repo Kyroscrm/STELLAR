@@ -1,282 +1,257 @@
 
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { jobSchema, type JobFormData } from '@/lib/validation';
+import React, { useState, useEffect } from 'react';
+import { useJobs, JobWithCustomer } from '@/hooks/useJobs';
+import { useCustomers } from '@/hooks/useCustomers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useCustomers } from '@/hooks/useCustomers';
-import { useJobs, type JobWithCustomer } from '@/hooks/useJobs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 
 interface NewJobFormProps {
-  onSuccess: () => void;
-  onCancel: () => void;
-  customerId?: string;
-  job?: JobWithCustomer; // For editing existing jobs
+  onSuccess?: () => void;
+  onCancel?: () => void;
+  job?: JobWithCustomer | null; // For editing existing jobs
 }
 
-const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel, customerId, job }) => {
-  const { customers } = useCustomers();
+const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel, job }) => {
   const { createJob, updateJob } = useJobs();
-  const isEditing = !!job;
+  const { customers } = useCustomers();
+  const [loading, setLoading] = useState(false);
 
-  const form = useForm<JobFormData>({
-    resolver: zodResolver(jobSchema),
-    defaultValues: {
-      title: job?.title || '',
-      description: job?.description || '',
-      customer_id: job?.customer_id || customerId || '',
-      status: job?.status || 'quoted',
-      start_date: job?.start_date || '',
-      end_date: job?.end_date || '',
-      estimated_hours: job?.estimated_hours || 0,
-      budget: job?.budget || 0,
-      address: job?.address || '',
-      notes: job?.notes || '',
-    },
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    customer_id: '',
+    address: '',
+    budget: '',
+    estimated_hours: '',
+    start_date: '',
+    end_date: '',
+    status: 'quoted' as const,
+    notes: ''
   });
 
-  const onSubmit = async (data: JobFormData) => {
-    try {
-      // Ensure required title field is present and validate
-      if (!data.title || data.title.trim() === '') {
-        throw new Error('Job title is required');
-      }
+  // Pre-fill form if editing existing job
+  useEffect(() => {
+    if (job) {
+      setFormData({
+        title: job.title || '',
+        description: job.description || '',
+        customer_id: job.customer_id || '',
+        address: job.address || '',
+        budget: job.budget ? job.budget.toString() : '',
+        estimated_hours: job.estimated_hours ? job.estimated_hours.toString() : '',
+        start_date: job.start_date || '',
+        end_date: job.end_date || '',
+        status: job.status || 'quoted',
+        notes: job.notes || ''
+      });
+    }
+  }, [job]);
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.title.trim()) {
+      toast.error('Please enter a job title');
+      return;
+    }
+
+    if (!formData.customer_id) {
+      toast.error('Please select a customer');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
       const jobData = {
-        title: data.title.trim(),
-        description: data.description || null,
-        customer_id: data.customer_id || null,
-        status: data.status || 'quoted',
-        start_date: data.start_date || null,
-        end_date: data.end_date || null,
-        estimated_hours: data.estimated_hours || null,
-        budget: data.budget || null,
-        address: data.address || null,
-        notes: data.notes || null,
+        title: formData.title,
+        description: formData.description || null,
+        customer_id: formData.customer_id,
+        address: formData.address || null,
+        budget: formData.budget ? parseFloat(formData.budget) : null,
+        estimated_hours: formData.estimated_hours ? parseFloat(formData.estimated_hours) : null,
+        start_date: formData.start_date || null,
+        end_date: formData.end_date || null,
+        status: formData.status,
+        notes: formData.notes || null
       };
 
-      if (isEditing && job) {
-        const success = await updateJob(job.id, jobData);
-        if (success) {
-          toast.success('Job updated successfully');
-          onSuccess();
-        }
+      let success;
+      if (job) {
+        // Update existing job
+        success = await updateJob(job.id, jobData);
       } else {
-        const newJob = await createJob(jobData);
-        if (newJob) {
-          toast.success('Job created successfully');
-          onSuccess();
-        }
+        // Create new job
+        const result = await createJob(jobData);
+        success = !!result;
+      }
+
+      if (success) {
+        onSuccess?.();
       }
     } catch (error) {
       console.error('Error saving job:', error);
-      toast.error(`Failed to ${isEditing ? 'update' : 'create'} job`);
+      toast.error('Failed to save job');
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Job Title *</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter job title" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle>{job ? 'Edit Job' : 'Create New Job'}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Job Title *</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => handleChange('title', e.target.value)}
+                placeholder="Enter job title"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="customer">Customer *</Label>
+              <Select value={formData.customer_id} onValueChange={(value) => handleChange('customer_id', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a customer" />
+                </SelectTrigger>
+                <SelectContent>
+                  {customers.map((customer) => (
+                    <SelectItem key={customer.id} value={customer.id}>
+                      {customer.first_name} {customer.last_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => handleChange('description', e.target.value)}
+              placeholder="Enter job description"
+              rows={3}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="address">Address</Label>
+            <Input
+              id="address"
+              value={formData.address}
+              onChange={(e) => handleChange('address', e.target.value)}
+              placeholder="Enter job address"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="budget">Budget ($)</Label>
+              <Input
+                id="budget"
+                type="number"
+                step="0.01"
+                value={formData.budget}
+                onChange={(e) => handleChange('budget', e.target.value)}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="estimated_hours">Estimated Hours</Label>
+              <Input
+                id="estimated_hours"
+                type="number"
+                step="0.5"
+                value={formData.estimated_hours}
+                onChange={(e) => handleChange('estimated_hours', e.target.value)}
+                placeholder="0"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select value={formData.status} onValueChange={(value) => handleChange('status', value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="quoted">Quoted</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="scheduled">Scheduled</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="start_date">Start Date</Label>
+              <Input
+                id="start_date"
+                type="date"
+                value={formData.start_date}
+                onChange={(e) => handleChange('start_date', e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="end_date">End Date</Label>
+              <Input
+                id="end_date"
+                type="date"
+                value={formData.end_date}
+                onChange={(e) => handleChange('end_date', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => handleChange('notes', e.target.value)}
+              placeholder="Additional notes or requirements"
+              rows={3}
+            />
+          </div>
+
+          <div className="flex gap-2 pt-4">
+            <Button type="submit" disabled={loading} className="flex-1">
+              {loading ? 'Saving...' : (job ? 'Update Job' : 'Create Job')}
+            </Button>
+            {onCancel && (
+              <Button type="button" variant="outline" onClick={onCancel}>
+                Cancel
+              </Button>
             )}
-          />
-
-          <FormField
-            control={form.control}
-            name="customer_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Customer *</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a customer" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {customers.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        {customer.first_name} {customer.last_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Enter job description" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Status</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="quoted">Quoted</SelectItem>
-                    <SelectItem value="approved">Approved</SelectItem>
-                    <SelectItem value="scheduled">Scheduled</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="address"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Job Address</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter job address" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="start_date"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Start Date</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="end_date"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>End Date</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="estimated_hours"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Estimated Hours</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    step="0.5"
-                    min="0"
-                    placeholder="0"
-                    {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="budget"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Budget ($)</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    step="0.01"
-                    min="0"
-                    placeholder="0.00"
-                    {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="notes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Notes</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Additional notes..." {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="flex gap-2 pt-4">
-          <Button type="submit">
-            {isEditing ? 'Update Job' : 'Create Job'}
-          </Button>
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-        </div>
-      </form>
-    </Form>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 
