@@ -14,6 +14,24 @@ export interface UserPreferences {
   updated_at: string;
 }
 
+// Type guard to validate discount_type
+const isValidDiscountType = (value: any): value is 'percentage' | 'fixed' => {
+  return value === 'percentage' || value === 'fixed';
+};
+
+// Helper function to safely convert Supabase data to UserPreferences
+const convertToUserPreferences = (data: any): UserPreferences => {
+  return {
+    id: data.id,
+    discount_type: isValidDiscountType(data.discount_type) ? data.discount_type : 'percentage',
+    default_discount_value: typeof data.default_discount_value === 'number' ? data.default_discount_value : 0,
+    show_templates: typeof data.show_templates === 'boolean' ? data.show_templates : false,
+    preferences: data.preferences || {},
+    created_at: data.created_at,
+    updated_at: data.updated_at
+  };
+};
+
 export const useUserPreferences = () => {
   const { user } = useAuth();
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
@@ -33,7 +51,8 @@ export const useUserPreferences = () => {
       if (error) throw error;
 
       if (data) {
-        setPreferences(data);
+        const safePreferences = convertToUserPreferences(data);
+        setPreferences(safePreferences);
       } else {
         // Create default preferences if none exist
         await createDefaultPreferences();
@@ -64,8 +83,9 @@ export const useUserPreferences = () => {
 
       if (error) throw error;
 
-      setPreferences(data);
-      return data;
+      const safePreferences = convertToUserPreferences(data);
+      setPreferences(safePreferences);
+      return safePreferences;
     } catch (error: any) {
       console.error('Error creating default preferences:', error);
       return null;
@@ -85,7 +105,8 @@ export const useUserPreferences = () => {
 
       if (error) throw error;
 
-      setPreferences(data);
+      const safePreferences = convertToUserPreferences(data);
+      setPreferences(safePreferences);
       return true;
     } catch (error: any) {
       console.error('Error updating preferences:', error);
