@@ -156,12 +156,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (error) {
           console.error('Error fetching profile on auth change:', error);
           setUser(null);
+        } finally {
+          setLoading(false); // ✅ ENSURE it always runs
         }
-      } else if (!session) {
+      } else {
         setUser(null);
+        setLoading(false); // ✅ fallback
       }
-      
-      setLoading(false);
     });
 
     return () => {
