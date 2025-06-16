@@ -1,199 +1,123 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { useActivityLogging } from '@/hooks/useActivityLogging';
 
-export type Lead = Tables<'leads'>;
-type LeadInsert = Omit<TablesInsert<'leads'>, 'user_id'>;
-type LeadUpdate = TablesUpdate<'leads'>;
+export interface Lead {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  source?: 'website' | 'referral' | 'google_ads' | 'facebook' | 'direct_mail' | 'cold_call' | 'trade_show' | 'other';
+  status?: 'new' | 'contacted' | 'qualified' | 'proposal_sent' | 'negotiating' | 'won' | 'lost';
+  score?: number;
+  notes?: string;
+  estimated_value?: number;
+  expected_close_date?: string;
+  user_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
 export const useLeads = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const { logActivity } = useActivityLogging();
 
   const fetchLeads = async () => {
     if (!user) {
       setLeads([]);
+      setLoading(false);
       return;
     }
-    
-    setLoading(true);
-    setError(null);
+
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('leads')
         .select('*')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+
       setLeads(data || []);
       console.log(`Fetched ${data?.length || 0} leads`);
-    } catch (error: any) {
-      console.error('Error fetching leads:', error);
-      setError(error);
-      toast.error('Failed to fetch leads');
-      setLeads([]);
+    } catch (err) {
+      console.error('Error fetching leads:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch leads');
     } finally {
       setLoading(false);
     }
   };
 
-  const createLead = async (leadData: LeadInsert) => {
-    if (!user) {
-      toast.error('You must be logged in to create leads');
-      return null;
-    }
+  const createLead = async (leadData: Omit<Lead, 'id' | 'created_at' | 'updated_at'>) => {
+    if (!user) throw new Error('User not authenticated');
 
     try {
       const { data, error } = await supabase
         .from('leads')
-        .insert({ ...leadData, user_id: user.id })
+        .insert([{ ...leadData, user_id: user.id }])
         .select()
         .single();
 
       if (error) throw error;
-      
-      setLeads(prev => [data, ...prev]);
-      toast.success('Lead created successfully');
-      
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'lead',
-        entity_id: data.id,
-        action: 'created',
-        description: `Lead created: ${data.first_name} ${data.last_name}`
-      });
 
+      await logActivity('create', 'lead', data.id, `Created lead: ${data.first_name} ${data.last_name}`);
+      await fetchLeads();
       return data;
-    } catch (error: any) {
-      console.error('Error creating lead:', error);
-      toast.error(error.message || 'Failed to create lead');
-      return null;
+    } catch (err) {
+      console.error('Error creating lead:', err);
+      throw err;
     }
   };
 
-  const updateLead = async (id: string, updates: LeadUpdate) => {
-    if (!user) {
-      toast.error('You must be logged in to update leads');
-      return false;
-    }
+  const updateLead = async (id: string, updates: Partial<Lead>) => {
+    if (!user) throw new Error('User not authenticated');
 
     try {
       const { data, error } = await supabase
         .from('leads')
         .update(updates)
         .eq('id', id)
-        .eq('user_id', user.id)
         .select()
         .single();
 
       if (error) throw error;
-      
-      setLeads(prev => prev.map(lead => lead.id === id ? data : lead));
-      toast.success('Lead updated successfully');
-      
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'lead',
-        entity_id: id,
-        action: 'updated',
-        description: `Lead updated`
-      });
 
+      await logActivity('update', 'lead', id, `Updated lead: ${data.first_name} ${data.last_name}`);
+      await fetchLeads();
       return true;
-    } catch (error: any) {
-      console.error('Error updating lead:', error);
-      toast.error(error.message || 'Failed to update lead');
+    } catch (err) {
+      console.error('Error updating lead:', err);
       return false;
     }
   };
 
   const deleteLead = async (id: string) => {
-    if (!user) {
-      toast.error('You must be logged in to delete leads');
-      return;
-    }
+    if (!user) throw new Error('User not authenticated');
 
     try {
       const { error } = await supabase
         .from('leads')
         .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('id', id);
 
       if (error) throw error;
-      
-      setLeads(prev => prev.filter(lead => lead.id !== id));
-      toast.success('Lead deleted successfully');
-      
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'lead',
-        entity_id: id,
-        action: 'deleted',
-        description: `Lead deleted`
-      });
-    } catch (error: any) {
-      console.error('Error deleting lead:', error);
-      toast.error(error.message || 'Failed to delete lead');
-    }
-  };
 
-  const convertToCustomer = async (id: string) => {
-    if (!user) {
-      toast.error('You must be logged in to convert leads');
-      return null;
-    }
-
-    try {
-      const lead = leads.find(l => l.id === id);
-      if (!lead) {
-        toast.error('Lead not found');
-        return null;
-      }
-
-      const { data: customer, error: customerError } = await supabase
-        .from('customers')
-        .insert({
-          user_id: user.id,
-          first_name: lead.first_name,
-          last_name: lead.last_name,
-          email: lead.email,
-          phone: lead.phone,
-          address: lead.address,
-          city: lead.city,
-          state: lead.state,
-          zip_code: lead.zip_code,
-          notes: lead.notes,
-          lead_id: lead.id
-        })
-        .select()
-        .single();
-
-      if (customerError) throw customerError;
-
-      // Update lead status to "won" instead of "converted" to match enum
-      await updateLead(id, { status: 'won' });
-      
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'lead',
-        entity_id: id,
-        action: 'converted',
-        description: `Lead converted to customer: ${lead.first_name} ${lead.last_name}`
-      });
-
-      toast.success('Lead converted to customer successfully');
-      return customer;
-    } catch (error: any) {
-      console.error('Error converting lead:', error);
-      toast.error(error.message || 'Failed to convert lead');
-      return null;
+      await logActivity('delete', 'lead', id, 'Deleted lead');
+      await fetchLeads();
+      return true;
+    } catch (err) {
+      console.error('Error deleting lead:', err);
+      return false;
     }
   };
 
@@ -209,6 +133,5 @@ export const useLeads = () => {
     createLead,
     updateLead,
     deleteLead,
-    convertToCustomer
   };
 };
