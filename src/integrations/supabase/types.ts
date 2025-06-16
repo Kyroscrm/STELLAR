@@ -1321,6 +1321,48 @@ export type Database = {
         }
         Relationships: []
       }
+      logo_settings: {
+        Row: {
+          created_at: string
+          id: string
+          logo_height: number | null
+          logo_position: string | null
+          logo_url: string | null
+          logo_width: number | null
+          show_on_approved: boolean | null
+          show_on_drafts: boolean | null
+          updated_at: string
+          user_id: string
+          watermark_opacity: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          logo_height?: number | null
+          logo_position?: string | null
+          logo_url?: string | null
+          logo_width?: number | null
+          show_on_approved?: boolean | null
+          show_on_drafts?: boolean | null
+          updated_at?: string
+          user_id: string
+          watermark_opacity?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          logo_height?: number | null
+          logo_position?: string | null
+          logo_url?: string | null
+          logo_width?: number | null
+          show_on_approved?: boolean | null
+          show_on_drafts?: boolean | null
+          updated_at?: string
+          user_id?: string
+          watermark_opacity?: number | null
+        }
+        Relationships: []
+      }
       media_files: {
         Row: {
           created_at: string | null
