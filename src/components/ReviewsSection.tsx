@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Star, Quote, ThumbsUp, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -41,12 +42,12 @@ const ReviewsSection = () => {
   };
 
   const handleReviewButtonClick = () => {
-    window.open('https://www.google.com/search?q=final+roofing+%26+Retro-fit+google+reviews&sca_esv=f066f66756e41e74&sxsrf=AE3TifOQx5rqHZNuc-RmjORG4-GuvDPGHw%3A1750003218656&source=hp&ei=Eu5OaITuJdOJptQPgabJoQM&iflsig=AOw8s4IAAAAAaE78Ipa2GMRTPrlFp9jsOfAL8eKHm4zH&ved=0ahUKEwiEv86B5vONAxXThIkEHQFTMjQQ4dUDCCs&uact=5&oq=final+roofing+%26+Retro-fit+google+reviews&gs_lp=Egdnd3Mtd2l6IihmaW5hbCByb29maW5nICYgUmV0cm8tZml0IGdvb2dsZSByZXZpZXdzMgQQIxgnMgUQABjvBTIFEAAY7wUyBRAAGO8FMggQABiABBiiBDIIEAAYgAQYogRI0hBQoQNYoQNwAXgAkAEAmAF7oAF7qgEDMC4xuAEDyAEA-AEC-AEBmAICoAJ_qAIKwgIHECMYJxjqAsICChAjGCcYyQIY6gKYAwPxBd1f6Q2trDLckgcDMS4xoAf7BbIHAzAuMbgHfMIHAzAuMsgHAw&sclient=gws-wiz', '_blank');
+    window.open('https://g.co/kgs/Autr3zW', '_blank');
   };
 
   const handlePlatformButtonClick = (platform: string) => {
     const urls: Record<string, string> = {
-      google: 'https://www.google.com/search?q=final+roofing+%26+Retro-fit+google+reviews',
+      google: 'https://g.co/kgs/Autr3zW',
       yelp: 'https://www.yelp.com/biz/final-roofing-retro-fit',
       bbb: 'https://www.bbb.org/us/ca/final-roofing-retro-fit',
       angi: 'https://www.angi.com/companyprofile/final-roofing-retro-fit'
@@ -78,10 +79,10 @@ const ReviewsSection = () => {
           <div className="flex items-center justify-center gap-4 mb-4">
             <StarRating rating={Math.round(averageRating)} size="lg" />
             <span className="text-2xl font-bold text-primary">
-              {averageRating > 0 ? averageRating.toFixed(1) : '5.0'}
+              {averageRating.toFixed(1)}
             </span>
             <span className="text-gray-600">
-              ({totalReviews > 0 ? totalReviews : '247'} reviews)
+              ({totalReviews} reviews)
             </span>
           </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">

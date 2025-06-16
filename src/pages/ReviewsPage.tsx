@@ -32,11 +32,11 @@ const ReviewsPage = () => {
           </p>
           <div className="bg-white rounded-lg p-6 inline-block shadow-lg">
             <div className="text-4xl font-bold text-primary">
-              {averageRating > 0 ? averageRating.toFixed(1) : '4.9'}/5
+              {averageRating.toFixed(1)}/5
             </div>
             <div className="text-gray-600">Average Rating</div>
             <div className="text-sm text-gray-500">
-              Based on {totalReviews > 0 ? totalReviews : '247'} reviews
+              Based on {totalReviews} reviews
             </div>
           </div>
         </div>
@@ -72,7 +72,7 @@ const ReviewsPage = () => {
             </div>
             <div className="p-6">
               <div className="text-4xl font-bold text-primary mb-2">
-                {totalReviews > 0 ? totalReviews : '247'}
+                {totalReviews}
               </div>
               <div className="text-gray-600">Customer Reviews</div>
             </div>
