@@ -8,7 +8,7 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'staff' | 'client' | 'user';
+  role: 'admin' | 'manager' | 'staff' | 'client' | 'user';
 }
 
 export interface AuthContextType {
@@ -133,15 +133,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
-        // Create profile with proper role type
+        // Create profile - Fix: Remove id from insert payload since it references auth.users
         const { error: profileError } = await supabase
           .from('profiles')
           .insert({
-            id: data.user.id,
             email: data.user.email!,
             first_name: firstName,
             last_name: lastName,
-            role: 'user' as const
+            role: 'user'
           });
 
         if (profileError) {
