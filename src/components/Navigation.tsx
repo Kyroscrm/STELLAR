@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -94,7 +93,7 @@ const Navigation = () => {
       children: [
         { title: 'All Estimates', href: '/admin/estimates', description: 'View estimates' },
         { title: 'New Estimate', href: '/admin/estimates/new', description: 'Create estimate' },
-        { title: 'Templates', href: '/admin/estimates/templates', description: 'Estimate templates' }
+        { title: 'Manage Templates', href: '/admin/settings?tab=templates', description: 'Estimate templates' }
       ]
     },
     {
