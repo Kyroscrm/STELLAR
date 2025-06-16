@@ -1,0 +1,268 @@
+USING THIS RULES:
+⚙️ GLOBAL AI DEVELOPER RULES (FRONTEND + BACKEND)
+🧠 GENERAL PRINCIPLES
+Never Guess. Always Derive From Schema or Codebase.
+Pull table names, fields, and types from Supabase schema or FastAPI models. Never assume structure.
+
+Enforce DRY & SRP Principles.
+Avoid repetition. Every file/component/function must have a single clear responsibility.
+
+No Placeholder Logic.
+Every button, modal, route, or feature must work fully. No “coming soon,” commented-out stubs, or static data.
+
+Always Check for Existing Hooks, Components, or Endpoints First.
+Never create duplicate hooks/components. Use useCustomer, useLead, etc., and extend only when necessary.
+
+🧩 FRONTEND RULES (React + Supabase)
+📦 COMPONENTS & HOOKS
+Use Typed Hooks: All Supabase hooks must be strongly typed (TS) and use RLS-safe queries.
+
+Naming Convention:
+
+Hooks: use[Entity] (e.g., useEstimateLineItems)
+
+Components: PascalCase by feature (EstimateBuilder, InvoicePreview)
+
+Forms Must Be Fully Controlled
+
+Use useState or react-hook-form.
+
+Validate on blur/change.
+
+Disable submit button when invalid or submitting.
+
+🔍 DATA FETCHING & STATE
+No Hardcoded Data in UI — Ever.
+
+Fetch from Supabase via hooks.
+
+Show skeleton loaders while loading.
+
+Handle all error states gracefully.
+
+Global Toast + Error Boundaries
+
+All mutations must show toast feedback.
+
+Wrap screens with error boundaries (GlobalErrorHandler).
+
+📲 RESPONSIVENESS & UX
+Mobile-First Design
+
+All layouts must work on mobile viewports.
+
+Use grid/flex consistently.
+
+Avoid horizontal scroll on small screens.
+
+Modals Must Be Reusable
+
+Don’t re-create a modal for every entity. Use generic modal with dynamic form content.
+
+Avoid Premature Abstractions
+
+Only extract components when reused ≥2 times.
+
+Avoid over-engineered HOCs unless justified.
+
+🛠️ BACKEND RULES (FastAPI + Supabase)
+🧬 MODELING
+Always Sync FastAPI → Supabase Schema
+
+Keep SQLModel models in sync with Supabase tables.
+
+Validate each model using Pydantic on both input and output.
+
+Use Enum Fields Where Possible
+
+e.g., status, priority, type, etc.
+
+Enforce these in both schema and API validation.
+
+Define All Relationships with FK + Backrefs
+
+Use Relationship(...) in FastAPI models.
+
+Create Supabase FK constraints in SQL migration files.
+
+🔐 AUTH & RLS
+NEVER Bypass RLS in Production
+
+Every query must obey row-level security policies.
+
+Use auth.uid() inside Supabase RLS SQL.
+
+All Mutations Must Log to activity_logs
+
+Log CRUD action, entity_type, entity_id, and user_id.
+
+Use UUID validation before logging.
+
+⚠️ ERROR HANDLING
+Always Return Standardized Error Format
+
+json
+Copy
+Edit
+{
+  "code": "ERROR_CODE",
+  "message": "Human-readable message",
+  "trace_id": "uuid"
+}
+Log full trace internally for debugging.
+
+Tests Are Mandatory
+
+Minimum: 3 unit tests per API route
+
+Test: happy path, invalid input, permission error
+
+🚀 DEPLOYMENT/PERFORMANCE
+No Unused Imports or Dead Code
+Use a linter/formatter that removes unused vars.
+
+No Inline Styles or Raw CSS
+Use Tailwind. Stick to the design system.
+
+No Client-Side Only Auth Checks
+Auth logic must be replicated server-side (via Supabase RLS or API auth middleware).
+
+✅ COMPLETION CHECKLIST (PER MODULE)
+Every screen/module must:
+
+ Render live Supabase data (no mocks)
+
+ Support full CRUD + filter/search
+
+ Include responsive layout + mobile tests
+
+ Include tests for all mutations
+
+ Log actions to activity_logs
+
+ Include dark/light mode support
+
+ Be accessible (keyboard nav, alt tags, ARIA)
+
+🔐 AI DEVELOPER FINAL RULE
+Do not deploy or submit any code unless every element has been verified against schema, tested for all edge cases, and validated for security, UX, and logic integrity.
+
+ User Rules for the Structure & Backend (Global AI Agent Behaviors)
+These rules apply to YOU as the AI agent, guiding how you work across the entire project.
+
+Project Awareness & Context
+Always begin by reading PLANNING.md for full system context, goals, constraints, and architecture.
+
+Reference TASK.md before starting any work; add new tasks only when missing or discovered.
+
+Never assume requirements—ask if unsure.
+
+Modularity & File Management
+Never create or edit any file exceeding 500 lines; split into feature-based modules/helpers.
+
+Use consistent, logical naming and folder structure as described in PLANNING.md.
+
+All code changes must follow existing project architecture and conventions unless instructed otherwise.
+
+Task-Driven Development
+Only make changes specifically requested, or approved after diagnostic review.
+
+After any change, update TASK.md immediately—marking tasks complete and logging discovered sub-tasks.
+
+Flag (but do not implement) potential improvements or optimizations unless directly approved.
+
+Testing & Reliability
+For each new feature, MANDATORILY create or update Pytest unit tests: one normal, one edge, one failure case.
+
+Place all tests in /tests, mirroring the structure of main app modules.
+
+Never push changes without tests for all new logic.
+
+Language, Style & Validation
+Use Python exclusively for backend logic.
+
+Adhere to PEP8, with Black formatting and type hints.
+
+Use pydantic for validation, FastAPI for APIs, SQLAlchemy/SQLModel for ORM.
+
+Docstrings required for every function/class—Google style.
+
+All changes must be reviewed for clarity and explainability (comment anything non-obvious).
+
+Documentation & Communication
+Update README.md when features, dependencies, or setup change.
+
+Use # Reason: inline comments for complex/critical logic.
+
+Never hallucinate code or use unverified libraries; check file paths/modules before referencing.
+
+Security & Compliance
+Never touch user/role permissions, sensitive data, or integrations unless specifically authorized.
+
+Only perform changes explicitly approved for security-sensitive features (auth, payments, encryption).
+
+Project Rules for CRM Structure & Backend (Specific for Attached Project)
+These rules guide how you address the specific missing features and incomplete implementations in this CRM.
+
+Review & Diagnostic Pass
+DO NOT CHANGE: UI, UX, or feature logic unless explicitly authorized.
+
+Perform systematic, feature-by-feature reviews (file-by-file if necessary).
+
+For each module (e.g., Invoices, Documents, Calendar, Reports), list:
+
+What works (fully functional)
+
+What’s missing/incomplete (any broken, partial, or stubbed functionality)
+
+Log all findings in a comprehensive diagnostic report (plain markdown preferred).
+
+Feature Implementation Workflow (When Approved)
+For each authorized feature:
+
+Read the latest PLANNING.md and TASK.md for constraints.
+
+Start with backend: database schema, API endpoints, business logic.
+
+Only after backend is stable, add or update frontend as per current architecture.
+
+Each module must include:
+
+Database models (SQLAlchemy/SQLModel)
+
+Pydantic schemas for validation
+
+FastAPI routes with proper typing and docstrings
+
+Unit tests (in /tests)
+
+Data validation (with descriptive errors)
+
+Full CRUD unless otherwise specified
+
+For integrations (e.g., Supabase, QuickBooks, Twilio):
+
+Only use official SDKs/libraries
+
+Follow security and compliance requirements from global rules
+
+Always validate connectivity and error handling
+
+Quality & Optimization
+Minimize memory overhead: avoid large in-memory objects, use async where appropriate.
+
+Optimize for fast cold/hot starts (keep code lean, avoid unnecessary imports).
+
+Ensure code can be reviewed and understood by a mid-level developer.
+
+All new code must pass linting, formatting, and tests before submission.
+
+Persistent State & Data Flow
+All state (filters, searches, dashboards) must persist to the database—never just local/browser memory.
+
+Ensure all new features are mobile-responsive and fully functional on all supported devices (when working on frontend).
+
+Reporting & Follow-Up
+Every time a new missing feature is diagnosed, log it under “Discovered During Work” in TASK.md.
+
+Before starting any new implementation, confirm that no related critical issues remain unresolved.
