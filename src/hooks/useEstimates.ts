@@ -1,58 +1,174 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { Database } from '@/integrations/supabase/types';
 
-export type Estimate = Database['public']['Tables']['estimates']['Row'];
-export type EstimateLineItem = Database['public']['Tables']['estimate_line_items']['Row'];
-export type Customer = Database['public']['Tables']['customers']['Row'];
-export type Job = Database['public']['Tables']['jobs']['Row'];
-
-export interface EstimateWithLineItems extends Estimate {
+export type Estimate = Tables<'estimates'>;
+export type EstimateLineItem = Tables<'estimate_line_items'>;
+export type EstimateWithLineItems = Estimate & {
   estimate_line_items: EstimateLineItem[];
-  customers?: Customer | null;
-  jobs?: Job | null;
-}
+  customers?: { first_name: string; last_name: string };
+};
+
+type EstimateInsert = Omit<TablesInsert<'estimates'>, 'user_id'>;
+type EstimateUpdate = TablesUpdate<'estimates'>;
 
 export const useEstimates = () => {
-  const { user } = useAuth();
   const [estimates, setEstimates] = useState<EstimateWithLineItems[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const { user } = useAuth();
 
   const fetchEstimates = async () => {
     if (!user) {
       setEstimates([]);
-      setLoading(false);
       return;
     }
-
+    
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      const { data, error: supabaseError } = await supabase
+      const { data, error } = await supabase
         .from('estimates')
         .select(`
           *,
-          estimate_line_items ( * ),
-          customers ( * ),
-          jobs ( * )
+          estimate_line_items(*),
+          customers(first_name, last_name)
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (supabaseError) {
-        throw supabaseError;
-      }
-      
-      setEstimates(data as EstimateWithLineItems[] || []);
-    } catch (err: any) {
-      console.error('Error fetching estimates:', err);
-      setError(err);
-      toast.error('Error fetching estimates: ' + (err.message || 'Could not retrieve estimates from the server.'));
+      if (error) throw error;
+      setEstimates(data || []);
+      console.log(`Fetched ${data?.length || 0} estimates`);
+    } catch (error: any) {
+      console.error('Error fetching estimates:', error);
+      setError(error);
+      toast.error('Failed to fetch estimates');
+      setEstimates([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const createEstimate = async (estimateData: EstimateInsert & { lineItems: any[] }) => {
+    if (!user) {
+      toast.error('You must be logged in to create estimates');
+      return null;
+    }
+
+    try {
+      const { lineItems, ...estimateFields } = estimateData;
+      
+      const { data: estimate, error: estimateError } = await supabase
+        .from('estimates')
+        .insert({ ...estimateFields, user_id: user.id })
+        .select()
+        .single();
+
+      if (estimateError) throw estimateError;
+
+      if (lineItems && lineItems.length > 0) {
+        const lineItemsToInsert = lineItems.map(item => ({
+          estimate_id: estimate.id,
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total: item.quantity * item.unit_price
+        }));
+
+        const { error: lineItemsError } = await supabase
+          .from('estimate_line_items')
+          .insert(lineItemsToInsert);
+
+        if (lineItemsError) throw lineItemsError;
+      }
+      
+      await fetchEstimates();
+      toast.success('Estimate created successfully');
+      
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        entity_type: 'estimate',
+        entity_id: estimate.id,
+        action: 'created',
+        description: `Estimate created: ${estimate.title}`
+      });
+
+      return estimate;
+    } catch (error: any) {
+      console.error('Error creating estimate:', error);
+      toast.error(error.message || 'Failed to create estimate');
+      return null;
+    }
+  };
+
+  const updateEstimate = async (id: string, updates: EstimateUpdate) => {
+    if (!user) {
+      toast.error('You must be logged in to update estimates');
+      return false;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('estimates')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      await fetchEstimates();
+      toast.success('Estimate updated successfully');
+      
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        entity_type: 'estimate',
+        entity_id: id,
+        action: 'updated',
+        description: `Estimate updated`
+      });
+
+      return true;
+    } catch (error: any) {
+      console.error('Error updating estimate:', error);
+      toast.error(error.message || 'Failed to update estimate');
+      return false;
+    }
+  };
+
+  const deleteEstimate = async (id: string) => {
+    if (!user) {
+      toast.error('You must be logged in to delete estimates');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('estimates')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      setEstimates(prev => prev.filter(estimate => estimate.id !== id));
+      toast.success('Estimate deleted successfully');
+      
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        entity_type: 'estimate',
+        entity_id: id,
+        action: 'deleted',
+        description: `Estimate deleted`
+      });
+    } catch (error: any) {
+      console.error('Error deleting estimate:', error);
+      toast.error(error.message || 'Failed to delete estimate');
     }
   };
 
@@ -60,113 +176,13 @@ export const useEstimates = () => {
     fetchEstimates();
   }, [user]);
 
-  const addEstimate = async (newEstimateData: Omit<Estimate, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!user) return null;
-
-    try {
-      const { data, error } = await supabase
-        .from('estimates')
-        .insert([{ ...newEstimateData, user_id: user.id }])
-        .select(`
-          *,
-          estimate_line_items ( * ),
-          customers ( * ),
-          jobs ( * )
-        `)
-        .single();
-
-      if (error) throw error;
-
-      setEstimates(prev => [data, ...prev]);
-      toast.success('Estimate created successfully');
-
-      // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'estimate',
-        entity_id: data.id,
-        action: 'created',
-        description: `Estimate created: ${data.title}`
-      });
-
-      return data;
-    } catch (err: any) {
-      console.error('Error creating estimate:', err);
-      toast.error('Error creating estimate: ' + (err.message || 'Could not create the estimate.'));
-      return null;
-    }
+  return {
+    estimates,
+    loading,
+    error,
+    fetchEstimates,
+    createEstimate,
+    updateEstimate,
+    deleteEstimate
   };
-  
-  const updateEstimate = async (estimateId: string, updatedEstimateData: Partial<Estimate>) => {
-    if (!user) return null;
-
-    try {
-      const { data, error } = await supabase
-        .from('estimates')
-        .update(updatedEstimateData)
-        .eq('id', estimateId)
-        .eq('user_id', user.id)
-        .select(`
-          *,
-          estimate_line_items ( * ),
-          customers ( * ),
-          jobs ( * )
-        `)
-        .single();
-
-      if (error) throw error;
-
-      setEstimates(prev => prev.map(estimate => 
-        estimate.id === estimateId ? data : estimate
-      ));
-      
-      toast.success('Estimate updated successfully');
-
-      // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'estimate',
-        entity_id: estimateId,
-        action: 'updated',
-        description: `Estimate updated`
-      });
-
-      return data;
-    } catch (err: any) {
-      console.error('Error updating estimate:', err);
-      toast.error('Error updating estimate: ' + (err.message || 'Could not update the estimate.'));
-      return null;
-    }
-  };
-
-  const deleteEstimate = async (estimateId: string) => {
-    if (!user) return;
-
-    try {
-      const { error } = await supabase
-        .from('estimates')
-        .delete()
-        .eq('id', estimateId)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
-      setEstimates(prev => prev.filter(estimate => estimate.id !== estimateId));
-      toast.success('Estimate deleted successfully');
-
-      // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'estimate',
-        entity_id: estimateId,
-        action: 'deleted',
-        description: `Estimate deleted`
-      });
-    } catch (err: any) {
-      console.error('Error deleting estimate:', err);
-      toast.error('Error deleting estimate: ' + (err.message || 'Could not delete the estimate.'));
-    }
-  };
-
-  return { estimates, loading, error, addEstimate, updateEstimate, deleteEstimate, fetchEstimates };
 };

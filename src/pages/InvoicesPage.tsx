@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useInvoices } from '@/hooks/useInvoices';
 import { useCustomers } from '@/hooks/useCustomers';
@@ -279,30 +280,29 @@ const InvoicesPage = () => {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => handleViewInvoice(invoice)}>
                           <Eye className="h-4 w-4 mr-2" />
-                          View Details
+                          View
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleGeneratePDF(invoice)} disabled={generating}>
+                        <DropdownMenuItem 
+                          onClick={() => handleGeneratePDF(invoice)}
+                          disabled={generating}
+                        >
                           <Download className="h-4 w-4 mr-2" />
                           Download PDF
                         </DropdownMenuItem>
-                        {invoice.status === 'draft' && (
-                          <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, 'sent')}>
-                            <Send className="h-4 w-4 mr-2" />
-                            Send to Customer
-                          </DropdownMenuItem>
-                        )}
-                        {invoice.status === 'sent' && (
-                          <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, 'paid')}>
-                            <Check className="h-4 w-4 mr-2" />
-                            Mark as Paid
-                          </DropdownMenuItem>
-                        )}
+                        <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, 'sent')}>
+                          <Send className="h-4 w-4 mr-2" />
+                          Mark as Sent
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, 'paid')}>
+                          <Check className="h-4 w-4 mr-2" />
+                          Mark as Paid
+                        </DropdownMenuItem>
                         <DropdownMenuItem 
                           className="text-red-600"
                           onClick={() => setDeleteConfirmId(invoice.id)}
                         >
                           <X className="h-4 w-4 mr-2" />
-                          Delete Invoice
+                          Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -311,93 +311,61 @@ const InvoicesPage = () => {
               ))}
             </TableBody>
           </Table>
+          
           {filteredInvoices.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500">No invoices found.</p>
-              <Button className="mt-4" onClick={() => setIsCreateModalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Your First Invoice
-              </Button>
+            <div className="text-center py-8">
+              <FileText className="mx-auto h-12 w-12 text-gray-400" />
+              <p className="mt-4 text-gray-500">No invoices found</p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* View Invoice Modal */}
+      {/* View Invoice Dialog */}
       <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              Invoice Details - {selectedInvoice?.invoice_number}
-            </DialogTitle>
+            <DialogTitle>Invoice Details</DialogTitle>
           </DialogHeader>
           {selectedInvoice && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h3 className="font-semibold mb-2">Invoice Information</h3>
-                  <p><strong>Title:</strong> {selectedInvoice.title}</p>
-                  <p><strong>Status:</strong> <Badge className="ml-2 capitalize">{selectedInvoice.status}</Badge></p>
-                  <p><strong>Due Date:</strong> {selectedInvoice.due_date ? new Date(selectedInvoice.due_date).toLocaleDateString() : 'N/A'}</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-2">Customer Information</h3>
-                  {selectedInvoice.customers ? (
-                    <div>
-                      <p><strong>Name:</strong> {selectedInvoice.customers.first_name} {selectedInvoice.customers.last_name}</p>
-                      <p><strong>Email:</strong> {selectedInvoice.customers.email || 'N/A'}</p>
-                      <p><strong>Phone:</strong> {selectedInvoice.customers.phone || 'N/A'}</p>
-                    </div>
-                  ) : (
-                    <p>No customer assigned</p>
-                  )}
-                </div>
-              </div>
-              
-              {selectedInvoice.description && (
-                <div>
-                  <h3 className="font-semibold mb-2">Description</h3>
-                  <p className="text-gray-700">{selectedInvoice.description}</p>
-                </div>
-              )}
-
-              <div className="flex justify-between items-center pt-4 border-t">
-                <div className="flex gap-2">
-                  <Button onClick={() => handleGeneratePDF(selectedInvoice)} disabled={generating}>
-                    <Download className="h-4 w-4 mr-2" />
-                    {generating ? 'Generating...' : 'Download PDF'}
-                  </Button>
-                  {selectedInvoice.status === 'draft' && (
-                    <Button 
-                      variant="outline"
-                      onClick={() => handleStatusChange(selectedInvoice.id, 'sent')}
-                    >
-                      <Send className="h-4 w-4 mr-2" />
-                      Send to Customer
-                    </Button>
-                  )}
+                  <h3 className="font-semibold">Invoice #{selectedInvoice.invoice_number}</h3>
+                  <p className="text-gray-600">{selectedInvoice.title}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg"><strong>Total: ${(selectedInvoice.total_amount || 0).toFixed(2)}</strong></p>
+                  <Badge className="capitalize">{selectedInvoice.status}</Badge>
                 </div>
               </div>
+              <div className="border-t pt-4">
+                <p><strong>Customer:</strong> {selectedInvoice.customers ? `${selectedInvoice.customers.first_name} ${selectedInvoice.customers.last_name}` : 'N/A'}</p>
+                <p><strong>Due Date:</strong> {selectedInvoice.due_date || 'N/A'}</p>
+                <p><strong>Total:</strong> ${(selectedInvoice.total_amount || 0).toFixed(2)}</p>
+              </div>
+              {selectedInvoice.description && (
+                <div>
+                  <strong>Description:</strong>
+                  <p className="text-gray-600">{selectedInvoice.description}</p>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Delete Invoice</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the invoice and all associated line items.
+              Are you sure you want to delete this invoice? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={() => deleteConfirmId && handleDeleteInvoice(deleteConfirmId)}
               className="bg-red-600 hover:bg-red-700"
             >

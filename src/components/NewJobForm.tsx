@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,19 +10,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useJobs } from '@/hooks/useJobs';
-import { useJobNumberGenerator } from '@/hooks/useJobNumberGenerator';
-import { RefreshCw } from 'lucide-react';
+import { toast } from 'sonner';
 
 const jobSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
-  customer_id: z.string().optional(),
-  address: z.string().optional(),
+  customer_id: z.string().min(1, 'Customer is required'),
+  status: z.enum(['quoted', 'approved', 'in_progress', 'completed', 'cancelled']),
   start_date: z.string().optional(),
   end_date: z.string().optional(),
-  budget: z.number().min(0).optional(),
   estimated_hours: z.number().min(0).optional(),
-  status: z.enum(['quoted', 'scheduled', 'in_progress', 'completed', 'cancelled']),
+  budget: z.number().min(0).optional(),
+  address: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -31,99 +30,93 @@ type JobFormData = z.infer<typeof jobSchema>;
 interface NewJobFormProps {
   onSuccess: () => void;
   onCancel: () => void;
-  preselectedCustomerId?: string;
+  customerId?: string;
 }
 
-const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel, preselectedCustomerId }) => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel, customerId }) => {
   const { customers } = useCustomers();
   const { createJob } = useJobs();
-  const { generateJobNumber, loading: generatingNumber } = useJobNumberGenerator();
 
   const form = useForm<JobFormData>({
     resolver: zodResolver(jobSchema),
     defaultValues: {
       title: '',
       description: '',
-      customer_id: preselectedCustomerId || '',
-      address: '',
+      customer_id: customerId || '',
+      status: 'quoted',
       start_date: '',
       end_date: '',
-      budget: undefined,
-      estimated_hours: undefined,
-      status: 'quoted',
+      estimated_hours: 0,
+      budget: 0,
+      address: '',
       notes: '',
     },
   });
 
-  // Set preselected customer when component mounts or prop changes
-  useEffect(() => {
-    if (preselectedCustomerId) {
-      form.setValue('customer_id', preselectedCustomerId);
-    }
-  }, [preselectedCustomerId, form]);
-
-  const handleGenerateJobNumber = async () => {
-    const jobNumber = await generateJobNumber();
-    form.setValue('title', jobNumber);
-  };
-
   const onSubmit = async (data: JobFormData) => {
-    setIsSubmitting(true);
     try {
       const jobData = {
-        title: data.title,
-        description: data.description || '',
-        customer_id: data.customer_id || null,
-        address: data.address || '',
-        start_date: data.start_date || '',
-        end_date: data.end_date || '',
-        budget: data.budget || null,
+        ...data,
         estimated_hours: data.estimated_hours || null,
-        status: data.status,
-        notes: data.notes || '',
+        budget: data.budget || null,
+        start_date: data.start_date || null,
+        end_date: data.end_date || null,
       };
 
-      await createJob(jobData);
-      onSuccess();
+      const newJob = await createJob(jobData);
+      if (newJob) {
+        toast.success('Job created successfully');
+        onSuccess();
+      }
     } catch (error) {
       console.error('Error creating job:', error);
-    } finally {
-      setIsSubmitting(false);
+      toast.error('Failed to create job');
     }
   };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Job Title / Number *</FormLabel>
-              <div className="flex gap-2">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="title"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Job Title *</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter job title or number" {...field} />
+                  <Input placeholder="Enter job title" {...field} />
                 </FormControl>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleGenerateJobNumber}
-                  disabled={generatingNumber}
-                >
-                  {generatingNumber ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    'Generate'
-                  )}
-                </Button>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="customer_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Customer *</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a customer" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {customers.map((customer) => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.first_name} {customer.last_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <FormField
           control={form.control}
@@ -142,31 +135,6 @@ const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel, preselecte
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="customer_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Customer</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a customer" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {customers.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        {customer.first_name} {customer.last_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
             name="status"
             render={({ field }) => (
               <FormItem>
@@ -179,7 +147,7 @@ const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel, preselecte
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="quoted">Quoted</SelectItem>
-                    <SelectItem value="scheduled">Scheduled</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
                     <SelectItem value="in_progress">In Progress</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
@@ -189,21 +157,21 @@ const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel, preselecte
               </FormItem>
             )}
           />
-        </div>
 
-        <FormField
-          control={form.control}
-          name="address"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Job Address</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter job site address" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="address"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Job Address</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter job address" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
@@ -238,17 +206,18 @@ const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel, preselecte
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="budget"
+            name="estimated_hours"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Budget ($)</FormLabel>
+                <FormLabel>Estimated Hours</FormLabel>
                 <FormControl>
                   <Input 
                     type="number" 
-                    step="0.01"
-                    placeholder="0.00"
+                    step="0.5"
+                    min="0"
+                    placeholder="0"
                     {...field}
-                    onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                   />
                 </FormControl>
                 <FormMessage />
@@ -258,17 +227,18 @@ const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel, preselecte
 
           <FormField
             control={form.control}
-            name="estimated_hours"
+            name="budget"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Estimated Hours</FormLabel>
+                <FormLabel>Budget ($)</FormLabel>
                 <FormControl>
                   <Input 
                     type="number" 
-                    step="0.1"
-                    placeholder="0.0"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
                     {...field}
-                    onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                   />
                 </FormControl>
                 <FormMessage />
@@ -284,7 +254,7 @@ const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel, preselecte
             <FormItem>
               <FormLabel>Notes</FormLabel>
               <FormControl>
-                <Textarea placeholder="Enter any additional notes" {...field} />
+                <Textarea placeholder="Additional notes..." {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -292,9 +262,7 @@ const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel, preselecte
         />
 
         <div className="flex gap-2 pt-4">
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Creating...' : 'Create Job'}
-          </Button>
+          <Button type="submit">Create Job</Button>
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>

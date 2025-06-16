@@ -6,16 +6,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 export type Job = Tables<'jobs'>;
-export type JobWithCustomer = Job & {
-  customers?: Tables<'customers'> | null;
-};
-
 type JobInsert = Omit<TablesInsert<'jobs'>, 'user_id'>;
 type JobUpdate = TablesUpdate<'jobs'>;
 
 export const useJobs = () => {
-  const [jobs, setJobs] = useState<JobWithCustomer[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   const { user } = useAuth();
 
   const fetchJobs = async () => {
@@ -25,20 +22,20 @@ export const useJobs = () => {
     }
     
     setLoading(true);
+    setError(null);
     try {
       const { data, error } = await supabase
         .from('jobs')
-        .select(`
-          *,
-          customers (*)
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       setJobs(data || []);
+      console.log(`Fetched ${data?.length || 0} jobs`);
     } catch (error: any) {
       console.error('Error fetching jobs:', error);
+      setError(error);
       toast.error('Failed to fetch jobs');
       setJobs([]);
     } finally {
@@ -53,27 +50,17 @@ export const useJobs = () => {
     }
 
     try {
-      console.log('Creating job:', jobData);
-      
       const { data, error } = await supabase
         .from('jobs')
         .insert({ ...jobData, user_id: user.id })
-        .select(`
-          *,
-          customers (*)
-        `)
+        .select()
         .single();
 
-      if (error) {
-        console.error('Error creating job:', error);
-        throw error;
-      }
+      if (error) throw error;
       
-      console.log('Job created successfully:', data);
       setJobs(prev => [data, ...prev]);
       toast.success('Job created successfully');
       
-      // Log activity
       await supabase.from('activity_logs').insert({
         user_id: user.id,
         entity_type: 'job',
@@ -97,29 +84,19 @@ export const useJobs = () => {
     }
 
     try {
-      console.log('Updating job:', id, updates);
-      
       const { data, error } = await supabase
         .from('jobs')
         .update(updates)
         .eq('id', id)
         .eq('user_id', user.id)
-        .select(`
-          *,
-          customers (*)
-        `)
+        .select()
         .single();
 
-      if (error) {
-        console.error('Error updating job:', error);
-        throw error;
-      }
+      if (error) throw error;
       
-      console.log('Job updated successfully:', data);
       setJobs(prev => prev.map(job => job.id === id ? data : job));
       toast.success('Job updated successfully');
       
-      // Log activity
       await supabase.from('activity_logs').insert({
         user_id: user.id,
         entity_type: 'job',
@@ -143,24 +120,17 @@ export const useJobs = () => {
     }
 
     try {
-      console.log('Deleting job:', id);
-      
       const { error } = await supabase
         .from('jobs')
         .delete()
         .eq('id', id)
         .eq('user_id', user.id);
 
-      if (error) {
-        console.error('Error deleting job:', error);
-        throw error;
-      }
+      if (error) throw error;
       
-      console.log('Job deleted successfully');
       setJobs(prev => prev.filter(job => job.id !== id));
       toast.success('Job deleted successfully');
       
-      // Log activity
       await supabase.from('activity_logs').insert({
         user_id: user.id,
         entity_type: 'job',
@@ -181,6 +151,7 @@ export const useJobs = () => {
   return {
     jobs,
     loading,
+    error,
     fetchJobs,
     createJob,
     updateJob,

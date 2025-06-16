@@ -32,6 +32,7 @@ export const useTasks = () => {
 
       if (error) throw error;
       setTasks(data || []);
+      console.log(`Fetched ${data?.length || 0} tasks`);
     } catch (error: any) {
       console.error('Error fetching tasks:', error);
       setError(error);
@@ -42,9 +43,9 @@ export const useTasks = () => {
     }
   };
 
-  const addTask = async (taskData: TaskInsert) => {
+  const createTask = async (taskData: TaskInsert) => {
     if (!user) {
-      toast.error('You must be logged in to add tasks');
+      toast.error('You must be logged in to create tasks');
       return null;
     }
 
@@ -58,7 +59,7 @@ export const useTasks = () => {
       if (error) throw error;
       
       setTasks(prev => [data, ...prev]);
-      toast.success('Task added successfully');
+      toast.success('Task created successfully');
       
       await supabase.from('activity_logs').insert({
         user_id: user.id,
@@ -70,8 +71,8 @@ export const useTasks = () => {
 
       return data;
     } catch (error: any) {
-      console.error('Error adding task:', error);
-      toast.error(error.message || 'Failed to add task');
+      console.error('Error creating task:', error);
+      toast.error(error.message || 'Failed to create task');
       return null;
     }
   };
@@ -152,7 +153,7 @@ export const useTasks = () => {
     loading,
     error,
     fetchTasks,
-    addTask,
+    createTask,
     updateTask,
     deleteTask
   };

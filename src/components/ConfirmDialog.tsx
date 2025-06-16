@@ -32,11 +32,6 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   variant = 'default',
   onConfirm
 }) => {
-  const handleConfirm = () => {
-    onConfirm();
-    onOpenChange(false);
-  };
-
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -45,11 +40,9 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => onOpenChange(false)}>
-            {cancelText}
-          </AlertDialogCancel>
+          <AlertDialogCancel>{cancelText}</AlertDialogCancel>
           <AlertDialogAction
-            onClick={handleConfirm}
+            onClick={onConfirm}
             className={variant === 'destructive' ? 'bg-red-600 hover:bg-red-700' : ''}
           >
             {confirmText}

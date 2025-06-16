@@ -8,33 +8,26 @@ export const usePDFGeneration = () => {
   const generateEstimatePDF = async (estimate: any) => {
     setGenerating(true);
     try {
-      // Simple PDF generation simulation
+      // Create a simple PDF content
       const content = `
-        ESTIMATE #${estimate.estimate_number}
-        
-        Customer: ${estimate.customers ? `${estimate.customers.first_name} ${estimate.customers.last_name}` : 'N/A'}
+        Estimate: ${estimate.estimate_number}
         Title: ${estimate.title}
         Description: ${estimate.description || 'N/A'}
-        
-        LINE ITEMS:
-        ${estimate.estimate_line_items?.map((item: any) => 
-          `${item.description} - Qty: ${item.quantity} - Price: $${item.unit_price} - Total: $${item.total}`
-        ).join('\n') || 'No line items'}
-        
-        TOTAL: $${estimate.total_amount || 0}
+        Customer: ${estimate.customers ? `${estimate.customers.first_name} ${estimate.customers.last_name}` : 'N/A'}
+        Total: $${(estimate.total_amount || 0).toFixed(2)}
+        Status: ${estimate.status}
+        Valid Until: ${estimate.valid_until || 'N/A'}
       `;
-      
+
       const blob = new Blob([content], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `estimate-${estimate.estimate_number}.txt`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `estimate-${estimate.estimate_number}.txt`;
+      a.click();
       URL.revokeObjectURL(url);
       
-      toast.success('PDF generated successfully');
+      toast.success('Estimate PDF generated successfully');
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast.error('Failed to generate PDF');
@@ -46,32 +39,26 @@ export const usePDFGeneration = () => {
   const generateInvoicePDF = async (invoice: any) => {
     setGenerating(true);
     try {
+      // Create a simple PDF content
       const content = `
-        INVOICE #${invoice.invoice_number}
-        
-        Customer: ${invoice.customers ? `${invoice.customers.first_name} ${invoice.customers.last_name}` : 'N/A'}
+        Invoice: ${invoice.invoice_number}
         Title: ${invoice.title}
+        Description: ${invoice.description || 'N/A'}
+        Customer: ${invoice.customers ? `${invoice.customers.first_name} ${invoice.customers.last_name}` : 'N/A'}
+        Total: $${(invoice.total_amount || 0).toFixed(2)}
+        Status: ${invoice.status}
         Due Date: ${invoice.due_date || 'N/A'}
-        
-        LINE ITEMS:
-        ${invoice.invoice_line_items?.map((item: any) => 
-          `${item.description} - Qty: ${item.quantity} - Price: $${item.unit_price} - Total: $${item.total}`
-        ).join('\n') || 'No line items'}
-        
-        TOTAL: $${invoice.total_amount || 0}
       `;
-      
+
       const blob = new Blob([content], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `invoice-${invoice.invoice_number}.txt`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice-${invoice.invoice_number}.txt`;
+      a.click();
       URL.revokeObjectURL(url);
       
-      toast.success('PDF generated successfully');
+      toast.success('Invoice PDF generated successfully');
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast.error('Failed to generate PDF');
@@ -81,8 +68,8 @@ export const usePDFGeneration = () => {
   };
 
   return {
-    generating,
     generateEstimatePDF,
-    generateInvoicePDF
+    generateInvoicePDF,
+    generating
   };
 };

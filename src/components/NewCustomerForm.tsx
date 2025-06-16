@@ -1,250 +1,275 @@
-import React, { useState } from 'react';
+
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useCustomers } from '@/hooks/useCustomers';
-import { useToast } from '@/hooks/use-toast';
-import { validateCustomer } from '@/lib/serverValidation';
-import FormFieldError from './FormFieldError';
-import { X } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+
+const customerSchema = z.object({
+  first_name: z.string().min(1, 'First name is required'),
+  last_name: z.string().min(1, 'Last name is required'),
+  email: z.string().email('Invalid email').optional().or(z.literal('')),
+  phone: z.string().optional(),
+  company_name: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zip_code: z.string().optional(),
+  emergency_contact_name: z.string().optional(),
+  emergency_contact_phone: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+type CustomerFormData = z.infer<typeof customerSchema>;
 
 interface NewCustomerFormProps {
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess: () => void;
 }
 
-const NewCustomerForm = ({ onClose, onSuccess }: NewCustomerFormProps) => {
+const NewCustomerForm: React.FC<NewCustomerFormProps> = ({ onClose, onSuccess }) => {
   const { createCustomer } = useCustomers();
-  const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    state: '',
-    zip_code: '',
-    company_name: '',
-    emergency_contact_name: '',
-    emergency_contact_phone: '',
-    notes: ''
+
+  const form = useForm<CustomerFormData>({
+    resolver: zodResolver(customerSchema),
+    defaultValues: {
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone: '',
+      company_name: '',
+      address: '',
+      city: '',
+      state: '',
+      zip_code: '',
+      emergency_contact_name: '',
+      emergency_contact_phone: '',
+      notes: '',
+    },
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setErrors({});
-
+  const onSubmit = async (data: CustomerFormData) => {
     try {
-      // Server-side validation
-      const validation = await validateCustomer(formData);
-      
-      if (!validation.isValid) {
-        setErrors(validation.errors);
-        setIsSubmitting(false);
-        return;
-      }
+      const customerData = {
+        ...data,
+        email: data.email || null,
+      };
 
-      await createCustomer(formData);
-      
-      toast({
-        title: "Customer Created",
-        description: "New customer has been successfully added to the system."
-      });
-      
-      onSuccess?.();
-      onClose();
+      const newCustomer = await createCustomer(customerData);
+      if (newCustomer) {
+        onSuccess();
+        onClose();
+      }
     } catch (error) {
       console.error('Error creating customer:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create customer. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Add New Customer</CardTitle>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Contact Information */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg">Contact Information</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="first_name">First Name *</Label>
-                  <Input
-                    id="first_name"
-                    value={formData.first_name}
-                    onChange={(e) => handleChange('first_name', e.target.value)}
-                    required
-                  />
-                  <FormFieldError error={errors.first_name} />
-                </div>
-                <div>
-                  <Label htmlFor="last_name">Last Name *</Label>
-                  <Input
-                    id="last_name"
-                    value={formData.last_name}
-                    onChange={(e) => handleChange('last_name', e.target.value)}
-                    required
-                  />
-                  <FormFieldError error={errors.last_name} />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => handleChange('email', e.target.value)}
-                  />
-                  <FormFieldError error={errors.email} />
-                </div>
-                <div>
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => handleChange('phone', e.target.value)}
-                  />
-                  <FormFieldError error={errors.phone} />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="company_name">Company Name</Label>
-                <Input
-                  id="company_name"
-                  value={formData.company_name}
-                  onChange={(e) => handleChange('company_name', e.target.value)}
-                />
-                <FormFieldError error={errors.company_name} />
-              </div>
-            </div>
-
-            {/* Address Information */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg">Address</h3>
-              <div>
-                <Label htmlFor="address">Street Address</Label>
-                <Input
-                  id="address"
-                  value={formData.address}
-                  onChange={(e) => handleChange('address', e.target.value)}
-                />
-                <FormFieldError error={errors.address} />
-              </div>
-              
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="city">City</Label>
-                  <Input
-                    id="city"
-                    value={formData.city}
-                    onChange={(e) => handleChange('city', e.target.value)}
-                  />
-                  <FormFieldError error={errors.city} />
-                </div>
-                <div>
-                  <Label htmlFor="state">State</Label>
-                  <Input
-                    id="state"
-                    value={formData.state}
-                    onChange={(e) => handleChange('state', e.target.value)}
-                  />
-                  <FormFieldError error={errors.state} />
-                </div>
-                <div>
-                  <Label htmlFor="zip_code">ZIP Code</Label>
-                  <Input
-                    id="zip_code"
-                    value={formData.zip_code}
-                    onChange={(e) => handleChange('zip_code', e.target.value)}
-                  />
-                  <FormFieldError error={errors.zip_code} />
-                </div>
-              </div>
-            </div>
-
-            {/* Emergency Contact */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg">Emergency Contact</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="emergency_contact_name">Emergency Contact Name</Label>
-                  <Input
-                    id="emergency_contact_name"
-                    value={formData.emergency_contact_name}
-                    onChange={(e) => handleChange('emergency_contact_name', e.target.value)}
-                  />
-                  <FormFieldError error={errors.emergency_contact_name} />
-                </div>
-                <div>
-                  <Label htmlFor="emergency_contact_phone">Emergency Contact Phone</Label>
-                  <Input
-                    id="emergency_contact_phone"
-                    type="tel"
-                    value={formData.emergency_contact_phone}
-                    onChange={(e) => handleChange('emergency_contact_phone', e.target.value)}
-                  />
-                  <FormFieldError error={errors.emergency_contact_phone} />
-                </div>
-              </div>
-            </div>
-
-            {/* Notes */}
-            <div>
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => handleChange('notes', e.target.value)}
-                rows={3}
-                placeholder="Any additional information about the customer..."
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Add New Customer</DialogTitle>
+        </DialogHeader>
+        
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="first_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First Name *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter first name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              <FormFieldError error={errors.notes} />
+
+              <FormField
+                control={form.control}
+                name="last_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Name *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter last name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
-            <div className="flex gap-3 pt-4">
-              <Button type="submit" disabled={isSubmitting} className="flex-1">
-                {isSubmitting ? 'Creating...' : 'Create Customer'}
-              </Button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="Enter email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter phone number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="company_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Company Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter company name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Address</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter address" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter city" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="state"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>State</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter state" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="zip_code"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>ZIP Code</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter ZIP code" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="emergency_contact_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Emergency Contact Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter emergency contact name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="emergency_contact_phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Emergency Contact Phone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter emergency contact phone" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="Enter any additional notes" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex gap-2 pt-4">
+              <Button type="submit">Create Customer</Button>
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
             </div>
           </form>
-        </CardContent>
-      </Card>
-    </div>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 };
 

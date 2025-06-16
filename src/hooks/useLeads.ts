@@ -32,6 +32,7 @@ export const useLeads = () => {
 
       if (error) throw error;
       setLeads(data || []);
+      console.log(`Fetched ${data?.length || 0} leads`);
     } catch (error: any) {
       console.error('Error fetching leads:', error);
       setError(error);
@@ -42,9 +43,9 @@ export const useLeads = () => {
     }
   };
 
-  const addLead = async (leadData: LeadInsert) => {
+  const createLead = async (leadData: LeadInsert) => {
     if (!user) {
-      toast.error('You must be logged in to add leads');
+      toast.error('You must be logged in to create leads');
       return null;
     }
 
@@ -58,7 +59,7 @@ export const useLeads = () => {
       if (error) throw error;
       
       setLeads(prev => [data, ...prev]);
-      toast.success('Lead added successfully');
+      toast.success('Lead created successfully');
       
       await supabase.from('activity_logs').insert({
         user_id: user.id,
@@ -70,13 +71,11 @@ export const useLeads = () => {
 
       return data;
     } catch (error: any) {
-      console.error('Error adding lead:', error);
-      toast.error(error.message || 'Failed to add lead');
+      console.error('Error creating lead:', error);
+      toast.error(error.message || 'Failed to create lead');
       return null;
     }
   };
-
-  const createLead = addLead; // Alias for compatibility
 
   const updateLead = async (id: string, updates: LeadUpdate) => {
     if (!user) {
@@ -145,14 +144,14 @@ export const useLeads = () => {
     }
   };
 
-  const convertToCustomer = async (leadId: string) => {
+  const convertToCustomer = async (id: string) => {
     if (!user) {
       toast.error('You must be logged in to convert leads');
       return null;
     }
 
     try {
-      const lead = leads.find(l => l.id === leadId);
+      const lead = leads.find(l => l.id === id);
       if (!lead) {
         toast.error('Lead not found');
         return null;
@@ -170,20 +169,29 @@ export const useLeads = () => {
           city: lead.city,
           state: lead.state,
           zip_code: lead.zip_code,
-          notes: lead.notes
+          notes: lead.notes,
+          lead_id: lead.id
         })
         .select()
         .single();
 
       if (customerError) throw customerError;
 
-      await updateLead(leadId, { status: 'won' }); // Changed from 'converted' to 'won'
+      await updateLead(id, { status: 'converted' });
       
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        entity_type: 'lead',
+        entity_id: id,
+        action: 'converted',
+        description: `Lead converted to customer: ${lead.first_name} ${lead.last_name}`
+      });
+
       toast.success('Lead converted to customer successfully');
       return customer;
     } catch (error: any) {
       console.error('Error converting lead:', error);
-      toast.error('Failed to convert lead to customer');
+      toast.error(error.message || 'Failed to convert lead');
       return null;
     }
   };
@@ -197,7 +205,6 @@ export const useLeads = () => {
     loading,
     error,
     fetchLeads,
-    addLead,
     createLead,
     updateLead,
     deleteLead,

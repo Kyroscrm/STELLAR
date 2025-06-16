@@ -1,44 +1,70 @@
 
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const useJobNumberGenerator = () => {
   const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
-  const generateEstimateNumber = async (): Promise<string> => {
+  const generateJobNumber = async (): Promise<string> => {
     setLoading(true);
     try {
-      // Simple estimate number generation based on timestamp
-      const timestamp = Date.now();
-      const estimateNumber = `EST-${timestamp.toString().slice(-6)}`;
-      return estimateNumber;
+      const { count } = await supabase
+        .from('jobs')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user?.id);
+
+      const nextNumber = (count || 0) + 1;
+      return `JOB-${String(nextNumber).padStart(4, '0')}`;
     } catch (error) {
-      console.error('Error generating estimate number:', error);
-      toast.error('Failed to generate estimate number');
-      return `EST-${Math.floor(Math.random() * 100000)}`;
+      console.error('Error generating job number:', error);
+      return `JOB-${String(Date.now()).slice(-4)}`;
     } finally {
       setLoading(false);
     }
   };
 
-  const generateJobNumber = async (): Promise<string> => {
+  const generateEstimateNumber = async (): Promise<string> => {
     setLoading(true);
     try {
-      const timestamp = Date.now();
-      const jobNumber = `JOB-${timestamp.toString().slice(-6)}`;
-      return jobNumber;
+      const { count } = await supabase
+        .from('estimates')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user?.id);
+
+      const nextNumber = (count || 0) + 1;
+      return `EST-${String(nextNumber).padStart(4, '0')}`;
     } catch (error) {
-      console.error('Error generating job number:', error);
-      toast.error('Failed to generate job number');
-      return `JOB-${Math.floor(Math.random() * 100000)}`;
+      console.error('Error generating estimate number:', error);
+      return `EST-${String(Date.now()).slice(-4)}`;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateInvoiceNumber = async (): Promise<string> => {
+    setLoading(true);
+    try {
+      const { count } = await supabase
+        .from('invoices')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user?.id);
+
+      const nextNumber = (count || 0) + 1;
+      return `INV-${String(nextNumber).padStart(4, '0')}`;
+    } catch (error) {
+      console.error('Error generating invoice number:', error);
+      return `INV-${String(Date.now()).slice(-4)}`;
     } finally {
       setLoading(false);
     }
   };
 
   return {
-    generateEstimateNumber,
     generateJobNumber,
+    generateEstimateNumber,
+    generateInvoiceNumber,
     loading
   };
 };
