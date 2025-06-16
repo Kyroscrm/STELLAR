@@ -1,227 +1,143 @@
 
 import React, { useState } from 'react';
-import { Calendar, Clock, User, Phone, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
+import { Calendar, Clock } from 'lucide-react';
 
 const BookingScheduler = () => {
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedTime, setSelectedTime] = useState('');
   const [formData, setFormData] = useState({
-    serviceType: '',
     name: '',
     email: '',
     phone: '',
-    address: '',
-    notes: ''
+    service: '',
+    date: '',
+    time: '',
+    message: ''
   });
 
-  const { toast } = useToast();
-
-  // Generate available dates (next 14 days, excluding Sundays)
-  const getAvailableDates = () => {
-    const dates = [];
-    const today = new Date();
-    
-    for (let i = 1; i <= 21; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      
-      // Skip Sundays (0)
-      if (date.getDay() !== 0) {
-        dates.push({
-          value: date.toISOString().split('T')[0],
-          label: date.toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            month: 'long', 
-            day: 'numeric' 
-          })
-        });
-      }
-    }
-    
-    return dates;
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const availableTimes = [
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Handle form submission
+    console.log('Booking request:', formData);
+    alert('Thank you! We will contact you within 24 hours to confirm your appointment.');
+  };
+
+  const timeSlots = [
     '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM',
-    '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'
+    '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'
   ];
-
-  const serviceTypes = [
-    'Free Consultation',
-    'Project Assessment',
-    'Design Consultation',
-    'Cost Estimate Meeting',
-    'Follow-up Discussion'
-  ];
-
-  const handleSubmit = () => {
-    if (!selectedDate || !selectedTime || !formData.serviceType || !formData.name || !formData.email || !formData.phone) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields to schedule your appointment.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // In a real app, this would integrate with calendar system and CRM
-    console.log('Appointment scheduled:', {
-      date: selectedDate,
-      time: selectedTime,
-      ...formData
-    });
-
-    toast({
-      title: "Appointment Scheduled!",
-      description: `Your ${formData.serviceType.toLowerCase()} is scheduled for ${new Date(selectedDate).toLocaleDateString()} at ${selectedTime}. We'll send you a confirmation email shortly.`
-    });
-
-    // Reset form
-    setSelectedDate('');
-    setSelectedTime('');
-    setFormData({
-      serviceType: '',
-      name: '',
-      email: '',
-      phone: '',
-      address: '',
-      notes: ''
-    });
-  };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto shadow-lg">
-      <CardHeader className="text-center bg-gradient-to-r from-secondary to-secondary/80 text-primary rounded-t-lg">
-        <CardTitle className="flex items-center justify-center gap-2 text-2xl">
-          <Calendar className="h-6 w-6" />
-          Schedule Your Consultation
-        </CardTitle>
-        <p className="text-primary/80">Book a free consultation with our experts</p>
-      </CardHeader>
-      <CardContent className="p-6 space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="serviceType">Service Type *</Label>
-          <Select value={formData.serviceType} onValueChange={(value) => setFormData(prev => ({ ...prev, serviceType: value }))}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select consultation type" />
-            </SelectTrigger>
-            <SelectContent>
-              {serviceTypes.map(service => (
-                <SelectItem key={service} value={service}>
-                  {service}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label htmlFor="date">Preferred Date *</Label>
-            <Select value={selectedDate} onValueChange={setSelectedDate}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a date" />
-              </SelectTrigger>
-              <SelectContent>
-                {getAvailableDates().map(date => (
-                  <SelectItem key={date.value} value={date.value}>
-                    {date.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="time">Preferred Time *</Label>
-            <Select value={selectedTime} onValueChange={setSelectedTime}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a time" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableTimes.map(time => (
-                  <SelectItem key={time} value={time}>
-                    <Clock className="h-4 w-4 mr-2" />
-                    {time}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label htmlFor="name">Full Name *</Label>
-            <Input
-              id="name"
-              placeholder="Your full name"
-              value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number *</Label>
-            <Input
-              id="phone"
-              type="tel"
-              placeholder="(123) 456-7890"
-              value={formData.phone}
-              onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="email">Email Address *</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="your@email.com"
-            value={formData.email}
-            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="address">Project Address</Label>
-          <Input
-            id="address"
-            placeholder="Street address, City, State, ZIP"
-            value={formData.address}
-            onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="notes">Additional Notes</Label>
-          <Textarea
-            id="notes"
-            placeholder="Any specific questions or details about your project..."
-            value={formData.notes}
-            onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-            rows={3}
-          />
-        </div>
-
-        <Button 
-          onClick={handleSubmit}
-          className="w-full bg-primary text-white hover:bg-primary/90 font-semibold py-3"
-        >
-          <Calendar className="h-4 w-4 mr-2" />
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Calendar className="h-5 w-5" />
           Schedule Consultation
-        </Button>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="name">Name *</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="phone">Phone *</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                required
+              />
+            </div>
+          </div>
 
-        <div className="text-center text-sm text-gray-500">
-          <p>Free consultations • No obligation • Licensed & insured</p>
-        </div>
+          <div>
+            <Label htmlFor="email">Email *</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => handleInputChange('email', e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="service">Service Needed</Label>
+            <select
+              id="service"
+              value={formData.service}
+              onChange={(e) => handleInputChange('service', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">Select a service</option>
+              <option value="roof-replacement">Roof Replacement</option>
+              <option value="roof-repair">Roof Repair</option>
+              <option value="energy-retrofit">Energy Retrofit</option>
+              <option value="solar-integration">Solar Integration</option>
+              <option value="inspection">Roof Inspection</option>
+              <option value="consultation">General Consultation</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="date">Preferred Date</Label>
+              <Input
+                id="date"
+                type="date"
+                value={formData.date}
+                onChange={(e) => handleInputChange('date', e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+            <div>
+              <Label htmlFor="time">Preferred Time</Label>
+              <select
+                id="time"
+                value={formData.time}
+                onChange={(e) => handleInputChange('time', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">Select time</option>
+                {timeSlots.map(slot => (
+                  <option key={slot} value={slot}>{slot}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="message">Additional Details</Label>
+            <Textarea
+              id="message"
+              placeholder="Tell us about your project or any specific requirements..."
+              value={formData.message}
+              onChange={(e) => handleInputChange('message', e.target.value)}
+              rows={3}
+            />
+          </div>
+
+          <Button type="submit" className="w-full">
+            <Clock className="h-4 w-4 mr-2" />
+            Schedule Consultation
+          </Button>
+        </form>
       </CardContent>
     </Card>
   );
