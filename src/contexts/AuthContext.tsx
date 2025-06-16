@@ -39,7 +39,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     console.log('Auth Session:', session);
     console.log('Current User:', user);
-  }, [session, user]);
+    console.log('Loading state:', loading);
+  }, [session, user, loading]);
 
   useEffect(() => {
     // Get initial session
@@ -53,9 +54,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         if (session?.user) {
           await fetchUserProfile(session.user);
+        } else {
+          setLoading(false);
         }
       }
-      setLoading(false);
     };
 
     getInitialSession();
@@ -68,8 +70,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await fetchUserProfile(session.user);
       } else {
         setUser(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -110,12 +112,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           if (createError) {
             console.error('Error creating profile:', createError);
+            setLoading(false);
             return;
           } else {
             console.log('Profile created successfully:', newProfile);
             profile = newProfile;
           }
         } else {
+          setLoading(false);
           return;
         }
       }
@@ -131,8 +135,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('Setting user data:', authUserData);
         setUser(authUserData);
       }
+      
+      console.log('Profile fetch completed, setting loading to false');
+      setLoading(false);
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
+      setLoading(false);
     }
   };
 
@@ -159,7 +167,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(data.session);
         await fetchUserProfile(data.user);
         toast.success('Successfully logged in!');
-        setLoading(false);
         return true;
       }
 
