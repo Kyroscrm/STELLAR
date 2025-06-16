@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -15,22 +16,22 @@ const Login = () => {
     password: ''
   });
   const [errors, setErrors] = useState<{email?: string; password?: string}>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login, user, loading } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const { login, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   // Redirect if already logged in
   useEffect(() => {
-    console.log('Login page - checking auth state:', { user: user?.email, loading });
-    
-    if (!loading && user) {
+    if (user) {
       console.log('User already logged in, redirecting...');
-      const redirectPath = user.role === 'admin' || user.role === 'staff' ? '/admin' : '/client';
-      console.log('Redirecting to:', redirectPath);
-      navigate(redirectPath, { replace: true });
+      if (user.role === 'admin' || user.role === 'staff') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/client', { replace: true });
+      }
     }
-  }, [user, loading, navigate]);
+  }, [user, navigate]);
 
   const validateForm = () => {
     const newErrors: {email?: string; password?: string} = {};
@@ -54,23 +55,23 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm() || isSubmitting) {
+    if (!validateForm()) {
       return;
     }
 
-    setIsSubmitting(true);
+    setIsLoading(true);
 
     try {
       console.log('Submitting login form...');
       const success = await login(formData.email, formData.password);
-      console.log('Login result:', success);
-      
-      if (!success) {
+      if (success) {
         toast({
-          title: "Login Failed",
-          description: "Please check your email and password and try again.",
-          variant: "destructive"
+          title: "Login Successful",
+          description: "Welcome back! Redirecting to your dashboard..."
         });
+        
+        // The redirect will happen automatically via the useEffect above
+        // when the user state updates
       }
     } catch (error) {
       console.error('Login form error:', error);
@@ -80,7 +81,7 @@ const Login = () => {
         variant: "destructive"
       });
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
@@ -98,15 +99,6 @@ const Login = () => {
     });
     setErrors({});
   };
-
-  // Show loading spinner while checking authentication
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 flex items-center justify-center p-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 flex items-center justify-center p-4">
@@ -142,7 +134,7 @@ const Login = () => {
                     value={formData.email}
                     onChange={(e) => handleChange('email', e.target.value)}
                     className="pl-10"
-                    disabled={isSubmitting}
+                    disabled={isLoading}
                   />
                 </div>
                 <FormFieldError error={errors.email} />
@@ -159,7 +151,7 @@ const Login = () => {
                     value={formData.password}
                     onChange={(e) => handleChange('password', e.target.value)}
                     className="pl-10"
-                    disabled={isSubmitting}
+                    disabled={isLoading}
                   />
                 </div>
                 <FormFieldError error={errors.password} />
@@ -177,9 +169,9 @@ const Login = () => {
               <Button 
                 type="submit" 
                 className="w-full bg-primary text-white hover:bg-primary/90"
-                disabled={isSubmitting}
+                disabled={isLoading}
               >
-                {isSubmitting ? "Signing In..." : "Sign In"}
+                {isLoading ? "Signing In..." : "Sign In"}
               </Button>
             </form>
 
@@ -198,7 +190,7 @@ const Login = () => {
                 onClick={fillAdminCredentials}
                 className="w-full"
                 type="button"
-                disabled={isSubmitting}
+                disabled={isLoading}
               >
                 Fill Admin Credentials
               </Button>

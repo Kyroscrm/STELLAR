@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
@@ -9,30 +8,26 @@ export type Estimate = Tables<'estimates'>;
 type EstimateInsert = Omit<TablesInsert<'estimates'>, 'user_id'>;
 type EstimateUpdate = TablesUpdate<'estimates'>;
 
-// Extended Estimate type with customer data
-export type EstimateWithCustomer = Estimate & {
+export type EstimateWithLineItems = Estimate & {
+  estimate_line_items: Array<{
+    id: string;
+    description: string;
+    quantity: number;
+    unit_price: number;
+    total: number;
+  }>;
   customers?: {
     id: string;
     first_name: string;
     last_name: string;
     email?: string;
     phone?: string;
+    company_name?: string;
   };
 };
 
-// Extended Estimate type with line items
-export type EstimateWithLineItems = Estimate & {
-  estimate_line_items?: {
-    id: string;
-    description: string;
-    quantity: number;
-    unit_price: number;
-    total: number;
-  }[];
-};
-
 export const useEstimates = () => {
-  const [estimates, setEstimates] = useState<EstimateWithCustomer[]>([]);
+  const [estimates, setEstimates] = useState<EstimateWithLineItems[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const { user } = useAuth();
@@ -55,7 +50,15 @@ export const useEstimates = () => {
             first_name,
             last_name,
             email,
-            phone
+            phone,
+            company_name
+          ),
+          estimate_line_items (
+            id,
+            description,
+            quantity,
+            unit_price,
+            total
           )
         `)
         .eq('user_id', user.id)
@@ -74,42 +77,30 @@ export const useEstimates = () => {
     }
   };
 
-  const createEstimate = async (estimateData: EstimateInsert) => {
+  const createEstimate = async (estimateData: EstimateInsert & { line_items?: any[] }) => {
     if (!user) {
       toast.error('You must be logged in to create estimates');
       return null;
     }
 
-    // Validate UUID fields - don't submit empty strings
-    const cleanedData = { ...estimateData };
-    if (!cleanedData.customer_id || cleanedData.customer_id.trim() === '') {
-      toast.error('Please select a customer');
-      return null;
-    }
-    if (cleanedData.job_id && cleanedData.job_id.trim() === '') {
-      delete cleanedData.job_id;
-    }
-
     try {
       const { data, error } = await supabase
         .from('estimates')
-        .insert({ ...cleanedData, user_id: user.id })
+        .insert({ ...estimateData, user_id: user.id })
         .select()
         .single();
 
       if (error) throw error;
       
-      setEstimates(prev => [data, ...prev]);
+      setEstimates(prev => [{ ...data, estimate_line_items: [], customers: undefined }, ...prev]);
       toast.success('Estimate created successfully');
       
-      // Log activity
       await supabase.from('activity_logs').insert({
         user_id: user.id,
         entity_type: 'estimate',
         entity_id: data.id,
         action: 'created',
-        description: `Estimate created: ${data.title}`,
-        metadata: { estimate_number: data.estimate_number }
+        description: `Estimate created: ${data.title}`
       });
 
       return data;
@@ -119,8 +110,6 @@ export const useEstimates = () => {
       return null;
     }
   };
-
-  const addEstimate = createEstimate; // Alias for compatibility
 
   const updateEstimate = async (id: string, updates: EstimateUpdate) => {
     if (!user) {
@@ -139,17 +128,17 @@ export const useEstimates = () => {
 
       if (error) throw error;
       
-      setEstimates(prev => prev.map(estimate => estimate.id === id ? data : estimate));
+      setEstimates(prev => prev.map(estimate => 
+        estimate.id === id ? { ...estimate, ...data } : estimate
+      ));
       toast.success('Estimate updated successfully');
       
-      // Log activity
       await supabase.from('activity_logs').insert({
         user_id: user.id,
         entity_type: 'estimate',
         entity_id: id,
         action: 'updated',
-        description: `Estimate updated`,
-        metadata: { updates: Object.keys(updates) }
+        description: `Estimate updated`
       });
 
       return true;
@@ -178,7 +167,6 @@ export const useEstimates = () => {
       setEstimates(prev => prev.filter(estimate => estimate.id !== id));
       toast.success('Estimate deleted successfully');
       
-      // Log activity
       await supabase.from('activity_logs').insert({
         user_id: user.id,
         entity_type: 'estimate',
@@ -191,6 +179,9 @@ export const useEstimates = () => {
       toast.error(error.message || 'Failed to delete estimate');
     }
   };
+
+  // Alias for addEstimate to match component expectations
+  const addEstimate = createEstimate;
 
   useEffect(() => {
     fetchEstimates();
