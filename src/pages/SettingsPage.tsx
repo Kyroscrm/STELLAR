@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
+import EstimateTemplatesManager from '@/components/EstimateTemplatesManager';
 import { 
   User, 
   Settings, 
@@ -339,48 +339,9 @@ const SettingsPage = () => {
           </Card>
         </TabsContent>
 
-        {/* Templates Tab */}
+        {/* NEW Templates Tab */}
         <TabsContent value="templates">
-          <Card>
-            <CardHeader>
-              <CardTitle>Document Templates</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card>
-                  <CardContent className="p-4">
-                    <h3 className="font-medium mb-2">Estimate Template</h3>
-                    <p className="text-sm text-gray-600 mb-3">Standard estimate layout and formatting</p>
-                    <Button variant="outline" size="sm">Edit Template</Button>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="p-4">
-                    <h3 className="font-medium mb-2">Invoice Template</h3>
-                    <p className="text-sm text-gray-600 mb-3">Default invoice design and terms</p>
-                    <Button variant="outline" size="sm">Edit Template</Button>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="p-4">
-                    <h3 className="font-medium mb-2">Contract Template</h3>
-                    <p className="text-sm text-gray-600 mb-3">Standard service agreement template</p>
-                    <Button variant="outline" size="sm">Edit Template</Button>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="p-4">
-                    <h3 className="font-medium mb-2">Email Templates</h3>
-                    <p className="text-sm text-gray-600 mb-3">Automated email templates</p>
-                    <Button variant="outline" size="sm">Manage Templates</Button>
-                  </CardContent>
-                </Card>
-              </div>
-            </CardContent>
-          </Card>
+          <EstimateTemplatesManager />
         </TabsContent>
 
         {/* Security Tab */}
