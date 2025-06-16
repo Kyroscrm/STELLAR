@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useInvoices } from '@/hooks/useInvoices';
 import { useCustomers } from '@/hooks/useCustomers';
@@ -56,7 +55,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const InvoicesPage = () => {
-  const { invoices, loading, error, addInvoice, updateInvoice, deleteInvoice } = useInvoices();
+  const { invoices, loading, error, createInvoice, updateInvoice, deleteInvoice } = useInvoices();
   const { customers } = useCustomers();
   const { generateInvoicePDF, generating } = usePDFGeneration();
   
@@ -83,7 +82,7 @@ const InvoicesPage = () => {
   const handleCreateInvoice = async (data: any) => {
     setIsSubmitting(true);
     try {
-      await addInvoice(data);
+      await createInvoice(data);
       setIsCreateModalOpen(false);
     } finally {
       setIsSubmitting(false);

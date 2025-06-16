@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
@@ -18,6 +17,17 @@ export type EstimateWithCustomer = Estimate & {
     email?: string;
     phone?: string;
   };
+};
+
+// Extended Estimate type with line items
+export type EstimateWithLineItems = Estimate & {
+  estimate_line_items?: {
+    id: string;
+    description: string;
+    quantity: number;
+    unit_price: number;
+    total: number;
+  }[];
 };
 
 export const useEstimates = () => {

@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { User } from '@supabase/supabase-js';
+import { User, Session } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
 export interface AuthUser {
@@ -13,11 +13,13 @@ export interface AuthUser {
 
 export interface AuthContextType {
   user: AuthUser | null;
+  session: Session | null;
   login: (email: string, password: string) => Promise<boolean>;
   register: (email: string, password: string, firstName: string, lastName: string) => Promise<boolean>;
   logout: () => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,12 +34,14 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Get initial session
     const getInitialSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
       if (session?.user) {
         await fetchUserProfile(session.user);
       }
@@ -48,6 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setSession(session);
       if (session?.user) {
         await fetchUserProfile(session.user);
       } else {
@@ -159,6 +164,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await supabase.auth.signOut();
       setUser(null);
+      setSession(null);
       toast.success('Successfully logged out!');
     } catch (error) {
       console.error('Logout error:', error);
@@ -170,11 +176,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const value: AuthContextType = {
     user,
+    session,
     login,
     register,
     logout,
     signOut,
     loading,
+    isLoading: loading,
   };
 
   return (

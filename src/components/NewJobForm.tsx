@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useJobs, JobWithCustomer } from '@/hooks/useJobs';
 import { useCustomers } from '@/hooks/useCustomers';
@@ -30,7 +29,7 @@ const NewJobForm: React.FC<NewJobFormProps> = ({ onSuccess, onCancel, job }) => 
     estimated_hours: '',
     start_date: '',
     end_date: '',
-    status: 'quoted' as const,
+    status: 'quoted' as 'quoted' | 'approved' | 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
     notes: ''
   });
 
