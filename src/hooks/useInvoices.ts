@@ -20,6 +20,17 @@ export type InvoiceWithCustomer = Invoice & {
   };
 };
 
+// Extended Invoice type with line items
+export type InvoiceWithLineItems = Invoice & {
+  invoice_line_items?: {
+    id: string;
+    description: string;
+    quantity: number;
+    unit_price: number;
+    total: number;
+  }[];
+};
+
 export const useInvoices = () => {
   const [invoices, setInvoices] = useState<InvoiceWithCustomer[]>([]);
   const [loading, setLoading] = useState(false);
@@ -112,6 +123,8 @@ export const useInvoices = () => {
     }
   };
 
+  const addInvoice = createInvoice; // Alias for compatibility
+
   const updateInvoice = async (id: string, updates: InvoiceUpdate) => {
     if (!user) {
       toast.error('You must be logged in to update invoices');
@@ -192,6 +205,7 @@ export const useInvoices = () => {
     error,
     fetchInvoices,
     createInvoice,
+    addInvoice,
     updateInvoice,
     deleteInvoice
   };

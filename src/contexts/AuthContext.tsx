@@ -133,7 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
-        // Create profile
+        // Create profile with proper role type
         const { error: profileError } = await supabase
           .from('profiles')
           .insert({
@@ -141,7 +141,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             email: data.user.email!,
             first_name: firstName,
             last_name: lastName,
-            role: 'user'
+            role: 'user' as const
           });
 
         if (profileError) {

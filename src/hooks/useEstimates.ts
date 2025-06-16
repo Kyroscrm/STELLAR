@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
@@ -119,6 +120,8 @@ export const useEstimates = () => {
     }
   };
 
+  const addEstimate = createEstimate; // Alias for compatibility
+
   const updateEstimate = async (id: string, updates: EstimateUpdate) => {
     if (!user) {
       toast.error('You must be logged in to update estimates');
@@ -199,6 +202,7 @@ export const useEstimates = () => {
     error,
     fetchEstimates,
     createEstimate,
+    addEstimate,
     updateEstimate,
     deleteEstimate
   };
