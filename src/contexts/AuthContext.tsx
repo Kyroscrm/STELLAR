@@ -189,8 +189,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (data.user && data.session) {
         console.log('Login successful, user:', data.user.id);
-        toast.success('Successfully logged in!');
-        return true;
+        
+        // Immediately fetch profile and update user state
+        try {
+          const userData = await fetchUserProfile(data.user);
+          setUser(userData);
+          setSession(data.session);
+          console.log('User state updated after login:', userData);
+          toast.success('Successfully logged in!');
+          return true;
+        } catch (profileError) {
+          console.error('Error fetching profile after login:', profileError);
+          toast.error('Login successful but failed to load profile');
+          return false;
+        }
       }
 
       console.error('Login failed: no user or session returned');
