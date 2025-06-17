@@ -67,23 +67,35 @@ const NewJobDialog: React.FC<NewJobDialogProps> = ({
 
     try {
       // Validate with Zod schema
-      const validatedData = jobSchema.parse({
-        ...formData,
-        title: formData.title, // Ensure title is always included
-        customer_id: formData.customer_id || undefined,
-        estimated_hours: formData.estimated_hours || undefined,
-        actual_hours: formData.actual_hours || undefined,
-        budget: formData.budget || undefined,
-        total_cost: formData.total_cost || undefined,
-        start_date: formData.start_date || undefined,
-        end_date: formData.end_date || undefined
-      });
+      const result = jobSchema.safeParse(formData);
+      
+      if (!result.success) {
+        const firstError = result.error.errors[0];
+        toast.error(`Validation error: ${firstError.message}`);
+        return;
+      }
+
+      // Create a properly typed job object for Supabase
+      const jobData = {
+        title: result.data.title!, // Non-null assertion since we validated above
+        description: result.data.description || undefined,
+        customer_id: result.data.customer_id || undefined,
+        status: result.data.status || 'quoted' as const,
+        start_date: result.data.start_date || undefined,
+        end_date: result.data.end_date || undefined,
+        estimated_hours: result.data.estimated_hours || undefined,
+        actual_hours: result.data.actual_hours || undefined,
+        budget: result.data.budget || undefined,
+        total_cost: result.data.total_cost || undefined,
+        address: result.data.address || undefined,
+        notes: result.data.notes || undefined
+      };
 
       setLoading(true);
       
-      const result = await createJob(validatedData);
+      const createdJob = await createJob(jobData);
       
-      if (result) {
+      if (createdJob) {
         toast.success('Job created successfully');
         setOpen(false);
         resetForm();
@@ -91,13 +103,7 @@ const NewJobDialog: React.FC<NewJobDialogProps> = ({
       }
     } catch (error: any) {
       console.error('Error creating job:', error);
-      if (error.errors) {
-        // Zod validation errors
-        const firstError = error.errors[0];
-        toast.error(`Validation error: ${firstError.message}`);
-      } else {
-        toast.error('Failed to create job');
-      }
+      toast.error('Failed to create job');
     } finally {
       setLoading(false);
     }
