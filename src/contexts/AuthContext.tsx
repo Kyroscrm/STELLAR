@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -186,18 +187,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
+      console.log('Attempting to logout user:', user?.email);
+      setIsLoading(true);
+      
+      // Clear local state first
+      setUser(null);
+      setSession(null);
+      
+      // Sign out from Supabase
       const { error } = await supabase.auth.signOut();
+      
       if (error) {
         console.error('Logout error:', error);
         toast.error('Error signing out');
       } else {
-        setUser(null);
-        setSession(null);
+        console.log('Successfully signed out');
         toast.success('Signed out successfully');
       }
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Error signing out');
+    } finally {
+      setIsLoading(false);
     }
   };
 
