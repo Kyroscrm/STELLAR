@@ -4,6 +4,7 @@ import { useInvoices } from '@/hooks/useInvoices';
 import { useCustomers } from '@/hooks/useCustomers';
 import { usePDFGeneration } from '@/hooks/usePDFGeneration';
 import InvoiceForm from '@/components/InvoiceForm';
+import EditInvoiceDialog from '@/components/EditInvoiceDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +22,8 @@ import {
   Download,
   Send,
   Check,
-  X
+  X,
+  Edit
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -282,6 +284,15 @@ const InvoicesPage = () => {
                           <Eye className="h-4 w-4 mr-2" />
                           View
                         </DropdownMenuItem>
+                        <EditInvoiceDialog 
+                          invoice={invoice} 
+                          trigger={
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                          } 
+                        />
                         <DropdownMenuItem 
                           onClick={() => handleGeneratePDF(invoice)}
                           disabled={generating}
@@ -349,6 +360,46 @@ const InvoicesPage = () => {
                   <p className="text-gray-600">{selectedInvoice.description}</p>
                 </div>
               )}
+              
+              {/* Display line items */}
+              {selectedInvoice.invoice_line_items && selectedInvoice.invoice_line_items.length > 0 && (
+                <div>
+                  <strong>Line Items:</strong>
+                  <div className="mt-2 space-y-2">
+                    {selectedInvoice.invoice_line_items.map((item: any, index: number) => (
+                      <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                        <div>
+                          <p className="font-medium">{item.description}</p>
+                          <p className="text-sm text-gray-500">Qty: {item.quantity} × ${Number(item.unit_price).toFixed(2)}</p>
+                        </div>
+                        <p className="font-medium">${Number(item.total).toFixed(2)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex justify-between items-center pt-4 border-t">
+                <div className="flex gap-2">
+                  <EditInvoiceDialog 
+                    invoice={selectedInvoice} 
+                    trigger={
+                      <Button>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit Invoice
+                      </Button>
+                    } 
+                    onSuccess={() => setIsViewModalOpen(false)}
+                  />
+                  <Button onClick={() => handleGeneratePDF(selectedInvoice)} disabled={generating}>
+                    <Download className="h-4 w-4 mr-2" />
+                    {generating ? 'Generating...' : 'Download PDF'}
+                  </Button>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg"><strong>Total: ${(selectedInvoice.total_amount || 0).toFixed(2)}</strong></p>
+                </div>
+              </div>
             </div>
           )}
         </DialogContent>
