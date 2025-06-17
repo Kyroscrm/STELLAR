@@ -22,7 +22,7 @@ export type Database = {
           refresh_token: string | null
           status: Database["public"]["Enums"]["integration_status"] | null
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           access_token?: string | null
@@ -36,7 +36,7 @@ export type Database = {
           refresh_token?: string | null
           status?: Database["public"]["Enums"]["integration_status"] | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           access_token?: string | null
@@ -50,7 +50,7 @@ export type Database = {
           refresh_token?: string | null
           status?: Database["public"]["Enums"]["integration_status"] | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -63,7 +63,7 @@ export type Database = {
           entity_type: string
           id: string
           metadata: Json | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           action: string
@@ -73,7 +73,7 @@ export type Database = {
           entity_type: string
           id?: string
           metadata?: Json | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           action?: string
@@ -83,7 +83,7 @@ export type Database = {
           entity_type?: string
           id?: string
           metadata?: Json | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -96,7 +96,7 @@ export type Database = {
           last_used: string | null
           name: string
           permissions: string[] | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
@@ -106,7 +106,7 @@ export type Database = {
           last_used?: string | null
           name: string
           permissions?: string[] | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string | null
@@ -116,7 +116,7 @@ export type Database = {
           last_used?: string | null
           name?: string
           permissions?: string[] | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -132,7 +132,7 @@ export type Database = {
           status: Database["public"]["Enums"]["backup_status"] | null
           tables_included: string[] | null
           type: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           completed_at?: string | null
@@ -145,7 +145,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["backup_status"] | null
           tables_included?: string[] | null
           type: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           completed_at?: string | null
@@ -158,7 +158,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["backup_status"] | null
           tables_included?: string[] | null
           type?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -171,7 +171,7 @@ export type Database = {
           location: Json | null
           metadata: Json | null
           scanned_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           barcode_type?: string | null
@@ -181,7 +181,7 @@ export type Database = {
           location?: Json | null
           metadata?: Json | null
           scanned_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           barcode_type?: string | null
@@ -191,7 +191,7 @@ export type Database = {
           location?: Json | null
           metadata?: Json | null
           scanned_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -264,7 +264,7 @@ export type Database = {
           start_time: string
           task_id: string | null
           title: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           all_day?: boolean | null
@@ -278,7 +278,7 @@ export type Database = {
           start_time: string
           task_id?: string | null
           title: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           all_day?: boolean | null
@@ -292,7 +292,7 @@ export type Database = {
           start_time?: string
           task_id?: string | null
           title?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -323,7 +323,7 @@ export type Database = {
           status: Database["public"]["Enums"]["integration_status"] | null
           sync_enabled: boolean | null
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           access_token?: string | null
@@ -336,7 +336,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["integration_status"] | null
           sync_enabled?: boolean | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           access_token?: string | null
@@ -349,7 +349,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["integration_status"] | null
           sync_enabled?: boolean | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -366,7 +366,7 @@ export type Database = {
           target_audience: Json | null
           type: string
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           content?: string | null
@@ -380,7 +380,7 @@ export type Database = {
           target_audience?: Json | null
           type: string
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           content?: string | null
@@ -394,7 +394,7 @@ export type Database = {
           target_audience?: Json | null
           type?: string
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -447,7 +447,7 @@ export type Database = {
           id: string
           logo_url: string | null
           name: string
-          owner_id: string | null
+          owner_id: string
           primary_color: string | null
           secondary_color: string | null
           settings: Json | null
@@ -460,7 +460,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name: string
-          owner_id?: string | null
+          owner_id: string
           primary_color?: string | null
           secondary_color?: string | null
           settings?: Json | null
@@ -473,7 +473,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name?: string
-          owner_id?: string | null
+          owner_id?: string
           primary_color?: string | null
           secondary_color?: string | null
           settings?: Json | null
@@ -498,7 +498,7 @@ export type Database = {
           phone: string | null
           state: string | null
           updated_at: string | null
-          user_id: string | null
+          user_id: string
           zip_code: string | null
         }
         Insert: {
@@ -517,7 +517,7 @@ export type Database = {
           phone?: string | null
           state?: string | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
           zip_code?: string | null
         }
         Update: {
@@ -536,7 +536,7 @@ export type Database = {
           phone?: string | null
           state?: string | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
           zip_code?: string | null
         }
         Relationships: [
@@ -557,7 +557,7 @@ export type Database = {
           layout: Json
           name: string
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
@@ -566,7 +566,7 @@ export type Database = {
           layout: Json
           name: string
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string | null
@@ -575,7 +575,7 @@ export type Database = {
           layout?: Json
           name?: string
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -656,7 +656,7 @@ export type Database = {
           title: string
           type: string
           updated_at: string | null
-          user_id: string | null
+          user_id: string
           width: number | null
         }
         Insert: {
@@ -669,7 +669,7 @@ export type Database = {
           title: string
           type: string
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
           width?: number | null
         }
         Update: {
@@ -682,7 +682,7 @@ export type Database = {
           title?: string
           type?: string
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
           width?: number | null
         }
         Relationships: []
@@ -698,7 +698,7 @@ export type Database = {
           file_size: number | null
           id: string
           mime_type: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
@@ -710,7 +710,7 @@ export type Database = {
           file_size?: number | null
           id?: string
           mime_type?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string | null
@@ -722,7 +722,7 @@ export type Database = {
           file_size?: number | null
           id?: string
           mime_type?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -870,7 +870,7 @@ export type Database = {
           title: string
           total_amount: number | null
           updated_at: string | null
-          user_id: string | null
+          user_id: string
           valid_until: string | null
         }
         Insert: {
@@ -889,7 +889,7 @@ export type Database = {
           title: string
           total_amount?: number | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
           valid_until?: string | null
         }
         Update: {
@@ -908,7 +908,7 @@ export type Database = {
           title?: string
           total_amount?: number | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
           valid_until?: string | null
         }
         Relationships: [
@@ -940,7 +940,7 @@ export type Database = {
           page_type: string
           require_approval: boolean | null
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           allowed_file_types?: string[] | null
@@ -953,7 +953,7 @@ export type Database = {
           page_type: string
           require_approval?: boolean | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           allowed_file_types?: string[] | null
@@ -966,7 +966,7 @@ export type Database = {
           page_type?: string
           require_approval?: boolean | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -979,7 +979,7 @@ export type Database = {
           name: string
           page_type: string
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
@@ -989,7 +989,7 @@ export type Database = {
           name: string
           page_type: string
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string | null
@@ -999,7 +999,7 @@ export type Database = {
           name?: string
           page_type?: string
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1099,7 +1099,7 @@ export type Database = {
           title: string
           total_amount: number | null
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
@@ -1122,7 +1122,7 @@ export type Database = {
           title: string
           total_amount?: number | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string | null
@@ -1145,7 +1145,7 @@ export type Database = {
           title?: string
           total_amount?: number | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -1188,7 +1188,7 @@ export type Database = {
           title: string
           total_cost: number | null
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           actual_hours?: number | null
@@ -1206,7 +1206,7 @@ export type Database = {
           title: string
           total_cost?: number | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           actual_hours?: number | null
@@ -1224,7 +1224,7 @@ export type Database = {
           title?: string
           total_cost?: number | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -1246,7 +1246,7 @@ export type Database = {
           period: string | null
           target: number | null
           unit: string | null
-          user_id: string | null
+          user_id: string
           value: number | null
         }
         Insert: {
@@ -1258,7 +1258,7 @@ export type Database = {
           period?: string | null
           target?: number | null
           unit?: string | null
-          user_id?: string | null
+          user_id: string
           value?: number | null
         }
         Update: {
@@ -1270,7 +1270,7 @@ export type Database = {
           period?: string | null
           target?: number | null
           unit?: string | null
-          user_id?: string | null
+          user_id?: string
           value?: number | null
         }
         Relationships: []
@@ -1293,7 +1293,7 @@ export type Database = {
           state: string | null
           status: Database["public"]["Enums"]["lead_status"] | null
           updated_at: string | null
-          user_id: string | null
+          user_id: string
           zip_code: string | null
         }
         Insert: {
@@ -1313,7 +1313,7 @@ export type Database = {
           state?: string | null
           status?: Database["public"]["Enums"]["lead_status"] | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
           zip_code?: string | null
         }
         Update: {
@@ -1333,7 +1333,7 @@ export type Database = {
           state?: string | null
           status?: Database["public"]["Enums"]["lead_status"] | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
           zip_code?: string | null
         }
         Relationships: []
@@ -1423,7 +1423,7 @@ export type Database = {
           metadata: Json | null
           thumbnail_path: string | null
           type: Database["public"]["Enums"]["media_type"]
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
@@ -1434,7 +1434,7 @@ export type Database = {
           metadata?: Json | null
           thumbnail_path?: string | null
           type: Database["public"]["Enums"]["media_type"]
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string | null
@@ -1445,7 +1445,7 @@ export type Database = {
           metadata?: Json | null
           thumbnail_path?: string | null
           type?: Database["public"]["Enums"]["media_type"]
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -1502,7 +1502,7 @@ export type Database = {
           language: string | null
           metadata: Json | null
           processed_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           confidence_score?: number | null
@@ -1512,7 +1512,7 @@ export type Database = {
           language?: string | null
           metadata?: Json | null
           processed_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           confidence_score?: number | null
@@ -1522,7 +1522,7 @@ export type Database = {
           language?: string | null
           metadata?: Json | null
           processed_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1536,7 +1536,7 @@ export type Database = {
           synced: boolean | null
           synced_at: string | null
           table_name: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           action: string
@@ -1547,7 +1547,7 @@ export type Database = {
           synced?: boolean | null
           synced_at?: string | null
           table_name: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           action?: string
@@ -1558,7 +1558,7 @@ export type Database = {
           synced?: boolean | null
           synced_at?: string | null
           table_name?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1571,7 +1571,7 @@ export type Database = {
           provider_id: string | null
           type: Database["public"]["Enums"]["payment_method_type"]
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
@@ -1581,7 +1581,7 @@ export type Database = {
           provider_id?: string | null
           type: Database["public"]["Enums"]["payment_method_type"]
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string | null
@@ -1591,7 +1591,7 @@ export type Database = {
           provider_id?: string | null
           type?: Database["public"]["Enums"]["payment_method_type"]
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1606,7 +1606,7 @@ export type Database = {
           payment_method: string | null
           status: Database["public"]["Enums"]["payment_status"] | null
           transaction_id: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           amount: number
@@ -1618,7 +1618,7 @@ export type Database = {
           payment_method?: string | null
           status?: Database["public"]["Enums"]["payment_status"] | null
           transaction_id?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           amount?: number
@@ -1630,7 +1630,7 @@ export type Database = {
           payment_method?: string | null
           status?: Database["public"]["Enums"]["payment_status"] | null
           transaction_id?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -1691,7 +1691,7 @@ export type Database = {
           schedule: Json | null
           type: string
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
@@ -1702,7 +1702,7 @@ export type Database = {
           schedule?: Json | null
           type: string
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string | null
@@ -1713,7 +1713,7 @@ export type Database = {
           schedule?: Json | null
           type?: string
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1802,7 +1802,7 @@ export type Database = {
           sentiment_label: string | null
           sentiment_score: number | null
           text_content: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           emotions?: Json | null
@@ -1813,7 +1813,7 @@ export type Database = {
           sentiment_label?: string | null
           sentiment_score?: number | null
           text_content: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           emotions?: Json | null
@@ -1824,7 +1824,7 @@ export type Database = {
           sentiment_label?: string | null
           sentiment_score?: number | null
           text_content?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1842,7 +1842,7 @@ export type Database = {
           signer_name: string | null
           status: Database["public"]["Enums"]["document_status"] | null
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
@@ -1857,7 +1857,7 @@ export type Database = {
           signer_name?: string | null
           status?: Database["public"]["Enums"]["document_status"] | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string | null
@@ -1872,7 +1872,7 @@ export type Database = {
           signer_name?: string | null
           status?: Database["public"]["Enums"]["document_status"] | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1889,7 +1889,7 @@ export type Database = {
           platform: string
           platform_lead_id: string | null
           processed: boolean | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           campaign_source?: string | null
@@ -1903,7 +1903,7 @@ export type Database = {
           platform: string
           platform_lead_id?: string | null
           processed?: boolean | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           campaign_source?: string | null
@@ -1917,7 +1917,7 @@ export type Database = {
           platform?: string
           platform_lead_id?: string | null
           processed?: boolean | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1932,7 +1932,7 @@ export type Database = {
           status: string | null
           tags: string[] | null
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
@@ -1944,7 +1944,7 @@ export type Database = {
           status?: string | null
           tags?: string[] | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string | null
@@ -1956,7 +1956,7 @@ export type Database = {
           status?: string | null
           tags?: string[] | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1974,7 +1974,7 @@ export type Database = {
           status: Database["public"]["Enums"]["task_status"] | null
           title: string
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           actual_hours?: number | null
@@ -1989,7 +1989,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["task_status"] | null
           title: string
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           actual_hours?: number | null
@@ -2004,7 +2004,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["task_status"] | null
           title?: string
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -2071,7 +2071,7 @@ export type Database = {
           synced: boolean | null
           synced_at: string | null
           uploaded_offline: boolean | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
@@ -2083,7 +2083,7 @@ export type Database = {
           synced?: boolean | null
           synced_at?: string | null
           uploaded_offline?: boolean | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string | null
@@ -2095,7 +2095,7 @@ export type Database = {
           synced?: boolean | null
           synced_at?: string | null
           uploaded_offline?: boolean | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -2197,7 +2197,7 @@ export type Database = {
           preferences: Json | null
           timezone: string | null
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
@@ -2209,7 +2209,7 @@ export type Database = {
           preferences?: Json | null
           timezone?: string | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string | null
@@ -2221,7 +2221,7 @@ export type Database = {
           preferences?: Json | null
           timezone?: string | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -2237,7 +2237,7 @@ export type Database = {
           secret: string | null
           updated_at: string | null
           url: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           active?: boolean | null
@@ -2250,7 +2250,7 @@ export type Database = {
           secret?: string | null
           updated_at?: string | null
           url: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           active?: boolean | null
@@ -2263,7 +2263,7 @@ export type Database = {
           secret?: string | null
           updated_at?: string | null
           url?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
