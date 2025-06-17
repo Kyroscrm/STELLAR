@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import LoadingProvider from "@/components/LoadingProvider";
 import ToastProvider from "@/components/ToastProvider";
+import AdminLayout from "./components/AdminLayout";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -59,18 +60,20 @@ const App = () => (
                 <Route path="/client/login" element={<ClientLogin />} />
                 <Route path="/client/dashboard" element={<ClientDashboard />} />
                 
-                {/* Protected admin routes */}
-                <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-                <Route path="/admin/customers" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
-                <Route path="/admin/leads" element={<ProtectedRoute><LeadsPage /></ProtectedRoute>} />
-                <Route path="/admin/jobs" element={<ProtectedRoute><JobsPage /></ProtectedRoute>} />
-                <Route path="/admin/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
-                <Route path="/admin/estimates" element={<ProtectedRoute><EstimatesPage /></ProtectedRoute>} />
-                <Route path="/admin/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
-                <Route path="/admin/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
-                <Route path="/admin/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-                <Route path="/admin/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-                <Route path="/admin/integrations" element={<ProtectedRoute><IntegrationsPage /></ProtectedRoute>} />
+                {/* Protected admin routes with AdminLayout */}
+                <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="customers" element={<CustomersPage />} />
+                  <Route path="leads" element={<LeadsPage />} />
+                  <Route path="jobs" element={<JobsPage />} />
+                  <Route path="tasks" element={<TasksPage />} />
+                  <Route path="estimates" element={<EstimatesPage />} />
+                  <Route path="invoices" element={<InvoicesPage />} />
+                  <Route path="calendar" element={<CalendarPage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                  <Route path="profile" element={<ProfilePage />} />
+                  <Route path="integrations" element={<IntegrationsPage />} />
+                </Route>
                 
                 {/* 404 */}
                 <Route path="*" element={<NotFound />} />
