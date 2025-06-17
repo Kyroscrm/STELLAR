@@ -5,85 +5,112 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
-import LoadingProvider from "@/components/LoadingProvider";
-import ToastProvider from "@/components/ToastProvider";
-import AdminLayout from "./components/AdminLayout";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import AdminLayout from "@/components/AdminLayout";
 import Index from "./pages/Index";
+import ServicesPage from "./pages/ServicesPage";
+import GalleryPage from "./pages/GalleryPage";
+import ReviewsPage from "./pages/ReviewsPage";
+import AboutPage from "./pages/AboutPage";
+import ContactPage from "./pages/ContactPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import PasswordReset from "./pages/PasswordReset";
+import ProfilePage from "./pages/ProfilePage";
 import AdminDashboard from "./pages/AdminDashboard";
-import CustomersPage from "./pages/CustomersPage";
+import ClientDashboard from "./pages/ClientDashboard";
 import LeadsPage from "./pages/LeadsPage";
+import CustomersPage from "./pages/CustomersPage";
 import JobsPage from "./pages/JobsPage";
 import TasksPage from "./pages/TasksPage";
 import EstimatesPage from "./pages/EstimatesPage";
 import InvoicesPage from "./pages/InvoicesPage";
-import CalendarPage from "./pages/CalendarPage";
 import SettingsPage from "./pages/SettingsPage";
-import ProfilePage from "./pages/ProfilePage";
 import IntegrationsPage from "./pages/IntegrationsPage";
-import ReviewsPage from "./pages/ReviewsPage";
-import ServicesPage from "./pages/ServicesPage";
-import AboutPage from "./pages/AboutPage";
-import ContactPage from "./pages/ContactPage";
-import GalleryPage from "./pages/GalleryPage";
 import NotFound from "./pages/NotFound";
-import ClientLogin from "./pages/ClientLogin";
-import ClientDashboard from "./pages/ClientDashboard";
-import ProtectedRoute from "./components/ProtectedRoute";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 3,
+      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
+      retry: 1,
+    },
+  },
+});
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <LoadingProvider>
-        <ToastProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AuthProvider>
+function App() {
+  return (
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
               <Routes>
-                {/* Public routes */}
+                {/* Public Pages */}
                 <Route path="/" element={<Index />} />
+                <Route path="/services" element={<ServicesPage />} />
+                <Route path="/gallery" element={<GalleryPage />} />
+                <Route path="/reviews" element={<ReviewsPage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/contact" element={<ContactPage />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/password-reset" element={<PasswordReset />} />
-                <Route path="/services" element={<ServicesPage />} />
-                <Route path="/about" element={<AboutPage />} />
-                <Route path="/contact" element={<ContactPage />} />
-                <Route path="/gallery" element={<GalleryPage />} />
-                <Route path="/reviews" element={<ReviewsPage />} />
                 
-                {/* Client Portal routes */}
-                <Route path="/client/login" element={<ClientLogin />} />
-                <Route path="/client/dashboard" element={<ClientDashboard />} />
+                {/* Protected Profile Route */}
+                <Route path="/profile" element={
+                  <ErrorBoundary>
+                    <ProtectedRoute>
+                      <ProfilePage />
+                    </ProtectedRoute>
+                  </ErrorBoundary>
+                } />
                 
-                {/* Protected admin routes with AdminLayout */}
-                <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+                {/* Admin Routes with Layout */}
+                <Route path="/admin" element={
+                  <ErrorBoundary>
+                    <ProtectedRoute allowedRoles={['admin', 'staff']}>
+                      <AdminLayout />
+                    </ProtectedRoute>
+                  </ErrorBoundary>
+                }>
                   <Route index element={<AdminDashboard />} />
-                  <Route path="customers" element={<CustomersPage />} />
                   <Route path="leads" element={<LeadsPage />} />
+                  <Route path="customers" element={<CustomersPage />} />
                   <Route path="jobs" element={<JobsPage />} />
                   <Route path="tasks" element={<TasksPage />} />
                   <Route path="estimates" element={<EstimatesPage />} />
                   <Route path="invoices" element={<InvoicesPage />} />
-                  <Route path="calendar" element={<CalendarPage />} />
-                  <Route path="settings" element={<SettingsPage />} />
-                  <Route path="profile" element={<ProfilePage />} />
                   <Route path="integrations" element={<IntegrationsPage />} />
+                  <Route path="settings" element={<SettingsPage />} />
                 </Route>
                 
-                {/* 404 */}
+                {/* Client Routes */}
+                <Route path="/client" element={
+                  <ErrorBoundary>
+                    <ProtectedRoute allowedRoles={['client']}>
+                      <ClientDashboard />
+                    </ProtectedRoute>
+                  </ErrorBoundary>
+                } />
+                
+                {/* Catch all route */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </AuthProvider>
-          </BrowserRouter>
-        </ToastProvider>
-      </LoadingProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
+  );
+}
 
 export default App;

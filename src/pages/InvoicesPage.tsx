@@ -1,11 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState } from 'react';
 import { useInvoices } from '@/hooks/useInvoices';
 import { useCustomers } from '@/hooks/useCustomers';
 import { usePDFGeneration } from '@/hooks/usePDFGeneration';
-import { useRealtimeInvoices } from '@/hooks/useRealtimeInvoices';
-import { createStripeCheckoutSession, getPaymentStatusBadgeVariant, getPaymentStatusLabel } from '@/utils/stripe';
 import InvoiceForm from '@/components/InvoiceForm';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,15 +21,13 @@ import {
   Download,
   Send,
   Check,
-  X,
-  CreditCard
+  X
 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
   Table,
@@ -59,13 +54,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { toast } from 'sonner';
 
 const InvoicesPage = () => {
-  const { invoices, loading, createInvoice, updateInvoice, deleteInvoice, fetchInvoices } = useInvoices();
+  const { invoices, loading, error, addInvoice, updateInvoice, deleteInvoice } = useInvoices();
   const { customers } = useCustomers();
   const { generateInvoicePDF, generating } = usePDFGeneration();
-  const [searchParams] = useSearchParams();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -73,40 +66,24 @@ const InvoicesPage = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [paymentProcessing, setPaymentProcessing] = useState<string | null>(null);
 
-  // Handle payment success/cancellation from URL params
-  useEffect(() => {
-    const payment = searchParams.get('payment');
-    const sessionId = searchParams.get('session_id');
-    
-    if (payment === 'success' && sessionId) {
-      toast.success('Payment completed successfully!');
-      // You could also verify the payment status here if needed
-    } else if (payment === 'cancelled') {
-      toast.error('Payment was cancelled');
-    }
-  }, [searchParams]);
-
-  const filteredInvoices = invoices.filter(invoice => {
-    const customerName = getCustomerName(invoice.customer_id);
-    
-    return invoice.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           customerName.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+  const filteredInvoices = invoices.filter(invoice => 
+    invoice.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (invoice.customers && `${invoice.customers.first_name} ${invoice.customers.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
   
   const invoiceStats = {
     total: invoices.length,
     draft: invoices.filter(i => i.status === 'draft').length,
     sent: invoices.filter(i => i.status === 'sent').length,
-    paid: invoices.filter(i => i.payment_status === 'paid').length,
+    paid: invoices.filter(i => i.status === 'paid').length,
   };
 
   const handleCreateInvoice = async (data: any) => {
     setIsSubmitting(true);
     try {
-      await createInvoice(data);
+      await addInvoice(data);
       setIsCreateModalOpen(false);
     } finally {
       setIsSubmitting(false);
@@ -135,31 +112,6 @@ const InvoicesPage = () => {
     setIsViewModalOpen(true);
   };
 
-  const handlePayNow = async (invoiceId: string) => {
-    setPaymentProcessing(invoiceId);
-    try {
-      const checkoutUrl = await createStripeCheckoutSession({ invoiceId });
-      if (checkoutUrl) {
-        // Open Stripe checkout in a new tab
-        window.open(checkoutUrl, '_blank');
-      }
-    } catch (error) {
-      console.error('Payment initiation failed:', error);
-    } finally {
-      setPaymentProcessing(null);
-    }
-  };
-
-  const handleMarkAsPaid = async (invoiceId: string) => {
-    await updateInvoice(invoiceId, { payment_status: 'paid', paid_at: new Date().toISOString() });
-  };
-
-  // Add realtime updates
-  useRealtimeInvoices((updatedInvoice) => {
-    // Refresh invoices when payment status changes
-    fetchInvoices();
-  });
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -168,11 +120,14 @@ const InvoicesPage = () => {
     );
   }
   
-  const getCustomerName = (customerId: string | null) => {
-    if (!customerId) return 'N/A';
-    const customer = customers.find(c => c.id === customerId);
-    return customer ? `${customer.first_name} ${customer.last_name}` : 'N/A';
-  };
+  if (error) {
+    return (
+      <div className="p-6 text-center text-red-500">
+        <AlertTriangle className="mx-auto h-12 w-12" />
+        <p className="mt-4 text-lg">Error loading invoices: {error.message}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -280,7 +235,6 @@ const InvoicesPage = () => {
                 <TableHead>Title</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Payment</TableHead>
                 <TableHead>Total</TableHead>
                 <TableHead>Due Date</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -299,7 +253,10 @@ const InvoicesPage = () => {
                     </button>
                   </TableCell>
                   <TableCell>
-                    {getCustomerName(invoice.customer_id)}
+                    {invoice.customers ? 
+                      `${invoice.customers.first_name} ${invoice.customers.last_name}` : 
+                      'N/A'
+                    }
                   </TableCell>
                   <TableCell>
                     <Badge variant={
@@ -309,11 +266,6 @@ const InvoicesPage = () => {
                       'outline'
                     } className="capitalize">
                       {invoice.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getPaymentStatusBadgeVariant(invoice.payment_status || 'unpaid')}>
-                      {getPaymentStatusLabel(invoice.payment_status || 'unpaid')}
                     </Badge>
                   </TableCell>
                   <TableCell>${(invoice.total_amount || 0).toFixed(2)}</TableCell>
@@ -337,25 +289,14 @@ const InvoicesPage = () => {
                           <Download className="h-4 w-4 mr-2" />
                           Download PDF
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        {invoice.payment_status !== 'paid' && (
-                          <DropdownMenuItem 
-                            onClick={() => handlePayNow(invoice.id)}
-                            disabled={paymentProcessing === invoice.id}
-                          >
-                            <CreditCard className="h-4 w-4 mr-2" />
-                            {paymentProcessing === invoice.id ? 'Processing...' : 'Pay Now'}
-                          </DropdownMenuItem>
-                        )}
                         <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, 'sent')}>
                           <Send className="h-4 w-4 mr-2" />
                           Mark as Sent
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleMarkAsPaid(invoice.id)}>
+                        <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, 'paid')}>
                           <Check className="h-4 w-4 mr-2" />
                           Mark as Paid
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
                         <DropdownMenuItem 
                           className="text-red-600"
                           onClick={() => setDeleteConfirmId(invoice.id)}
@@ -393,22 +334,14 @@ const InvoicesPage = () => {
                   <h3 className="font-semibold">Invoice #{selectedInvoice.invoice_number}</h3>
                   <p className="text-gray-600">{selectedInvoice.title}</p>
                 </div>
-                <div className="text-right space-y-2">
+                <div className="text-right">
                   <Badge className="capitalize">{selectedInvoice.status}</Badge>
-                  <div>
-                    <Badge variant={getPaymentStatusBadgeVariant(selectedInvoice.payment_status || 'unpaid')}>
-                      {getPaymentStatusLabel(selectedInvoice.payment_status || 'unpaid')}
-                    </Badge>
-                  </div>
                 </div>
               </div>
               <div className="border-t pt-4">
-                <p><strong>Customer:</strong> {getCustomerName(selectedInvoice.customer_id)}</p>
+                <p><strong>Customer:</strong> {selectedInvoice.customers ? `${selectedInvoice.customers.first_name} ${selectedInvoice.customers.last_name}` : 'N/A'}</p>
                 <p><strong>Due Date:</strong> {selectedInvoice.due_date || 'N/A'}</p>
                 <p><strong>Total:</strong> ${(selectedInvoice.total_amount || 0).toFixed(2)}</p>
-                {selectedInvoice.paid_at && (
-                  <p><strong>Paid On:</strong> {new Date(selectedInvoice.paid_at).toLocaleDateString()}</p>
-                )}
               </div>
               {selectedInvoice.description && (
                 <div>

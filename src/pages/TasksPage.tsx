@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import TaskKanbanBoard from '@/components/TaskKanbanBoard';
@@ -39,12 +38,9 @@ import {
 } from "@/components/ui/table";
 
 const TasksPage = () => {
-  const { tasks, loading } = useTasks();
+  const { tasks, loading, error } = useTasks();
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editTask, setEditTask] = useState<any>(null);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const filteredTasks = useMemo(() => {
     if (!searchTerm.trim()) return tasks;
@@ -90,17 +86,25 @@ const TasksPage = () => {
     }
   };
 
-  const handleEditTask = (task: any) => {
-    setEditTask(task);
-    setEditDialogOpen(true);
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-600">Loading your tasks...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center">
+        <div className="text-center bg-white p-8 rounded-lg shadow-lg">
+          <AlertTriangle className="mx-auto h-16 w-16 text-red-500 mb-4" />
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Oops! Something went wrong</h2>
+          <p className="text-gray-600 mb-4">Error loading tasks: {error.message}</p>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
         </div>
       </div>
     );
@@ -131,10 +135,7 @@ const TasksPage = () => {
         {/* Action Bar */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Button onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Task
-            </Button>
+            <TaskFormDialog />
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input 
@@ -245,13 +246,12 @@ const TasksPage = () => {
                   ) : (
                     <div>
                       <p className="text-gray-500 text-lg mb-4">No tasks found.</p>
-                      <Button 
-                        className="bg-gradient-to-r from-blue-500 to-indigo-600"
-                        onClick={() => setCreateDialogOpen(true)}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Create Your First Task
-                      </Button>
+                      <TaskFormDialog trigger={
+                        <Button className="bg-gradient-to-r from-blue-500 to-indigo-600">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create Your First Task
+                        </Button>
+                      } />
                     </div>
                   )}
                 </div>
@@ -305,9 +305,10 @@ const TasksPage = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleEditTask(task)}>
-                                Edit Task
-                              </DropdownMenuItem>
+                              <TaskFormDialog 
+                                task={task}
+                                trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}>Edit Task</DropdownMenuItem>}
+                              />
                               <DropdownMenuItem className="text-red-600">
                                 Delete Task
                               </DropdownMenuItem>
@@ -323,22 +324,6 @@ const TasksPage = () => {
           </Card>
         )}
       </div>
-
-      <TaskFormDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
-        onSuccess={() => setCreateDialogOpen(false)}
-      />
-
-      <TaskFormDialog
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        task={editTask}
-        onSuccess={() => {
-          setEditTask(null);
-          setEditDialogOpen(false);
-        }}
-      />
     </div>
   );
 };

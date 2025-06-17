@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,7 +32,6 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
     zip_code: '',
     source: 'website' as const,
     status: 'new' as const,
-    score: 0,
     estimated_value: '',
     expected_close_date: '',
     notes: ''
@@ -47,9 +45,8 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
     try {
       const leadData = {
         ...formData,
-        score: formData.score || 0,
-        estimated_value: formData.estimated_value ? parseFloat(formData.estimated_value) : undefined,
-        expected_close_date: formData.expected_close_date || undefined
+        estimated_value: formData.estimated_value ? parseFloat(formData.estimated_value) : null,
+        expected_close_date: formData.expected_close_date || null
       };
 
       // Server-side validation
@@ -208,8 +205,8 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
                     <SelectContent>
                       <SelectItem value="website">Website</SelectItem>
                       <SelectItem value="referral">Referral</SelectItem>
-                      <SelectItem value="facebook">Social Media</SelectItem>
-                      <SelectItem value="google_ads">Advertising</SelectItem>
+                      <SelectItem value="social_media">Social Media</SelectItem>
+                      <SelectItem value="advertising">Advertising</SelectItem>
                       <SelectItem value="cold_call">Cold Call</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>

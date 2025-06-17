@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { useEstimates } from '@/hooks/useEstimates';
 import { useCustomers } from '@/hooks/useCustomers';
@@ -59,7 +58,7 @@ import EstimateLineItemsDisplay from '@/components/EstimateLineItemsDisplay';
 import { toast } from 'sonner';
 
 const EstimatesPage = () => {
-  const { estimates, loading, createEstimate, updateEstimate, deleteEstimate } = useEstimates();
+  const { estimates, loading, error, addEstimate, updateEstimate, deleteEstimate } = useEstimates();
   const { customers } = useCustomers();
   const { generateEstimatePDF, generating } = usePDFGeneration();
   
@@ -146,7 +145,7 @@ const EstimatesPage = () => {
         total_amount: 0
       };
 
-      const result = await createEstimate(estimateData);
+      const result = await addEstimate(estimateData);
       
       if (result && data.lineItems && data.lineItems.length > 0) {
         await addLineItemsToEstimate(result.id, data.lineItems);
@@ -213,6 +212,15 @@ const EstimatesPage = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="p-6 text-center text-red-500">
+        <AlertTriangle className="mx-auto h-12 w-12" />
+        <p className="mt-4 text-lg">Error loading estimates: {error.message}</p>
       </div>
     );
   }

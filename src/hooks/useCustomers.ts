@@ -1,40 +1,35 @@
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useActivityLogs } from '@/hooks/useActivityLogs';
+import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-export interface Customer {
-  id: string;
-  user_id: string;
-  first_name: string;
-  last_name: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  zip_code?: string;
-  company_name?: string;
-  notes?: string;
-  lead_id?: string;
-  emergency_contact_name?: string;
-  emergency_contact_phone?: string;
-  created_at: string;
-  updated_at: string;
-}
+export type Customer = Tables<'customers'>;
+type CustomerInsert = Omit<TablesInsert<'customers'>, 'user_id'>;
+type CustomerUpdate = TablesUpdate<'customers'>;
 
 export const useCustomers = () => {
-  const { user } = useAuth();
-  const { logActivity } = useActivityLogs();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const { user, session } = useAuth();
+
+  const validateUserAndSession = () => {
+    if (!user || !session) {
+      const errorMsg = 'Authentication required. Please log in again.';
+      setError(new Error(errorMsg));
+      toast.error(errorMsg);
+      return false;
+    }
+    return true;
+  };
 
   const fetchCustomers = async () => {
-    if (!user) return;
-
+    if (!validateUserAndSession()) return;
+    
     setLoading(true);
+    setError(null);
     try {
       console.log('Fetching customers for user:', user.id);
       
@@ -50,70 +45,76 @@ export const useCustomers = () => {
       console.log(`Successfully fetched ${data?.length || 0} customers`);
     } catch (error: any) {
       console.error('Error fetching customers:', error);
+      setError(error);
       toast.error('Failed to fetch customers');
+      setCustomers([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const createCustomer = async (customerData: Omit<Customer, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!user) {
-      toast.error('Authentication required');
-      return null;
-    }
+  const createCustomer = async (customerData: CustomerInsert) => {
+    if (!validateUserAndSession()) return null;
 
-    // Optimistic update
-    const tempCustomer: Customer = {
-      ...customerData,
+    const optimisticCustomer: Customer = {
       id: `temp-${Date.now()}`,
+      ...customerData,
       user_id: user.id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
-    };
-    setCustomers(prev => [tempCustomer, ...prev]);
+    } as Customer;
+
+    // Optimistic update
+    setCustomers(prev => [optimisticCustomer, ...prev]);
 
     try {
       console.log('Creating customer:', customerData);
       
       const { data, error } = await supabase
         .from('customers')
-        .insert({
-          ...customerData,
-          user_id: user.id
-        })
+        .insert({ ...customerData, user_id: user.id })
         .select()
         .single();
 
       if (error) throw error;
-
-      // Replace optimistic update with real data
-      setCustomers(prev => prev.map(c => c.id === tempCustomer.id ? data : c));
       
-      await logActivity('create', 'customer', data.id, `Created customer: ${data.first_name} ${data.last_name}`);
+      // Replace optimistic with real data
+      setCustomers(prev => prev.map(c => c.id === optimisticCustomer.id ? data : c));
+      
+      // Log activity
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        entity_type: 'customer',
+        entity_id: data.id,
+        action: 'created',
+        description: `Customer created: ${data.first_name} ${data.last_name}`
+      });
+
       toast.success('Customer created successfully');
+      console.log('Customer created successfully:', data);
       return data;
     } catch (error: any) {
       console.error('Error creating customer:', error);
       // Rollback optimistic update
-      setCustomers(prev => prev.filter(c => c.id !== tempCustomer.id));
-      toast.error('Failed to create customer');
+      setCustomers(prev => prev.filter(c => c.id !== optimisticCustomer.id));
+      toast.error(error.message || 'Failed to create customer');
       return null;
     }
   };
 
-  const updateCustomer = async (id: string, updates: Partial<Omit<Customer, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => {
-    if (!user) {
-      toast.error('Authentication required');
+  const updateCustomer = async (id: string, updates: CustomerUpdate) => {
+    if (!validateUserAndSession()) return false;
+
+    // Store original for rollback
+    const originalCustomer = customers.find(c => c.id === id);
+    if (!originalCustomer) {
+      toast.error('Customer not found');
       return false;
     }
 
     // Optimistic update
-    const optimisticCustomer = customers.find(c => c.id === id);
-    if (optimisticCustomer) {
-      setCustomers(prev => prev.map(c => 
-        c.id === id ? { ...c, ...updates, updated_at: new Date().toISOString() } : c
-      ));
-    }
+    const optimisticCustomer = { ...originalCustomer, ...updates, updated_at: new Date().toISOString() };
+    setCustomers(prev => prev.map(c => c.id === id ? optimisticCustomer : c));
 
     try {
       console.log('Updating customer:', id, updates);
@@ -131,28 +132,38 @@ export const useCustomers = () => {
       // Update with real data
       setCustomers(prev => prev.map(c => c.id === id ? data : c));
       
-      await logActivity('update', 'customer', id, `Updated customer: ${data.first_name} ${data.last_name}`);
+      // Log activity
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        entity_type: 'customer',
+        entity_id: id,
+        action: 'updated',
+        description: `Customer updated: ${data.first_name} ${data.last_name}`
+      });
+
       toast.success('Customer updated successfully');
+      console.log('Customer updated successfully:', data);
       return true;
     } catch (error: any) {
       console.error('Error updating customer:', error);
       // Rollback optimistic update
-      if (optimisticCustomer) {
-        setCustomers(prev => prev.map(c => c.id === id ? optimisticCustomer : c));
-      }
-      toast.error('Failed to update customer');
+      setCustomers(prev => prev.map(c => c.id === id ? originalCustomer : c));
+      toast.error(error.message || 'Failed to update customer');
       return false;
     }
   };
 
   const deleteCustomer = async (id: string) => {
-    if (!user) {
-      toast.error('Authentication required');
-      return false;
+    if (!validateUserAndSession()) return;
+
+    // Store original for rollback
+    const originalCustomer = customers.find(c => c.id === id);
+    if (!originalCustomer) {
+      toast.error('Customer not found');
+      return;
     }
 
     // Optimistic update
-    const customerToDelete = customers.find(c => c.id === id);
     setCustomers(prev => prev.filter(c => c.id !== id));
 
     try {
@@ -166,32 +177,38 @@ export const useCustomers = () => {
 
       if (error) throw error;
       
-      await logActivity('delete', 'customer', id, `Deleted customer: ${customerToDelete?.first_name} ${customerToDelete?.last_name}`);
+      // Log activity
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        entity_type: 'customer',
+        entity_id: id,
+        action: 'deleted',
+        description: `Customer deleted: ${originalCustomer.first_name} ${originalCustomer.last_name}`
+      });
+
       toast.success('Customer deleted successfully');
-      return true;
+      console.log('Customer deleted successfully');
     } catch (error: any) {
       console.error('Error deleting customer:', error);
       // Rollback optimistic update
-      if (customerToDelete) {
-        setCustomers(prev => [...prev, customerToDelete].sort((a, b) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        ));
-      }
-      toast.error('Failed to delete customer');
-      return false;
+      setCustomers(prev => [...prev, originalCustomer].sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      ));
+      toast.error(error.message || 'Failed to delete customer');
     }
   };
 
   useEffect(() => {
     fetchCustomers();
-  }, [user]);
+  }, [user, session]);
 
   return {
     customers,
     loading,
+    error,
+    fetchCustomers,
     createCustomer,
     updateCustomer,
-    deleteCustomer,
-    fetchCustomers
+    deleteCustomer
   };
 };

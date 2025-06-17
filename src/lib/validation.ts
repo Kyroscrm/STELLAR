@@ -19,7 +19,7 @@ export const customerSchema = z.object({
 
 export type CustomerFormData = z.infer<typeof customerSchema>;
 
-// Lead validation schema - Updated to match database schema exactly
+// Lead validation schema
 export const leadSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
@@ -29,8 +29,8 @@ export const leadSchema = z.object({
   city: z.string().optional(),
   state: z.string().optional(),
   zip_code: z.string().optional(),
-  source: z.enum(['website', 'referral', 'google_ads', 'facebook', 'direct_mail', 'cold_call', 'trade_show', 'social', 'advertising', 'other']).optional(),
-  status: z.enum(['new', 'contacted', 'qualified', 'proposal', 'proposal_sent', 'negotiating', 'won', 'lost']).optional(),
+  source: z.enum(['website', 'referral', 'google_ads', 'facebook', 'direct_mail', 'cold_call', 'trade_show', 'other']).optional(),
+  status: z.enum(['new', 'contacted', 'qualified', 'proposal_sent', 'negotiating', 'won', 'lost', 'converted']).optional(),
   score: z.number().min(0).max(100).optional(),
   notes: z.string().optional(),
   estimated_value: z.number().min(0).optional(),
@@ -39,7 +39,7 @@ export const leadSchema = z.object({
 
 export type LeadFormData = z.infer<typeof leadSchema>;
 
-// Job validation schema - Updated to match database schema exactly
+// Job validation schema
 export const jobSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
@@ -72,7 +72,7 @@ export const taskSchema = z.object({
 
 export type TaskFormData = z.infer<typeof taskSchema>;
 
-// Estimate validation schema - Updated to match database schema exactly
+// Estimate validation schema
 export const estimateSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
@@ -88,7 +88,7 @@ export const estimateSchema = z.object({
 
 export type EstimateFormData = z.infer<typeof estimateSchema>;
 
-// Invoice validation schema - Updated to match database schema exactly
+// Invoice validation schema
 export const invoiceSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),

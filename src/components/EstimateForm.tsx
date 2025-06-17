@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,7 +12,7 @@ import { useJobs } from '@/hooks/useJobs';
 import { useJobNumberGenerator } from '@/hooks/useJobNumberGenerator';
 import { EstimateWithLineItems } from '@/hooks/useEstimates';
 import { estimateSchema, EstimateFormData } from '@/lib/validation';
-import { RefreshCw, Plus, Trash2, ArrowLeft } from 'lucide-react';
+import { RefreshCw, Plus, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import EstimateTemplateSelector from './EstimateTemplateSelector';
 
@@ -135,23 +136,10 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
 
   if (showTemplateSelector) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowTemplateSelector(false)}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Form
-          </Button>
-        </div>
-        <EstimateTemplateSelector
-          onSelectTemplate={handleTemplateSelect}
-          onCreateNew={() => setShowTemplateSelector(false)}
-        />
-      </div>
+      <EstimateTemplateSelector
+        onSelectTemplate={handleTemplateSelect}
+        onCreateNew={() => setShowTemplateSelector(false)}
+      />
     );
   }
 
