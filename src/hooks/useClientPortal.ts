@@ -16,6 +16,7 @@ export const useClientPortalAuth = (token?: string) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [portalData, setPortalData] = useState<ClientPortalData | null>(null);
+  const [customerId, setCustomerId] = useState<string | null>(null);
 
   useEffect(() => {
     const validateToken = async () => {
@@ -36,6 +37,7 @@ export const useClientPortalAuth = (token?: string) => {
 
         if (data && data.length > 0 && data[0].is_valid) {
           setIsAuthenticated(true);
+          setCustomerId(data[0].customer_id);
           await fetchPortalData(data[0].customer_id);
         } else {
           setError('Invalid or expired access token');
@@ -78,10 +80,22 @@ export const useClientPortalAuth = (token?: string) => {
     }
   };
 
+  const logout = () => {
+    setIsAuthenticated(false);
+    setPortalData(null);
+    setCustomerId(null);
+    setError(null);
+  };
+
   return {
     isAuthenticated,
     isLoading,
     error,
-    portalData
+    portalData,
+    customerId,
+    logout
   };
 };
+
+// Export alias for backward compatibility
+export const useClientPortalData = useClientPortalAuth;

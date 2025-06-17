@@ -17,14 +17,32 @@ export interface Lead {
   state?: string;
   zip_code?: string;
   notes?: string;
-  status: 'new' | 'contacted' | 'qualified' | 'proposal' | 'won' | 'lost';
-  source: 'website' | 'referral' | 'social' | 'advertising' | 'cold_call' | 'other';
+  status: 'new' | 'contacted' | 'qualified' | 'proposal' | 'proposal_sent' | 'negotiating' | 'won' | 'lost';
+  source: 'website' | 'referral' | 'google_ads' | 'facebook' | 'direct_mail' | 'cold_call' | 'trade_show' | 'social' | 'advertising' | 'other';
   score: number;
   estimated_value?: number;
   expected_close_date?: string;
   created_at: string;
   updated_at: string;
 }
+
+// Normalize database response to frontend types
+const normalizeLeadStatus = (status: string): Lead['status'] => {
+  const statusMap: Record<string, Lead['status']> = {
+    'proposal_sent': 'proposal',
+    'negotiating': 'proposal'
+  };
+  return statusMap[status] || status as Lead['status'];
+};
+
+const normalizeLeadSource = (source: string): Lead['source'] => {
+  const sourceMap: Record<string, Lead['source']> = {
+    'social_media': 'facebook',
+    'social': 'facebook',
+    'advertising': 'google_ads'
+  };
+  return sourceMap[source] || source as Lead['source'];
+};
 
 export const useLeads = () => {
   const { user } = useAuth();
@@ -47,8 +65,15 @@ export const useLeads = () => {
 
       if (error) throw error;
       
-      setLeads(data || []);
-      console.log(`Successfully fetched ${data?.length || 0} leads`);
+      // Normalize data to match frontend types
+      const normalizedLeads = (data || []).map(lead => ({
+        ...lead,
+        status: normalizeLeadStatus(lead.status),
+        source: normalizeLeadSource(lead.source)
+      }));
+      
+      setLeads(normalizedLeads);
+      console.log(`Successfully fetched ${normalizedLeads.length} leads`);
     } catch (error: any) {
       console.error('Error fetching leads:', error);
       toast.error('Failed to fetch leads');
@@ -93,12 +118,18 @@ export const useLeads = () => {
 
       if (error) throw error;
 
-      // Replace optimistic update with real data
-      setLeads(prev => prev.map(l => l.id === tempLead.id ? data : l));
+      // Normalize and replace optimistic update with real data
+      const normalizedLead = {
+        ...data,
+        status: normalizeLeadStatus(data.status),
+        source: normalizeLeadSource(data.source)
+      };
+      
+      setLeads(prev => prev.map(l => l.id === tempLead.id ? normalizedLead : l));
       
       await logActivity('create', 'lead', data.id, `Created lead: ${data.first_name} ${data.last_name}`);
       toast.success('Lead created successfully');
-      return data;
+      return normalizedLead;
     } catch (error: any) {
       console.error('Error creating lead:', error);
       // Rollback optimistic update
@@ -135,8 +166,14 @@ export const useLeads = () => {
 
       if (error) throw error;
       
-      // Update with real data
-      setLeads(prev => prev.map(l => l.id === id ? data : l));
+      // Normalize and update with real data
+      const normalizedLead = {
+        ...data,
+        status: normalizeLeadStatus(data.status),
+        source: normalizeLeadSource(data.source)
+      };
+      
+      setLeads(prev => prev.map(l => l.id === id ? normalizedLead : l));
       
       await logActivity('update', 'lead', id, `Updated lead: ${data.first_name} ${data.last_name}`);
       toast.success('Lead updated successfully');

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -207,8 +208,8 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
                     <SelectContent>
                       <SelectItem value="website">Website</SelectItem>
                       <SelectItem value="referral">Referral</SelectItem>
-                      <SelectItem value="social_media">Social Media</SelectItem>
-                      <SelectItem value="advertising">Advertising</SelectItem>
+                      <SelectItem value="facebook">Social Media</SelectItem>
+                      <SelectItem value="google_ads">Advertising</SelectItem>
                       <SelectItem value="cold_call">Cold Call</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
