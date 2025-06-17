@@ -1,5 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useEstimates } from '@/hooks/useEstimates';
+import { useEstimateTemplates } from '@/hooks/useEstimateTemplates';
+import NewTemplateDialog from '@/components/NewTemplateDialog';
 import { useCustomers } from '@/hooks/useCustomers';
 import { usePDFGeneration } from '@/hooks/usePDFGeneration';
 import { supabase } from '@/integrations/supabase/client';
@@ -61,6 +63,7 @@ const EstimatesPage = () => {
   const { estimates, loading, error, addEstimate, updateEstimate, deleteEstimate } = useEstimates();
   const { customers } = useCustomers();
   const { generateEstimatePDF, generating } = usePDFGeneration();
+  const { estimateTemplates } = useEstimateTemplates();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -227,31 +230,22 @@ const EstimatesPage = () => {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Estimates</h1>
-          <p className="text-gray-600">Create and manage project estimates with line items</p>
+          <p className="text-gray-600">Create and manage project estimates</p>
         </div>
-        <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              New Estimate
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create New Estimate</DialogTitle>
-            </DialogHeader>
-            <EstimateForm
-              onSubmit={handleCreateEstimate}
-              onCancel={() => setIsCreateModalOpen(false)}
-              isSubmitting={isSubmitting}
-            />
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <NewTemplateDialog />
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            New Estimate
+          </Button>
+        </div>
       </div>
 
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
@@ -299,6 +293,7 @@ const EstimatesPage = () => {
         </Card>
       </div>
 
+      {/* Filters */}
       <div className="flex gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -315,6 +310,7 @@ const EstimatesPage = () => {
         </Button>
       </div>
 
+      {/* Estimates Grid */}
       <Card>
         <CardHeader>
           <CardTitle>Estimate List</CardTitle>

@@ -1,8 +1,11 @@
+
 import React, { useState } from 'react';
 import { useJobs } from '@/hooks/useJobs';
 import JobKanbanBoard from '@/components/JobKanbanBoard';
 import FileWorkflowManager from '@/components/FileWorkflowManager';
 import EditJobDialog from '@/components/EditJobDialog';
+import ViewJobDialog from '@/components/ViewJobDialog';
+import NewJobDialog from '@/components/NewJobDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -122,10 +125,7 @@ const JobsPage = () => {
           <Button variant="outline" size="sm" onClick={() => setViewMode('files')} className={viewMode === 'files' ? 'bg-primary text-white' : ''}>
             <Settings className="h-4 w-4" />
           </Button>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            New Job
-          </Button>
+          <NewJobDialog onSuccess={fetchJobs} />
         </div>
       </div>
 
@@ -256,13 +256,18 @@ const JobsPage = () => {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
+                          <ViewJobDialog 
+                            job={job}
+                            trigger={<span className="w-full cursor-pointer">View Details</span>}
+                          />
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
                           <EditJobDialog 
                             job={job} 
                             onSuccess={handleEditSuccess}
-                            trigger={<span>Edit Job</span>}
+                            trigger={<span className="w-full cursor-pointer">Edit Job</span>}
                           />
                         </DropdownMenuItem>
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
                         <DropdownMenuItem>Create Estimate</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleStatusChange(job.id, 'in_progress')}>
                           Start Job
@@ -340,10 +345,15 @@ const JobsPage = () => {
           {filteredJobs.length === 0 && (
             <div className="text-center py-12">
               <p className="text-gray-500">No jobs found matching your criteria.</p>
-              <Button className="mt-4">
-                <Plus className="h-4 w-4 mr-2" />
-                Create Your First Job
-              </Button>
+              <NewJobDialog 
+                onSuccess={fetchJobs}
+                trigger={
+                  <Button className="mt-4">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Your First Job
+                  </Button>
+                }
+              />
             </div>
           )}
         </>

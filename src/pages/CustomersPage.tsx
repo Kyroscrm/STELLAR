@@ -1,22 +1,26 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useCustomers } from '@/hooks/useCustomers';
+import ViewCustomerDialog from '@/components/ViewCustomerDialog';
+import EditCustomerDialog from '@/components/EditCustomerDialog';
+import CreateEstimateFromCustomerDialog from '@/components/CreateEstimateFromCustomerDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Plus, 
   Search, 
   Filter, 
   MoreHorizontal,
-  Phone,
   Mail,
+  Phone,
   MapPin,
   Building,
-  Users,
+  User,
   Calendar,
-  Briefcase,
-  Star
+  Users,
+  DollarSign
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -24,86 +28,37 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import NewCustomerForm from '@/components/NewCustomerForm';
-import NewJobForm from '@/components/NewJobForm';
-import ConfirmDialog from '@/components/ConfirmDialog';
 
 const CustomersPage = () => {
-  const { customers, loading, deleteCustomer } = useCustomers();
+  const { customers, loading, updateCustomer, deleteCustomer, fetchCustomers } = useCustomers();
   const [searchTerm, setSearchTerm] = useState('');
-  const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
-  const [showNewJobForm, setShowNewJobForm] = useState(false);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
-  const [deleteConfirm, setDeleteConfirm] = useState<{
-    open: boolean;
-    customer?: any;
-  }>({ open: false });
+  const [viewMode, setViewMode] = useState<'all' | 'active' | 'inactive'>('all');
 
-  const filteredCustomers = useMemo(() => {
-    if (!searchTerm.trim()) return customers;
+  const filteredCustomers = customers.filter(customer => {
+    const matchesSearch = !searchTerm || 
+      `${customer.first_name} ${customer.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (customer.company_name && customer.company_name.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const searchLower = searchTerm.toLowerCase();
-    return customers.filter(customer => {
-      const fullName = `${customer.first_name} ${customer.last_name}`.toLowerCase();
-      const email = (customer.email || '').toLowerCase();
-      const phone = customer.phone || '';
-      const company = (customer.company_name || '').toLowerCase();
-      const address = (customer.address || '').toLowerCase();
-      const city = (customer.city || '').toLowerCase();
-      const state = (customer.state || '').toLowerCase();
-      
-      return fullName.includes(searchLower) ||
-             email.includes(searchLower) ||
-             phone.includes(searchTerm) ||
-             company.includes(searchLower) ||
-             address.includes(searchLower) ||
-             city.includes(searchLower) ||
-             state.includes(searchLower);
-    });
-  }, [customers, searchTerm]);
+    return matchesSearch;
+  });
 
   const customerStats = {
     total: customers.length,
-    withJobs: customers.filter(c => c.company_name).length,
-    thisMonth: customers.filter(c => {
-      if (!c.created_at) return false;
-      const createdAt = new Date(c.created_at);
-      const now = new Date();
-      return createdAt.getMonth() === now.getMonth() && createdAt.getFullYear() === now.getFullYear();
-    }).length
+    withEmail: customers.filter(c => c.email).length,
+    withPhone: customers.filter(c => c.phone).length,
+    withAddress: customers.filter(c => c.address).length,
+    withCompany: customers.filter(c => c.company_name).length
   };
 
-  const handleDeleteCustomer = (customer: any) => {
-    setDeleteConfirm({ open: true, customer });
-  };
-
-  const confirmDelete = async () => {
-    if (deleteConfirm.customer) {
-      await deleteCustomer(deleteConfirm.customer.id);
-      setDeleteConfirm({ open: false });
+  const handleDeleteCustomer = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this customer?')) {
+      await deleteCustomer(id);
     }
   };
 
-  const handleCreateJob = (customerId: string) => {
-    setSelectedCustomerId(customerId);
-    setShowNewJobForm(true);
-  };
-
-  const handleJobSuccess = () => {
-    setShowNewJobForm(false);
-    setSelectedCustomerId('');
-    window.location.reload();
-  };
-
-  const handleJobCancel = () => {
-    setShowNewJobForm(false);
-    setSelectedCustomerId('');
+  const handleEditSuccess = () => {
+    fetchCustomers(); // Refresh the customers list
   };
 
   if (loading) {
@@ -116,18 +71,20 @@ const CustomersPage = () => {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Customers</h1>
           <p className="text-gray-600">Manage your customer relationships</p>
         </div>
-        <Button onClick={() => setShowNewCustomerForm(true)}>
+        <Button>
           <Plus className="h-4 w-4 mr-2" />
           New Customer
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center">
@@ -143,10 +100,10 @@ const CustomersPage = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center">
-              <Briefcase className="h-8 w-8 text-green-600" />
+              <Mail className="h-8 w-8 text-green-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Business Customers</p>
-                <p className="text-2xl font-bold">{customerStats.withJobs}</p>
+                <p className="text-sm font-medium text-gray-600">With Email</p>
+                <p className="text-2xl font-bold">{customerStats.withEmail}</p>
               </div>
             </div>
           </CardContent>
@@ -155,21 +112,46 @@ const CustomersPage = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center">
-              <Calendar className="h-8 w-8 text-purple-600" />
+              <Phone className="h-8 w-8 text-yellow-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">New This Month</p>
-                <p className="text-2xl font-bold">{customerStats.thisMonth}</p>
+                <p className="text-sm font-medium text-gray-600">With Phone</p>
+                <p className="text-2xl font-bold">{customerStats.withPhone}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <MapPin className="h-8 w-8 text-purple-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">With Address</p>
+                <p className="text-2xl font-bold">{customerStats.withAddress}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <Building className="h-8 w-8 text-indigo-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">With Company</p>
+                <p className="text-2xl font-bold">{customerStats.withCompany}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Filters */}
       <div className="flex gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input 
-            placeholder="Search customers by name, email, phone, company, or address..." 
+            placeholder="Search customers..." 
             className="pl-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -177,24 +159,22 @@ const CustomersPage = () => {
         </div>
         <Button variant="outline">
           <Filter className="h-4 w-4 mr-2" />
-          Filter
+          More Filters
         </Button>
       </div>
 
+      {/* Customers Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredCustomers.map((customer) => (
           <Card key={customer.id} className="hover:shadow-lg transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <CardTitle className="text-lg flex items-center gap-2">
+                  <CardTitle className="text-lg">
                     {customer.first_name} {customer.last_name}
-                    <Star className="h-4 w-4 text-yellow-500 fill-current" />
                   </CardTitle>
                   {customer.company_name && (
-                    <Badge variant="outline" className="mt-1">
-                      {customer.company_name}
-                    </Badge>
+                    <p className="text-gray-600 text-sm mt-1">{customer.company_name}</p>
                   )}
                 </div>
                 <DropdownMenu>
@@ -204,16 +184,31 @@ const CustomersPage = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>View Details</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleCreateJob(customer.id)}>
-                      Create Job
+                    <DropdownMenuItem asChild>
+                      <ViewCustomerDialog 
+                        customer={customer}
+                        trigger={<span className="w-full cursor-pointer">View Details</span>}
+                      />
                     </DropdownMenuItem>
-                    <DropdownMenuItem>Create Estimate</DropdownMenuItem>
-                    <DropdownMenuItem>Send Message</DropdownMenuItem>
-                    <DropdownMenuItem>Edit Customer</DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <EditCustomerDialog 
+                        customer={customer} 
+                        onSuccess={handleEditSuccess}
+                        trigger={<span className="w-full cursor-pointer">Edit Customer</span>}
+                      />
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <CreateEstimateFromCustomerDialog 
+                        customer={customer}
+                        onSuccess={fetchCustomers}
+                        trigger={<span className="w-full cursor-pointer">Create Estimate</span>}
+                      />
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>Create Invoice</DropdownMenuItem>
+                    <DropdownMenuItem>View History</DropdownMenuItem>
                     <DropdownMenuItem 
                       className="text-red-600"
-                      onClick={() => handleDeleteCustomer(customer)}
+                      onClick={() => handleDeleteCustomer(customer.id)}
                     >
                       Delete Customer
                     </DropdownMenuItem>
@@ -241,32 +236,21 @@ const CustomersPage = () => {
                     {customer.address}
                     {customer.city && `, ${customer.city}`}
                     {customer.state && `, ${customer.state}`}
-                    {customer.zip_code && ` ${customer.zip_code}`}
-                  </div>
-                )}
-                {customer.company_name && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Building className="h-4 w-4 mr-2" />
-                    {customer.company_name}
                   </div>
                 )}
                 {customer.emergency_contact_name && (
-                  <div className="bg-gray-50 p-2 rounded text-sm">
-                    <p className="font-medium">Emergency Contact:</p>
-                    <p>{customer.emergency_contact_name}</p>
-                    {customer.emergency_contact_phone && (
-                      <p>{customer.emergency_contact_phone}</p>
-                    )}
+                  <div className="flex items-center text-sm text-gray-600">
+                    <User className="h-4 w-4 mr-2" />
+                    Emergency: {customer.emergency_contact_name}
+                    {customer.emergency_contact_phone && ` • ${customer.emergency_contact_phone}`}
                   </div>
                 )}
                 {customer.notes && (
-                  <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                    {customer.notes}
-                  </p>
+                  <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded mt-2">
+                    {customer.notes.substring(0, 100)}
+                    {customer.notes.length > 100 && '...'}
+                  </div>
                 )}
-                <div className="text-xs text-gray-400">
-                  Customer since {customer.created_at ? new Date(customer.created_at).toLocaleDateString() : 'Unknown'}
-                </div>
               </div>
             </CardContent>
           </Card>
@@ -275,53 +259,13 @@ const CustomersPage = () => {
 
       {filteredCustomers.length === 0 && (
         <div className="text-center py-12">
-          {searchTerm ? (
-            <div>
-              <p className="text-gray-500 mb-2">No customers found matching "{searchTerm}"</p>
-              <p className="text-sm text-gray-400">Try adjusting your search terms</p>
-            </div>
-          ) : (
-            <div>
-              <p className="text-gray-500">No customers found.</p>
-              <Button className="mt-4" onClick={() => setShowNewCustomerForm(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Your First Customer
-              </Button>
-            </div>
-          )}
+          <p className="text-gray-500">No customers found matching your criteria.</p>
+          <Button className="mt-4">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Your First Customer
+          </Button>
         </div>
       )}
-
-      {showNewCustomerForm && (
-        <NewCustomerForm 
-          onClose={() => setShowNewCustomerForm(false)}
-          onCancel={() => setShowNewCustomerForm(false)}
-          onSuccess={() => window.location.reload()}
-        />
-      )}
-
-      <Dialog open={showNewJobForm} onOpenChange={setShowNewJobForm}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Create New Job</DialogTitle>
-          </DialogHeader>
-          <NewJobForm 
-            onSuccess={handleJobSuccess}
-            onCancel={handleJobCancel}
-          />
-        </DialogContent>
-      </Dialog>
-
-      <ConfirmDialog
-        open={deleteConfirm.open}
-        onOpenChange={(open) => setDeleteConfirm({ open })}
-        title="Delete Customer"
-        description={`Are you sure you want to delete ${deleteConfirm.customer?.first_name} ${deleteConfirm.customer?.last_name}? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
-        variant="destructive"
-        onConfirm={confirmDelete}
-      />
     </div>
   );
 };
