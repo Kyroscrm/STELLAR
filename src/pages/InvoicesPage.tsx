@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useInvoices } from '@/hooks/useInvoices';
 import { useCustomers } from '@/hooks/useCustomers';
@@ -56,11 +55,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { LoadingWrapper } from '@/components/ui/loading-wrapper';
+import { FormErrorBoundary } from '@/components/ui/form-error-boundary';
+import { DataTable } from '@/components/ui/data-table';
+import { toast } from 'react-toastify';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 const InvoicesPage = () => {
   const { invoices, loading, error, addInvoice, updateInvoice, deleteInvoice } = useInvoices();
   const { customers } = useCustomers();
   const { generateInvoicePDF, generating } = usePDFGeneration();
+  const { handleError } = useErrorHandler();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -87,26 +92,55 @@ const InvoicesPage = () => {
     try {
       await addInvoice(data);
       setIsCreateModalOpen(false);
+      toast.success('Invoice created successfully');
+    } catch (error) {
+      handleError(error, { 
+        title: 'Failed to create invoice',
+        retryAction: () => handleCreateInvoice(data)
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDeleteInvoice = async (invoiceId: string) => {
-    await deleteInvoice(invoiceId);
-    setDeleteConfirmId(null);
+    try {
+      await deleteInvoice(invoiceId);
+      setDeleteConfirmId(null);
+      toast.success('Invoice deleted successfully');
+    } catch (error) {
+      handleError(error, { 
+        title: 'Failed to delete invoice',
+        retryAction: () => handleDeleteInvoice(invoiceId)
+      });
+    }
   };
 
   const handleStatusChange = async (invoiceId: string, newStatus: string) => {
-    await updateInvoice(invoiceId, { status: newStatus as any });
+    try {
+      await updateInvoice(invoiceId, { status: newStatus as any });
+      toast.success('Invoice status updated');
+    } catch (error) {
+      handleError(error, { 
+        title: 'Failed to update invoice status',
+        retryAction: () => handleStatusChange(invoiceId, newStatus)
+      });
+    }
   };
 
   const handleGeneratePDF = async (invoice: any) => {
-    const invoiceData = {
-      ...invoice,
-      invoice_line_items: invoice.invoice_line_items || []
-    };
-    await generateInvoicePDF(invoiceData);
+    try {
+      const invoiceData = {
+        ...invoice,
+        invoice_line_items: invoice.invoice_line_items || []
+      };
+      await generateInvoicePDF(invoiceData);
+    } catch (error) {
+      handleError(error, { 
+        title: 'Failed to generate PDF',
+        retryAction: () => handleGeneratePDF(invoice)
+      });
+    }
   };
 
   const handleViewInvoice = (invoice: any) => {
@@ -150,11 +184,13 @@ const InvoicesPage = () => {
             <DialogHeader>
               <DialogTitle>Create New Invoice</DialogTitle>
             </DialogHeader>
-            <InvoiceForm
-              onSubmit={handleCreateInvoice}
-              onCancel={() => setIsCreateModalOpen(false)}
-              isSubmitting={isSubmitting}
-            />
+            <FormErrorBoundary onRetry={() => setIsCreateModalOpen(false)}>
+              <InvoiceForm
+                onSubmit={handleCreateInvoice}
+                onCancel={() => setIsCreateModalOpen(false)}
+                isSubmitting={isSubmitting}
+              />
+            </FormErrorBoundary>
           </DialogContent>
         </Dialog>
       </div>
@@ -230,105 +266,105 @@ const InvoicesPage = () => {
           <CardTitle>Invoice List</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Number</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredInvoices.map((invoice) => (
-                <TableRow key={invoice.id}>
-                  <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
-                  <TableCell>
-                    <button
-                      onClick={() => handleViewInvoice(invoice)}
-                      className="hover:underline text-left"
-                    >
-                      {invoice.title}
-                    </button>
-                  </TableCell>
-                  <TableCell>
-                    {invoice.customers ? 
-                      `${invoice.customers.first_name} ${invoice.customers.last_name}` : 
-                      'N/A'
-                    }
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={
-                      invoice.status === 'paid' ? 'default' :
-                      invoice.status === 'sent' ? 'secondary' :
-                      invoice.status === 'overdue' ? 'destructive' :
-                      'outline'
-                    } className="capitalize">
-                      {invoice.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>${(invoice.total_amount || 0).toFixed(2)}</TableCell>
-                  <TableCell>{invoice.due_date ? new Date(invoice.due_date).toLocaleDateString() : 'N/A'}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleViewInvoice(invoice)}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View
-                        </DropdownMenuItem>
-                        <EditInvoiceDialog 
-                          invoice={invoice} 
-                          trigger={
-                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                          } 
-                        />
-                        <DropdownMenuItem 
-                          onClick={() => handleGeneratePDF(invoice)}
-                          disabled={generating}
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Download PDF
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, 'sent')}>
-                          <Send className="h-4 w-4 mr-2" />
-                          Mark as Sent
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, 'paid')}>
-                          <Check className="h-4 w-4 mr-2" />
-                          Mark as Paid
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          className="text-red-600"
-                          onClick={() => setDeleteConfirmId(invoice.id)}
-                        >
-                          <X className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          
-          {filteredInvoices.length === 0 && (
-            <div className="text-center py-8">
-              <FileText className="mx-auto h-12 w-12 text-gray-400" />
-              <p className="mt-4 text-gray-500">No invoices found</p>
-            </div>
-          )}
+          <DataTable
+            data={filteredInvoices}
+            loading={loading}
+            error={error}
+            emptyStateEntity="invoices"
+            onCreateNew={() => setIsCreateModalOpen(true)}
+            columns={[
+              { header: 'Number', accessor: 'invoice_number' },
+              { 
+                header: 'Title', 
+                accessor: (invoice) => (
+                  <button
+                    onClick={() => handleViewInvoice(invoice)}
+                    className="hover:underline text-left"
+                  >
+                    {invoice.title}
+                  </button>
+                )
+              },
+              { 
+                header: 'Customer', 
+                accessor: (invoice) => invoice.customers ? 
+                  `${invoice.customers.first_name} ${invoice.customers.last_name}` : 
+                  'N/A'
+              },
+              { 
+                header: 'Status', 
+                accessor: (invoice) => (
+                  <Badge variant={
+                    invoice.status === 'paid' ? 'default' :
+                    invoice.status === 'sent' ? 'secondary' :
+                    invoice.status === 'overdue' ? 'destructive' :
+                    'outline'
+                  } className="capitalize">
+                    {invoice.status}
+                  </Badge>
+                )
+              },
+              { 
+                header: 'Total', 
+                accessor: (invoice) => `$${(invoice.total_amount || 0).toFixed(2)}`
+              },
+              { 
+                header: 'Due Date', 
+                accessor: (invoice) => invoice.due_date ? 
+                  new Date(invoice.due_date).toLocaleDateString() : 'N/A'
+              },
+              { 
+                header: 'Actions', 
+                accessor: (invoice) => (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleViewInvoice(invoice)}>
+                        <Eye className="h-4 w-4 mr-2" />
+                        View
+                      </DropdownMenuItem>
+                      <EditInvoiceDialog 
+                        invoice={invoice} 
+                        trigger={
+                          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                        } 
+                      />
+                      <DropdownMenuItem 
+                        onClick={() => handleGeneratePDF(invoice)}
+                        disabled={generating}
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download PDF
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, 'sent')}>
+                        <Send className="h-4 w-4 mr-2" />
+                        Mark as Sent
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, 'paid')}>
+                        <Check className="h-4 w-4 mr-2" />
+                        Mark as Paid
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        className="text-red-600"
+                        onClick={() => setDeleteConfirmId(invoice.id)}
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ),
+                className: "text-right"
+              }
+            ]}
+          />
         </CardContent>
       </Card>
 

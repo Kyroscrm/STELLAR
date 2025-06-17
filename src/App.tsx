@@ -55,7 +55,7 @@ const RealTimeProvider: React.FC<{ children: React.ReactNode }> = ({ children })
 
 function App() {
   return (
-    <ErrorBoundary>
+    <GlobalErrorBoundary module="Application Root">
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <RealTimeProvider>
@@ -77,39 +77,71 @@ function App() {
                   
                   {/* Protected Profile Route */}
                   <Route path="/profile" element={
-                    <ErrorBoundary>
+                    <GlobalErrorBoundary module="Profile">
                       <ProtectedRoute>
                         <ProfilePage />
                       </ProtectedRoute>
-                    </ErrorBoundary>
+                    </GlobalErrorBoundary>
                   } />
                   
                   {/* Admin Routes with Layout */}
                   <Route path="/admin" element={
-                    <ErrorBoundary>
+                    <GlobalErrorBoundary module="Admin Dashboard">
                       <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout />
                       </ProtectedRoute>
-                    </ErrorBoundary>
+                    </GlobalErrorBoundary>
                   }>
                     <Route index element={<AdminDashboard />} />
-                    <Route path="leads" element={<LeadsPage />} />
-                    <Route path="customers" element={<CustomersPage />} />
-                    <Route path="jobs" element={<JobsPage />} />
-                    <Route path="tasks" element={<TasksPage />} />
-                    <Route path="estimates" element={<EstimatesPage />} />
-                    <Route path="invoices" element={<InvoicesPage />} />
-                    <Route path="integrations" element={<IntegrationsPage />} />
-                    <Route path="settings" element={<SettingsPage />} />
+                    <Route path="leads" element={
+                      <GlobalErrorBoundary module="Leads">
+                        <LeadsPage />
+                      </GlobalErrorBoundary>
+                    } />
+                    <Route path="customers" element={
+                      <GlobalErrorBoundary module="Customers">
+                        <CustomersPage />
+                      </GlobalErrorBoundary>
+                    } />
+                    <Route path="jobs" element={
+                      <GlobalErrorBoundary module="Jobs">
+                        <JobsPage />
+                      </GlobalErrorBoundary>
+                    } />
+                    <Route path="tasks" element={
+                      <GlobalErrorBoundary module="Tasks">
+                        <TasksPage />
+                      </GlobalErrorBoundary>
+                    } />
+                    <Route path="estimates" element={
+                      <GlobalErrorBoundary module="Estimates">
+                        <EstimatesPage />
+                      </GlobalErrorBoundary>
+                    } />
+                    <Route path="invoices" element={
+                      <GlobalErrorBoundary module="Invoices">
+                        <InvoicesPage />
+                      </GlobalErrorBoundary>
+                    } />
+                    <Route path="integrations" element={
+                      <GlobalErrorBoundary module="Integrations">
+                        <IntegrationsPage />
+                      </GlobalErrorBoundary>
+                    } />
+                    <Route path="settings" element={
+                      <GlobalErrorBoundary module="Settings">
+                        <SettingsPage />
+                      </GlobalErrorBoundary>
+                    } />
                   </Route>
                   
                   {/* Client Routes */}
                   <Route path="/client" element={
-                    <ErrorBoundary>
+                    <GlobalErrorBoundary module="Client Dashboard">
                       <ProtectedRoute allowedRoles={['client']}>
                         <ClientDashboard />
                       </ProtectedRoute>
-                    </ErrorBoundary>
+                    </GlobalErrorBoundary>
                   } />
                   
                   {/* Catch all route */}
@@ -120,7 +152,7 @@ function App() {
           </RealTimeProvider>
         </AuthProvider>
       </QueryClientProvider>
-    </ErrorBoundary>
+    </GlobalErrorBoundary>
   );
 }
 
