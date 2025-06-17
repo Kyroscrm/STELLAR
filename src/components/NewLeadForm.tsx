@@ -1,286 +1,356 @@
+
 import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useLeads } from '@/hooks/useLeads';
-import { useToast } from '@/hooks/use-toast';
-import { validateLead } from '@/lib/serverValidation';
-import FormFieldError from './FormFieldError';
-import { X } from 'lucide-react';
+import { toast } from 'sonner';
+
+const leadSchema = z.object({
+  first_name: z.string().min(1, 'First name is required'),
+  last_name: z.string().min(1, 'Last name is required'),
+  email: z.string().email('Invalid email').optional().or(z.literal('')),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zip_code: z.string().optional(),
+  status: z.enum(['new', 'contacted', 'qualified', 'proposal_sent', 'won', 'lost']),
+  source: z.enum(['website', 'referral', 'social_media', 'advertisement', 'cold_call', 'other']),
+  estimated_value: z.coerce.number().optional(),
+  expected_close_date: z.string().optional(),
+  score: z.coerce.number().min(0).max(100).optional(),
+  notes: z.string().optional(),
+});
+
+type LeadFormData = z.infer<typeof leadSchema>;
 
 interface NewLeadFormProps {
-  onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess: () => void;
+  onCancel: () => void;
+  lead?: any;
 }
 
-const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
-  const { createLead } = useLeads();
-  const { toast } = useToast();
+const NewLeadForm: React.FC<NewLeadFormProps> = ({
+  onSuccess,
+  onCancel,
+  lead
+}) => {
+  const { createLead, updateLead } = useLeads();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    state: '',
-    zip_code: '',
-    source: 'website' as const,
-    status: 'new' as const,
-    estimated_value: '',
-    expected_close_date: '',
-    notes: ''
+
+  const form = useForm<LeadFormData>({
+    resolver: zodResolver(leadSchema),
+    defaultValues: {
+      first_name: lead?.first_name || '',
+      last_name: lead?.last_name || '',
+      email: lead?.email || '',
+      phone: lead?.phone || '',
+      address: lead?.address || '',
+      city: lead?.city || '',
+      state: lead?.state || '',
+      zip_code: lead?.zip_code || '',
+      status: lead?.status || 'new',
+      source: lead?.source || 'website',
+      estimated_value: lead?.estimated_value || undefined,
+      expected_close_date: lead?.expected_close_date || '',
+      score: lead?.score || 0,
+      notes: lead?.notes || '',
+    },
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (data: LeadFormData) => {
     setIsSubmitting(true);
-    setErrors({});
-
     try {
-      const leadData = {
-        ...formData,
-        estimated_value: formData.estimated_value ? parseFloat(formData.estimated_value) : null,
-        expected_close_date: formData.expected_close_date || null
+      // Clean up the data
+      const cleanedData = {
+        ...data,
+        email: data.email && data.email.trim() !== '' ? data.email : undefined,
+        estimated_value: data.estimated_value || undefined,
+        score: data.score || 0,
       };
 
-      // Server-side validation
-      const validation = await validateLead(leadData);
-      
-      if (!validation.isValid) {
-        setErrors(validation.errors);
-        setIsSubmitting(false);
-        return;
+      let success;
+      if (lead) {
+        success = await updateLead(lead.id, cleanedData);
+      } else {
+        const result = await createLead(cleanedData);
+        success = !!result;
       }
 
-      await createLead(leadData);
-      
-      toast({
-        title: "Lead Created",
-        description: "New lead has been successfully added to the system."
-      });
-      
-      onSuccess?.();
-      onClose();
+      if (success) {
+        toast.success(lead ? 'Lead updated successfully' : 'Lead created successfully');
+        onSuccess();
+      }
     } catch (error) {
-      console.error('Error creating lead:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create lead. Please try again.",
-        variant: "destructive"
-      });
+      console.error('Error saving lead:', error);
+      toast.error('Failed to save lead');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  };
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Add New Lead</CardTitle>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Contact Information */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg">Contact Information</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="first_name">First Name *</Label>
-                  <Input
-                    id="first_name"
-                    value={formData.first_name}
-                    onChange={(e) => handleChange('first_name', e.target.value)}
-                    required
-                  />
-                  <FormFieldError error={errors.first_name} />
-                </div>
-                <div>
-                  <Label htmlFor="last_name">Last Name *</Label>
-                  <Input
-                    id="last_name"
-                    value={formData.last_name}
-                    onChange={(e) => handleChange('last_name', e.target.value)}
-                    required
-                  />
-                  <FormFieldError error={errors.last_name} />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => handleChange('email', e.target.value)}
-                  />
-                  <FormFieldError error={errors.email} />
-                </div>
-                <div>
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => handleChange('phone', e.target.value)}
-                  />
-                  <FormFieldError error={errors.phone} />
-                </div>
-              </div>
-            </div>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="first_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>First Name *</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter first name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-            {/* Address Information */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg">Address</h3>
-              <div>
-                <Label htmlFor="address">Street Address</Label>
-                <Input
-                  id="address"
-                  value={formData.address}
-                  onChange={(e) => handleChange('address', e.target.value)}
-                />
-                <FormFieldError error={errors.address} />
-              </div>
-              
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="city">City</Label>
-                  <Input
-                    id="city"
-                    value={formData.city}
-                    onChange={(e) => handleChange('city', e.target.value)}
-                  />
-                  <FormFieldError error={errors.city} />
-                </div>
-                <div>
-                  <Label htmlFor="state">State</Label>
-                  <Input
-                    id="state"
-                    value={formData.state}
-                    onChange={(e) => handleChange('state', e.target.value)}
-                  />
-                  <FormFieldError error={errors.state} />
-                </div>
-                <div>
-                  <Label htmlFor="zip_code">ZIP Code</Label>
-                  <Input
-                    id="zip_code"
-                    value={formData.zip_code}
-                    onChange={(e) => handleChange('zip_code', e.target.value)}
-                  />
-                  <FormFieldError error={errors.zip_code} />
-                </div>
-              </div>
-            </div>
+          <FormField
+            control={form.control}
+            name="last_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Last Name *</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter last name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
-            {/* Lead Details */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg">Lead Details</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="source">Lead Source</Label>
-                  <Select value={formData.source} onValueChange={(value) => handleChange('source', value)}>
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input type="email" placeholder="Enter email" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phone</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter phone number" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="address"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Address</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter address" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="grid grid-cols-3 gap-4">
+          <FormField
+            control={form.control}
+            name="city"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>City</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter city" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="state"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>State</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter state" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="zip_code"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>ZIP Code</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter ZIP code" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Status</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="website">Website</SelectItem>
-                      <SelectItem value="referral">Referral</SelectItem>
-                      <SelectItem value="social_media">Social Media</SelectItem>
-                      <SelectItem value="advertising">Advertising</SelectItem>
-                      <SelectItem value="cold_call">Cold Call</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormFieldError error={errors.source} />
-                </div>
-                <div>
-                  <Label htmlFor="status">Status</Label>
-                  <Select value={formData.status} onValueChange={(value) => handleChange('status', value)}>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="contacted">Contacted</SelectItem>
+                    <SelectItem value="qualified">Qualified</SelectItem>
+                    <SelectItem value="proposal_sent">Proposal Sent</SelectItem>
+                    <SelectItem value="won">Won</SelectItem>
+                    <SelectItem value="lost">Lost</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="source"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Source</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="new">New</SelectItem>
-                      <SelectItem value="contacted">Contacted</SelectItem>
-                      <SelectItem value="qualified">Qualified</SelectItem>
-                      <SelectItem value="proposal">Proposal Sent</SelectItem>
-                      <SelectItem value="won">Won</SelectItem>
-                      <SelectItem value="lost">Lost</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormFieldError error={errors.status} />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="estimated_value">Estimated Value ($)</Label>
-                  <Input
-                    id="estimated_value"
-                    type="number"
-                    min="0"
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="website">Website</SelectItem>
+                    <SelectItem value="referral">Referral</SelectItem>
+                    <SelectItem value="social_media">Social Media</SelectItem>
+                    <SelectItem value="advertisement">Advertisement</SelectItem>
+                    <SelectItem value="cold_call">Cold Call</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          <FormField
+            control={form.control}
+            name="estimated_value"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Estimated Value</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
                     step="0.01"
-                    value={formData.estimated_value}
-                    onChange={(e) => handleChange('estimated_value', e.target.value)}
+                    placeholder="0.00"
+                    {...field}
+                    onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
                   />
-                  <FormFieldError error={errors.estimated_value} />
-                </div>
-                <div>
-                  <Label htmlFor="expected_close_date">Expected Close Date</Label>
-                  <Input
-                    id="expected_close_date"
-                    type="date"
-                    value={formData.expected_close_date}
-                    onChange={(e) => handleChange('expected_close_date', e.target.value)}
-                  />
-                  <FormFieldError error={errors.expected_close_date} />
-                </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => handleChange('notes', e.target.value)}
-                  rows={3}
-                />
-                <FormFieldError error={errors.notes} />
-              </div>
-            </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-            <div className="flex gap-3 pt-4">
-              <Button type="submit" disabled={isSubmitting} className="flex-1">
-                {isSubmitting ? 'Creating...' : 'Create Lead'}
-              </Button>
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+          <FormField
+            control={form.control}
+            name="expected_close_date"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Expected Close Date</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="score"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Score (0-100)</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    min="0"
+                    max="100"
+                    placeholder="0"
+                    {...field}
+                    onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 0)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="notes"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Notes</FormLabel>
+              <FormControl>
+                <Textarea placeholder="Additional notes..." {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="flex justify-end gap-2 pt-4">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Saving...' : (lead ? 'Update Lead' : 'Create Lead')}
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 };
 

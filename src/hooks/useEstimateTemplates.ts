@@ -70,11 +70,13 @@ export const useEstimateTemplates = () => {
   const { user } = useAuth();
   const [templates, setTemplates] = useState<EstimateTemplate[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchTemplates = async () => {
     if (!user) return;
 
     setLoading(true);
+    setError(null);
     try {
       const { data, error } = await supabase
         .from('estimate_templates')
@@ -88,6 +90,7 @@ export const useEstimateTemplates = () => {
       setTemplates(convertedTemplates);
     } catch (error: any) {
       console.error('Error fetching estimate templates:', error);
+      setError(error.message);
       toast.error('Failed to fetch estimate templates');
     } finally {
       setLoading(false);
@@ -96,6 +99,16 @@ export const useEstimateTemplates = () => {
 
   const createTemplate = async (templateData: Omit<EstimateTemplate, 'id' | 'created_at' | 'updated_at'>) => {
     if (!user) return null;
+
+    // Optimistic update
+    const optimisticTemplate: EstimateTemplate = {
+      id: `temp-${Date.now()}`,
+      ...templateData,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    setTemplates(prev => [optimisticTemplate, ...prev]);
 
     try {
       // Convert line_items to Json for database storage
@@ -118,11 +131,18 @@ export const useEstimateTemplates = () => {
       if (error) throw error;
 
       const convertedTemplate = convertDbRowToTemplate(data);
-      setTemplates(prev => [convertedTemplate, ...prev]);
+      
+      // Replace optimistic with real data
+      setTemplates(prev => prev.map(template => 
+        template.id === optimisticTemplate.id ? convertedTemplate : template
+      ));
+      
       toast.success('Estimate template created successfully');
       return convertedTemplate;
     } catch (error: any) {
       console.error('Error creating estimate template:', error);
+      // Rollback optimistic update
+      setTemplates(prev => prev.filter(template => template.id !== optimisticTemplate.id));
       toast.error('Failed to create estimate template');
       return null;
     }
@@ -130,6 +150,20 @@ export const useEstimateTemplates = () => {
 
   const updateTemplate = async (id: string, templateData: Partial<Omit<EstimateTemplate, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => {
     if (!user) return null;
+
+    const originalTemplate = templates.find(t => t.id === id);
+    if (!originalTemplate) return null;
+
+    // Optimistic update
+    const updatedTemplate = {
+      ...originalTemplate,
+      ...templateData,
+      updated_at: new Date().toISOString(),
+    };
+
+    setTemplates(prev => prev.map(template => 
+      template.id === id ? updatedTemplate : template
+    ));
 
     try {
       // Convert line_items to Json for database storage if present
@@ -149,19 +183,32 @@ export const useEstimateTemplates = () => {
       if (error) throw error;
 
       const convertedTemplate = convertDbRowToTemplate(data);
+      
+      // Update with real data
       setTemplates(prev => prev.map(template => 
         template.id === id ? convertedTemplate : template
       ));
+      
       toast.success('Template updated successfully');
       return convertedTemplate;
     } catch (error: any) {
       console.error('Error updating estimate template:', error);
+      // Rollback optimistic update
+      setTemplates(prev => prev.map(template => 
+        template.id === id ? originalTemplate : template
+      ));
       toast.error('Failed to update estimate template');
       return null;
     }
   };
 
   const deleteTemplate = async (id: string) => {
+    const originalTemplate = templates.find(t => t.id === id);
+    if (!originalTemplate) return;
+
+    // Optimistic update
+    setTemplates(prev => prev.filter(template => template.id !== id));
+
     try {
       const { error } = await supabase
         .from('estimate_templates')
@@ -171,10 +218,13 @@ export const useEstimateTemplates = () => {
 
       if (error) throw error;
 
-      setTemplates(prev => prev.filter(template => template.id !== id));
       toast.success('Template deleted successfully');
     } catch (error: any) {
       console.error('Error deleting template:', error);
+      // Rollback optimistic update
+      setTemplates(prev => [...prev, originalTemplate].sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      ));
       toast.error('Failed to delete template');
     }
   };
@@ -186,6 +236,7 @@ export const useEstimateTemplates = () => {
   return {
     templates,
     loading,
+    error,
     createTemplate,
     updateTemplate,
     deleteTemplate,

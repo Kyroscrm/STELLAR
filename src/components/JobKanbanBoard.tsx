@@ -1,239 +1,224 @@
 
-import React, { useState } from 'react';
-import { useJobs } from '@/hooks/useJobs';
+import React, { useState, useEffect } from 'react';
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCorners } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, MoreHorizontal, Calendar, DollarSign, Clock, Edit, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useJobs, JobWithCustomer } from '@/hooks/useJobs';
+import { MapPin, DollarSign, Calendar, User, MoreVertical } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import NewJobForm from '@/components/NewJobForm';
-import EditJobDialog from '@/components/EditJobDialog';
-import { toast } from 'sonner';
+import EditJobDialog from './EditJobDialog';
 
-const JobKanbanBoard = () => {
-  const { jobs, loading, updateJob, deleteJob } = useJobs();
-  const [showNewJobForm, setShowNewJobForm] = useState(false);
-  const [deleteJobId, setDeleteJobId] = useState<string | null>(null);
+// Define job status columns
+const columns = [
+  { id: 'quoted', title: 'Quoted', color: 'bg-blue-50 border-blue-200' },
+  { id: 'approved', title: 'Approved', color: 'bg-green-50 border-green-200' },
+  { id: 'scheduled', title: 'Scheduled', color: 'bg-purple-50 border-purple-200' },
+  { id: 'in_progress', title: 'In Progress', color: 'bg-yellow-50 border-yellow-200' },
+  { id: 'completed', title: 'Completed', color: 'bg-emerald-50 border-emerald-200' },
+  { id: 'cancelled', title: 'Cancelled', color: 'bg-red-50 border-red-200' },
+];
 
-  const columns = [
-    { status: 'quoted', title: 'Quoted', color: 'bg-gray-100' },
-    { status: 'approved', title: 'Approved', color: 'bg-blue-100' },
-    { status: 'in_progress', title: 'In Progress', color: 'bg-yellow-100' },
-    { status: 'completed', title: 'Completed', color: 'bg-green-100' },
-    { status: 'cancelled', title: 'Cancelled', color: 'bg-red-100' },
-  ];
+interface SortableJobCardProps {
+  job: JobWithCustomer;
+  onEdit: () => void;
+}
 
-  const getJobsByStatus = (status: string) => {
-    return jobs.filter(job => job.status === status);
+const SortableJobCard: React.FC<SortableJobCardProps> = ({ job, onEdit }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: job.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
   };
 
-  const handleStatusChange = async (jobId: string, newStatus: string) => {
-    const success = await updateJob(jobId, { status: newStatus as any });
-    if (success) {
-      toast.success(`Job moved to ${newStatus}`);
-    }
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <Card className="mb-3 cursor-move hover:shadow-md transition-shadow">
+        <CardHeader className="pb-2">
+          <div className="flex items-start justify-between">
+            <CardTitle className="text-sm font-medium line-clamp-2">
+              {job.title}
+            </CardTitle>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                  <MoreVertical className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={onEdit}>
+                  Edit Job
+                </DropdownMenuItem>
+                <DropdownMenuItem>View Details</DropdownMenuItem>
+                <DropdownMenuItem>Create Estimate</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="space-y-2 text-xs">
+            {job.customers && (
+              <div className="flex items-center text-gray-600">
+                <User className="h-3 w-3 mr-1" />
+                {job.customers.first_name} {job.customers.last_name}
+              </div>
+            )}
+            {job.address && (
+              <div className="flex items-center text-gray-600">
+                <MapPin className="h-3 w-3 mr-1" />
+                <span className="truncate">{job.address}</span>
+              </div>
+            )}
+            {job.budget && (
+              <div className="flex items-center text-green-600 font-medium">
+                <DollarSign className="h-3 w-3 mr-1" />
+                ${job.budget.toLocaleString()}
+              </div>
+            )}
+            {job.start_date && (
+              <div className="flex items-center text-gray-600">
+                <Calendar className="h-3 w-3 mr-1" />
+                {new Date(job.start_date).toLocaleDateString()}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+const JobKanbanBoard: React.FC = () => {
+  const { jobs, updateJob } = useJobs();
+  const [activeJob, setActiveJob] = useState<JobWithCustomer | null>(null);
+  const [jobsByStatus, setJobsByStatus] = useState<Record<string, JobWithCustomer[]>>({});
+
+  // Group jobs by status
+  useEffect(() => {
+    const grouped = jobs.reduce((acc, job) => {
+      const status = job.status || 'quoted';
+      if (!acc[status]) {
+        acc[status] = [];
+      }
+      acc[status].push(job);
+      return acc;
+    }, {} as Record<string, JobWithCustomer[]>);
+
+    setJobsByStatus(grouped);
+  }, [jobs]);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const job = jobs.find(j => j.id === event.active.id);
+    setActiveJob(job || null);
   };
 
-  const handleDeleteJob = async () => {
-    if (!deleteJobId) return;
-    
-    try {
-      await deleteJob(deleteJobId);
-      setDeleteJobId(null);
-    } catch (error) {
-      console.error('Error deleting job:', error);
-    }
-  };
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveJob(null);
 
-  const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case 'quoted': return 'bg-gray-100 text-gray-800';
-      case 'approved': return 'bg-blue-100 text-blue-800';
-      case 'in_progress': return 'bg-yellow-100 text-yellow-800';
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+    if (!over) return;
 
-  const handleJobSuccess = () => {
-    setShowNewJobForm(false);
-  };
+    const jobId = active.id as string;
+    const newStatus = over.id as string;
 
-  const handleJobCancel = () => {
-    setShowNewJobForm(false);
-  };
+    // Check if we're dropping over a valid column
+    const validStatuses = columns.map(col => col.id);
+    if (!validStatuses.includes(newStatus)) return;
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+    const job = jobs.find(j => j.id === jobId);
+    if (!job || job.status === newStatus) return;
+
+    // Update job status
+    await updateJob(jobId, { status: newStatus as any });
+  };
 
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold">Jobs</h2>
-          <p className="text-gray-600">Manage your project pipeline</p>
-        </div>
-        <Button onClick={() => setShowNewJobForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Job
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 min-h-screen">
-        {columns.map((column) => (
-          <div key={column.status} className="space-y-4">
-            <div className={`p-4 rounded-lg ${column.color}`}>
-              <h3 className="font-semibold text-center">
-                {column.title} ({getJobsByStatus(column.status).length})
-              </h3>
-            </div>
-            
-            <div className="space-y-3">
-              {getJobsByStatus(column.status).map((job) => (
-                <Card key={job.id} className="cursor-pointer hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between">
-                      <CardTitle className="text-sm font-medium line-clamp-2">
-                        {job.title}
-                      </CardTitle>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <EditJobDialog 
+      <DndContext
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+          {columns.map((column) => (
+            <div key={column.id} className="flex flex-col">
+              <div className={`p-4 rounded-lg border-2 border-dashed ${column.color} min-h-[500px]`}>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-sm">{column.title}</h3>
+                  <Badge variant="secondary" className="text-xs">
+                    {jobsByStatus[column.id]?.length || 0}
+                  </Badge>
+                </div>
+                
+                <SortableContext 
+                  items={jobsByStatus[column.id]?.map(job => job.id) || []}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-3">
+                    {(jobsByStatus[column.id] || []).map((job) => (
+                      <EditJobDialog
+                        key={job.id}
+                        job={job}
+                        trigger={
+                          <SortableJobCard
                             job={job}
-                            trigger={
-                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit Job
-                              </DropdownMenuItem>
-                            }
+                            onEdit={() => {}}
                           />
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
-                          <DropdownMenuItem>Create Estimate</DropdownMenuItem>
-                          <DropdownMenuItem>Create Task</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {columns.map((col) => (
-                            col.status !== job.status && (
-                              <DropdownMenuItem 
-                                key={col.status}
-                                onClick={() => handleStatusChange(job.id, col.status)}
-                              >
-                                Move to {col.title}
-                              </DropdownMenuItem>
-                            )
-                          ))}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            className="text-red-600"
-                            onClick={() => setDeleteJobId(job.id)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete Job
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    <Badge className={getStatusBadgeColor(job.status)} variant="outline">
-                      {job.status}
-                    </Badge>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    {job.description && (
-                      <p className="text-xs text-gray-600 mb-3 line-clamp-2">
-                        {job.description}
-                      </p>
-                    )}
-                    
-                    <div className="space-y-2">
-                      {job.budget && (
-                        <div className="flex items-center text-xs text-gray-500">
-                          <DollarSign className="h-3 w-3 mr-1" />
-                          ${Number(job.budget).toLocaleString()}
-                        </div>
-                      )}
-                      
-                      {job.estimated_hours && (
-                        <div className="flex items-center text-xs text-gray-500">
-                          <Clock className="h-3 w-3 mr-1" />
-                          {job.estimated_hours}h estimated
-                        </div>
-                      )}
-                      
-                      {job.start_date && (
-                        <div className="flex items-center text-xs text-gray-500">
-                          <Calendar className="h-3 w-3 mr-1" />
-                          {new Date(job.start_date).toLocaleDateString()}
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                        }
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      <Dialog open={showNewJobForm} onOpenChange={setShowNewJobForm}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Create New Job</DialogTitle>
-          </DialogHeader>
-          <NewJobForm 
-            onSuccess={handleJobSuccess}
-            onCancel={handleJobCancel}
-          />
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={!!deleteJobId} onOpenChange={() => setDeleteJobId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Job</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this job? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteJob} className="bg-red-600 hover:bg-red-700">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        <DragOverlay>
+          {activeJob ? (
+            <Card className="cursor-move shadow-lg rotate-3">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">
+                  {activeJob.title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="space-y-2 text-xs">
+                  {activeJob.customers && (
+                    <div className="flex items-center text-gray-600">
+                      <User className="h-3 w-3 mr-1" />
+                      {activeJob.customers.first_name} {activeJob.customers.last_name}
+                    </div>
+                  )}
+                  {activeJob.budget && (
+                    <div className="flex items-center text-green-600 font-medium">
+                      <DollarSign className="h-3 w-3 mr-1" />
+                      ${activeJob.budget.toLocaleString()}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
     </div>
   );
 };

@@ -11,11 +11,13 @@ type EstimateLineItemUpdate = TablesUpdate<'estimate_line_items'>;
 export const useEstimateLineItems = (estimateId?: string) => {
   const [lineItems, setLineItems] = useState<EstimateLineItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchLineItems = async () => {
     if (!estimateId) return;
     
     setLoading(true);
+    setError(null);
     try {
       const { data, error } = await supabase
         .from('estimate_line_items')
@@ -27,6 +29,7 @@ export const useEstimateLineItems = (estimateId?: string) => {
       setLineItems(data || []);
     } catch (error: any) {
       console.error('Error fetching line items:', error);
+      setError(error.message);
       toast.error('Failed to fetch line items');
     } finally {
       setLoading(false);
@@ -39,15 +42,26 @@ export const useEstimateLineItems = (estimateId?: string) => {
       return null;
     }
 
+    // Optimistic update
+    const optimisticItem: EstimateLineItem = {
+      id: `temp-${Date.now()}`,
+      estimate_id: estimateId,
+      description: itemData.description,
+      quantity: itemData.quantity,
+      unit_price: itemData.unit_price,
+      total: Number(itemData.quantity) * Number(itemData.unit_price),
+      sort_order: lineItems.length,
+      created_at: new Date().toISOString(),
+    };
+
+    setLineItems(prev => [...prev, optimisticItem]);
+
     try {
-      const total = Number(itemData.quantity) * Number(itemData.unit_price);
-      
       const { data, error } = await supabase
         .from('estimate_line_items')
         .insert({ 
           ...itemData, 
           estimate_id: estimateId,
-          total,
           sort_order: lineItems.length
         })
         .select()
@@ -55,42 +69,66 @@ export const useEstimateLineItems = (estimateId?: string) => {
 
       if (error) throw error;
       
-      setLineItems(prev => [...prev, data]);
+      // Replace optimistic with real data
+      setLineItems(prev => prev.map(item => 
+        item.id === optimisticItem.id ? data : item
+      ));
+      
       toast.success('Line item added');
       return data;
     } catch (error: any) {
       console.error('Error adding line item:', error);
+      // Rollback optimistic update
+      setLineItems(prev => prev.filter(item => item.id !== optimisticItem.id));
       toast.error('Failed to add line item');
       return null;
     }
   };
 
   const updateLineItem = async (id: string, updates: EstimateLineItemUpdate) => {
-    try {
-      const total = updates.quantity && updates.unit_price 
-        ? Number(updates.quantity) * Number(updates.unit_price)
-        : undefined;
+    const originalItem = lineItems.find(item => item.id === id);
+    if (!originalItem) return null;
 
+    // Optimistic update
+    const updatedItem = {
+      ...originalItem,
+      ...updates,
+      total: updates.quantity && updates.unit_price 
+        ? Number(updates.quantity) * Number(updates.unit_price)
+        : originalItem.total
+    };
+
+    setLineItems(prev => prev.map(item => item.id === id ? updatedItem : item));
+
+    try {
       const { data, error } = await supabase
         .from('estimate_line_items')
-        .update({ ...updates, total })
+        .update(updates)
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
       
+      // Update with real data
       setLineItems(prev => prev.map(item => item.id === id ? data : item));
-      toast.success('Line item updated');
       return data;
     } catch (error: any) {
       console.error('Error updating line item:', error);
+      // Rollback optimistic update
+      setLineItems(prev => prev.map(item => item.id === id ? originalItem : item));
       toast.error('Failed to update line item');
       return null;
     }
   };
 
   const deleteLineItem = async (id: string) => {
+    const originalItem = lineItems.find(item => item.id === id);
+    if (!originalItem) return;
+
+    // Optimistic update
+    setLineItems(prev => prev.filter(item => item.id !== id));
+
     try {
       const { error } = await supabase
         .from('estimate_line_items')
@@ -98,16 +136,21 @@ export const useEstimateLineItems = (estimateId?: string) => {
         .eq('id', id);
 
       if (error) throw error;
-      
-      setLineItems(prev => prev.filter(item => item.id !== id));
       toast.success('Line item deleted');
     } catch (error: any) {
       console.error('Error deleting line item:', error);
+      // Rollback optimistic update
+      setLineItems(prev => [...prev, originalItem].sort((a, b) => a.sort_order - b.sort_order));
       toast.error('Failed to delete line item');
     }
   };
 
   const reorderLineItems = async (reorderedItems: EstimateLineItem[]) => {
+    const originalItems = [...lineItems];
+    
+    // Optimistic update
+    setLineItems(reorderedItems);
+
     try {
       const updates = reorderedItems.map((item, index) => ({
         id: item.id,
@@ -120,10 +163,10 @@ export const useEstimateLineItems = (estimateId?: string) => {
           .update({ sort_order: update.sort_order })
           .eq('id', update.id);
       }
-
-      setLineItems(reorderedItems);
     } catch (error: any) {
       console.error('Error reordering line items:', error);
+      // Rollback optimistic update
+      setLineItems(originalItems);
       toast.error('Failed to reorder line items');
     }
   };
@@ -135,6 +178,7 @@ export const useEstimateLineItems = (estimateId?: string) => {
   return {
     lineItems,
     loading,
+    error,
     fetchLineItems,
     addLineItem,
     updateLineItem,
