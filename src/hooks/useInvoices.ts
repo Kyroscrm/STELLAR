@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
@@ -6,9 +7,17 @@ import { toast } from 'sonner';
 
 export type Invoice = Tables<'invoices'>;
 export type InvoiceLineItem = Tables<'invoice_line_items'>;
-export type InvoiceWithLineItems = Invoice & {
+
+// Extended Invoice type with customer data
+export type InvoiceWithCustomer = Invoice & {
   invoice_line_items: InvoiceLineItem[];
-  customers?: { first_name: string; last_name: string };
+  customers?: { 
+    id: string;
+    first_name: string; 
+    last_name: string;
+    email?: string;
+    phone?: string;
+  };
 };
 
 type InvoiceInsert = Omit<TablesInsert<'invoices'>, 'user_id'>;
@@ -21,7 +30,7 @@ export type InvoiceFormData = Omit<InvoiceInsert, 'user_id'> & {
 };
 
 export const useInvoices = () => {
-  const [invoices, setInvoices] = useState<InvoiceWithLineItems[]>([]);
+  const [invoices, setInvoices] = useState<InvoiceWithCustomer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const { user } = useAuth();
@@ -40,14 +49,14 @@ export const useInvoices = () => {
         .select(`
           *,
           invoice_line_items(*),
-          customers(first_name, last_name)
+          customers(id, first_name, last_name, email, phone)
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       setInvoices(data || []);
-      console.log(`Fetched ${data?.length || 0} invoices`);
+      console.log(`Fetched ${data?.length || 0} invoices with customer data`);
     } catch (error: any) {
       console.error('Error fetching invoices:', error);
       setError(error);
@@ -64,6 +73,7 @@ export const useInvoices = () => {
       return null;
     }
 
+    setError(null);
     try {
       const { lineItems, ...invoiceFields } = invoiceData;
       
@@ -88,7 +98,11 @@ export const useInvoices = () => {
       const { data: invoice, error: invoiceError } = await supabase
         .from('invoices')
         .insert(cleanedInvoiceFields)
-        .select()
+        .select(`
+          *,
+          invoice_line_items(*),
+          customers(id, first_name, last_name, email, phone)
+        `)
         .single();
 
       if (invoiceError) throw invoiceError;
@@ -123,6 +137,7 @@ export const useInvoices = () => {
       return invoice;
     } catch (error: any) {
       console.error('Error creating invoice:', error);
+      setError(error);
       toast.error(error.message || 'Failed to create invoice');
       return null;
     }
@@ -134,6 +149,7 @@ export const useInvoices = () => {
       return false;
     }
 
+    setError(null);
     try {
       // Clean up UUID fields in updates as well
       const cleanedUpdates = { ...updates };
@@ -153,7 +169,11 @@ export const useInvoices = () => {
         .update(cleanedUpdates)
         .eq('id', id)
         .eq('user_id', user.id)
-        .select()
+        .select(`
+          *,
+          invoice_line_items(*),
+          customers(id, first_name, last_name, email, phone)
+        `)
         .single();
 
       if (error) throw error;
@@ -172,6 +192,7 @@ export const useInvoices = () => {
       return true;
     } catch (error: any) {
       console.error('Error updating invoice:', error);
+      setError(error);
       toast.error(error.message || 'Failed to update invoice');
       return false;
     }
@@ -183,6 +204,7 @@ export const useInvoices = () => {
       return;
     }
 
+    setError(null);
     try {
       const { error } = await supabase
         .from('invoices')
@@ -204,6 +226,7 @@ export const useInvoices = () => {
       });
     } catch (error: any) {
       console.error('Error deleting invoice:', error);
+      setError(error);
       toast.error(error.message || 'Failed to delete invoice');
     }
   };

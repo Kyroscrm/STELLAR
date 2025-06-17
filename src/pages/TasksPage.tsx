@@ -1,7 +1,10 @@
+
 import React, { useState, useMemo } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import TaskKanbanBoard from '@/components/TaskKanbanBoard';
 import TaskFormDialog from '@/components/TaskFormDialog';
+import ErrorDisplay from '@/components/ErrorDisplay';
+import LoadingDisplay from '@/components/LoadingDisplay';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,9 +16,7 @@ import {
   Filter, 
   MoreHorizontal,
   ClipboardList,
-  User,
   Calendar,
-  AlertTriangle,
   Clock,
   CheckCircle2,
   Zap,
@@ -36,9 +37,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TASK_STATUS_COLORS, TASK_PRIORITY_COLORS } from '@/types/supabase-enums';
 
 const TasksPage = () => {
-  const { tasks, loading, error } = useTasks();
+  const { tasks, loading, error, fetchTasks } = useTasks();
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
 
@@ -66,46 +68,19 @@ const TasksPage = () => {
     completed: tasks.filter(t => t.status === 'completed').length,
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'bg-red-100 text-red-800 border-red-200';
-      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'low': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'in_progress': return 'bg-blue-100 text-blue-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your tasks...</p>
-        </div>
-      </div>
-    );
+    return <LoadingDisplay message="Loading your tasks..." size="lg" />;
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center">
-        <div className="text-center bg-white p-8 rounded-lg shadow-lg">
-          <AlertTriangle className="mx-auto h-16 w-16 text-red-500 mb-4" />
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Oops! Something went wrong</h2>
-          <p className="text-gray-600 mb-4">Error loading tasks: {error.message}</p>
-          <Button onClick={() => window.location.reload()}>Try Again</Button>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center p-6">
+        <ErrorDisplay 
+          error={error}
+          onRetry={fetchTasks}
+          title="Failed to load tasks"
+          className="max-w-md"
+        />
       </div>
     );
   }
@@ -279,12 +254,12 @@ const TasksPage = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge className={getStatusColor(task.status || 'pending')}>
+                          <Badge className={TASK_STATUS_COLORS[task.status || 'pending']}>
                             {task.status}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge className={getPriorityColor(task.priority || 'medium')}>
+                          <Badge className={TASK_PRIORITY_COLORS[task.priority || 'medium']}>
                             {task.priority}
                           </Badge>
                         </TableCell>

@@ -12,26 +12,42 @@ import { CalendarIcon, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useJobs } from '@/hooks/useJobs';
+import { TaskStatus, TaskPriority } from '@/types/supabase-enums';
 import { toast } from 'sonner';
 
 interface TaskFormDialogProps {
   task?: Task;
   trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onSuccess?: () => void;
+  onCancel?: () => void;
 }
 
-const TaskFormDialog: React.FC<TaskFormDialogProps> = ({ task, trigger }) => {
+const TaskFormDialog: React.FC<TaskFormDialogProps> = ({ 
+  task, 
+  trigger, 
+  open: controlledOpen,
+  onOpenChange,
+  onSuccess,
+  onCancel
+}) => {
   const { addTask, updateTask } = useTasks();
   const { jobs } = useJobs();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  
+  const isControlled = controlledOpen !== undefined;
+  const isOpen = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (onOpenChange || (() => {})) : setInternalOpen;
   
   const [formData, setFormData] = useState({
     title: task?.title || '',
     description: task?.description || '',
     job_id: task?.job_id || '',
     assigned_to: task?.assigned_to || '',
-    status: task?.status || 'pending',
-    priority: task?.priority || 'medium',
+    status: (task?.status as TaskStatus) || 'pending' as TaskStatus,
+    priority: (task?.priority as TaskPriority) || 'medium' as TaskPriority,
     due_date: task?.due_date ? new Date(task.due_date) : undefined,
     estimated_hours: task?.estimated_hours || 0,
     actual_hours: task?.actual_hours || 0,
@@ -61,6 +77,7 @@ const TaskFormDialog: React.FC<TaskFormDialogProps> = ({ task, trigger }) => {
       }
       setOpen(false);
       resetForm();
+      onSuccess?.();
     } catch (error) {
       console.error('Error saving task:', error);
     } finally {
@@ -82,6 +99,12 @@ const TaskFormDialog: React.FC<TaskFormDialogProps> = ({ task, trigger }) => {
     });
   };
 
+  const handleCancel = () => {
+    setOpen(false);
+    resetForm();
+    onCancel?.();
+  };
+
   const defaultTrigger = (
     <Button>
       <Plus className="h-4 w-4 mr-2" />
@@ -90,10 +113,12 @@ const TaskFormDialog: React.FC<TaskFormDialogProps> = ({ task, trigger }) => {
   );
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || defaultTrigger}
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={setOpen}>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          {trigger || defaultTrigger}
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{task ? 'Edit Task' : 'Create New Task'}</DialogTitle>
@@ -142,7 +167,7 @@ const TaskFormDialog: React.FC<TaskFormDialogProps> = ({ task, trigger }) => {
 
             <div className="space-y-2">
               <Label>Status</Label>
-              <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as any }))}>
+              <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as TaskStatus }))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -159,7 +184,7 @@ const TaskFormDialog: React.FC<TaskFormDialogProps> = ({ task, trigger }) => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Priority</Label>
-              <Select value={formData.priority} onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value as any }))}>
+              <Select value={formData.priority} onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value as TaskPriority }))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -220,7 +245,7 @@ const TaskFormDialog: React.FC<TaskFormDialogProps> = ({ task, trigger }) => {
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={handleCancel}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
