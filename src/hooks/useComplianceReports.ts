@@ -48,7 +48,7 @@ export const useComplianceReports = () => {
     try {
       console.log('Fetching compliance reports for user:', user.id);
       
-      // Use fallback approach with activity logs
+      // Use fallback approach with activity logs to create mock reports
       const { data: activityData, error } = await supabase
         .from('activity_logs')
         .select('*')

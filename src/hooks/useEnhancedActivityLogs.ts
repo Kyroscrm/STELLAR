@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useAuditTrail } from './useAuditTrail';
 
 export interface EnhancedActivityLog {
   id: string;
@@ -26,7 +25,6 @@ export const useEnhancedActivityLogs = (options: { limit?: number; includeAudit?
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const { user, session } = useAuth();
-  const { logCustomAuditEvent } = useAuditTrail();
 
   const validateUserAndSession = () => {
     if (!user || !session) {
@@ -56,48 +54,11 @@ export const useEnhancedActivityLogs = (options: { limit?: number; includeAudit?
 
       if (activityError) throw activityError;
 
-      let enhancedLogs: EnhancedActivityLog[] = activityData?.map(log => ({
+      const enhancedLogs: EnhancedActivityLog[] = (activityData || []).map(log => ({
         ...log,
         compliance_level: getComplianceLevel(log.entity_type, log.action),
         risk_score: calculateRiskScore(log.entity_type, log.action)
-      })) || [];
-
-      // Include audit trail data if requested
-      if (includeAudit) {
-        const { data: auditData, error: auditError } = await supabase
-          .from('audit_trail')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(limit / 2); // Get fewer audit records to balance
-
-        if (!auditError && auditData) {
-          const auditLogs: EnhancedActivityLog[] = auditData.map(audit => ({
-            id: audit.id,
-            user_id: audit.user_id,
-            action: audit.action,
-            entity_type: audit.table_name,
-            entity_id: audit.record_id,
-            description: `${audit.action} operation on ${audit.table_name}`,
-            metadata: {
-              old_values: audit.old_values,
-              new_values: audit.new_values,
-              changed_fields: audit.changed_fields,
-              ip_address: audit.ip_address,
-              user_agent: audit.user_agent
-            },
-            created_at: audit.created_at,
-            compliance_level: audit.compliance_level,
-            audit_trail_id: audit.id,
-            risk_score: getAuditRiskScore(audit.compliance_level, audit.action)
-          }));
-
-          // Merge and sort by date
-          enhancedLogs = [...enhancedLogs, ...auditLogs]
-            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-            .slice(0, limit);
-        }
-      }
+      }));
 
       setLogs(enhancedLogs);
       console.log(`Successfully fetched ${enhancedLogs.length} enhanced activity logs`);
@@ -124,37 +85,43 @@ export const useEnhancedActivityLogs = (options: { limit?: number; includeAudit?
     try {
       console.log('Logging enhanced activity:', { action, entityType, entityId, description });
       
-      // Log to activity_logs table
-      const { data: activityData, error: activityError } = await supabase
-        .from('activity_logs')
-        .insert({
-          user_id: user.id,
-          action,
-          entity_type: entityType,
-          entity_id: entityId,
-          description: description || `${action} ${entityType}`,
-          metadata: metadata || {}
-        })
-        .select()
-        .single();
+      // Log to activity_logs table using the existing log_activity function
+      const { error: activityError } = await supabase.rpc('log_activity', {
+        p_action: action,
+        p_entity_type: entityType,
+        p_entity_id: entityId,
+        p_description: description || `${action} ${entityType}`,
+        p_metadata: metadata || {}
+      });
 
       if (activityError) throw activityError;
 
-      // Also log to audit trail if requested
-      if (includeAuditTrail) {
-        await logCustomAuditEvent(entityType, entityId, action, description, metadata);
+      // Fetch the newly created log to return it
+      const { data: newLogData } = await supabase
+        .from('activity_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('action', action)
+        .eq('entity_type', entityType)
+        .eq('entity_id', entityId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (newLogData) {
+        // Create enhanced log entry
+        const enhancedLog: EnhancedActivityLog = {
+          ...newLogData,
+          compliance_level: getComplianceLevel(entityType, action),
+          risk_score: calculateRiskScore(entityType, action)
+        };
+
+        setLogs(prev => [enhancedLog, ...prev.slice(0, limit - 1)]);
+        console.log('Enhanced activity logged successfully:', enhancedLog);
+        return enhancedLog;
       }
 
-      // Create enhanced log entry
-      const enhancedLog: EnhancedActivityLog = {
-        ...activityData,
-        compliance_level: getComplianceLevel(entityType, action),
-        risk_score: calculateRiskScore(entityType, action)
-      };
-
-      setLogs(prev => [enhancedLog, ...prev.slice(0, limit - 1)]);
-      console.log('Enhanced activity logged successfully:', enhancedLog);
-      return enhancedLog;
+      return null;
     } catch (error: any) {
       console.error('Error logging enhanced activity:', error);
       return null;
@@ -194,27 +161,6 @@ export const useEnhancedActivityLogs = (options: { limit?: number; includeAudit?
       score += 20;
     } else if (['customers', 'signed_documents'].includes(entityType)) {
       score += 15;
-    }
-
-    return Math.min(100, score);
-  };
-
-  const getAuditRiskScore = (complianceLevel: string, action: string): number => {
-    let score = 0;
-    
-    switch (complianceLevel) {
-      case 'critical':
-        score = 90;
-        break;
-      case 'high':
-        score = 60;
-        break;
-      default:
-        score = 30;
-    }
-
-    if (action === 'DELETE') {
-      score += 10;
     }
 
     return Math.min(100, score);

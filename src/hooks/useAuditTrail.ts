@@ -54,49 +54,36 @@ export const useAuditTrail = () => {
     try {
       console.log('Fetching audit records for user:', user.id);
       
-      // Use raw SQL to query audit_trail table to avoid TypeScript issues
-      const { data, error } = await supabase.rpc('get_audit_records', {
-        p_user_id: user.id,
-        p_limit: limit,
-        p_filters: filters
-      });
+      // Use activity logs as fallback since audit_trail table doesn't exist yet
+      const { data: activityData, error: activityError } = await supabase
+        .from('activity_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(limit);
 
-      if (error) {
-        // If the function doesn't exist yet, fallback to activity logs
-        console.log('Audit trail not available yet, using activity logs as fallback');
-        const { data: activityData, error: activityError } = await supabase
-          .from('activity_logs')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(limit);
+      if (activityError) throw activityError;
 
-        if (activityError) throw activityError;
+      // Convert activity logs to audit record format
+      const convertedRecords: AuditRecord[] = (activityData || []).map(log => ({
+        id: log.id,
+        user_id: log.user_id,
+        table_name: log.entity_type,
+        record_id: log.entity_id,
+        action: log.action as any,
+        old_values: null,
+        new_values: log.metadata,
+        changed_fields: [],
+        ip_address: '',
+        user_agent: '',
+        session_id: '',
+        compliance_level: getComplianceLevel(log.entity_type),
+        retention_period: '7 years',
+        created_at: log.created_at
+      }));
 
-        // Convert activity logs to audit record format
-        const convertedRecords: AuditRecord[] = (activityData || []).map(log => ({
-          id: log.id,
-          user_id: log.user_id,
-          table_name: log.entity_type,
-          record_id: log.entity_id,
-          action: log.action as any,
-          old_values: null,
-          new_values: log.metadata,
-          changed_fields: [],
-          ip_address: '',
-          user_agent: '',
-          session_id: '',
-          compliance_level: 'standard' as const,
-          retention_period: '7 years',
-          created_at: log.created_at
-        }));
-
-        setAuditRecords(convertedRecords);
-        return;
-      }
-      
-      setAuditRecords(data || []);
-      console.log(`Successfully fetched ${data?.length || 0} audit records`);
+      setAuditRecords(convertedRecords);
+      console.log(`Successfully fetched ${convertedRecords.length} audit records`);
     } catch (error: any) {
       console.error('Error fetching audit records:', error);
       setError(error);
@@ -119,44 +106,19 @@ export const useAuditTrail = () => {
     try {
       console.log('Logging custom audit event:', { tableName, recordId, action });
       
-      // Try to insert into audit_trail, fallback to activity_logs
-      try {
-        const { data, error } = await supabase.rpc('log_audit_event', {
-          p_user_id: user.id,
-          p_table_name: tableName,
-          p_record_id: recordId,
-          p_action: action,
-          p_new_values: { description, metadata },
-          p_compliance_level: 'standard'
-        });
+      // Use the existing log_activity function
+      const { error } = await supabase.rpc('log_activity', {
+        p_action: action,
+        p_entity_type: tableName,
+        p_entity_id: recordId,
+        p_description: description || `${action} ${tableName}`,
+        p_metadata: metadata || {}
+      });
 
-        if (error) throw error;
-        
-        // Update local state
-        if (data) {
-          setAuditRecords(prev => [data, ...prev.slice(0, 99)]);
-        }
-        return data;
-      } catch (rpcError) {
-        // Fallback to activity logs
-        const { data, error } = await supabase
-          .from('activity_logs')
-          .insert({
-            user_id: user.id,
-            action,
-            entity_type: tableName,
-            entity_id: recordId,
-            description: description || `${action} ${tableName}`,
-            metadata: metadata || {}
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        
-        console.log('Audit event logged to activity_logs:', data);
-        return data;
-      }
+      if (error) throw error;
+      
+      console.log('Audit event logged successfully');
+      return true;
     } catch (error: any) {
       console.error('Error logging custom audit event:', error);
       return null;
@@ -174,7 +136,7 @@ export const useAuditTrail = () => {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (!allRecords) {
+      if (!allRecords || allRecords.length === 0) {
         toast.error('No data to export');
         return false;
       }
@@ -210,6 +172,16 @@ export const useAuditTrail = () => {
       toast.error('Failed to export audit records');
       return false;
     }
+  };
+
+  const getComplianceLevel = (entityType: string): 'standard' | 'high' | 'critical' => {
+    if (['invoices', 'payments', 'signed_documents'].includes(entityType)) {
+      return 'critical';
+    }
+    if (['customers', 'jobs', 'estimates'].includes(entityType)) {
+      return 'high';
+    }
+    return 'standard';
   };
 
   useEffect(() => {
