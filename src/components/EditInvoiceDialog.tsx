@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,7 @@ import { invoiceSchema, InvoiceFormData } from '@/lib/validation';
 import { useInvoices, InvoiceWithCustomer } from '@/hooks/useInvoices';
 import { Plus, Trash2, Edit } from 'lucide-react';
 import { toast } from 'sonner';
-import { FormErrorBoundary } from '@/components/ui/form-error-boundary';
+import { FormErrorBoundary } from '@/components/FormErrorBoundary';
 import { useErrorHandler, useOptimisticUpdate } from '@/hooks';
 
 interface EditInvoiceDialogProps {
