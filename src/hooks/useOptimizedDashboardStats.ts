@@ -78,7 +78,7 @@ export const useOptimizedDashboardStats = () => {
     }
   }, [user]);
 
-  // Optimized fetch with single query using CTEs
+  // Optimized fetch with parallel queries
   const fetchStats = useCallback(async (useCache = true) => {
     if (!user) return;
     
@@ -97,52 +97,6 @@ export const useOptimizedDashboardStats = () => {
     try {
       console.log('Fetching optimized dashboard stats for user:', user.id);
       
-      // Use a single optimized query with CTEs for better performance
-      const { data, error } = await supabase.rpc('get_dashboard_stats_optimized', {
-        p_user_id: user.id
-      });
-
-      if (error) {
-        // Fallback to individual queries if RPC doesn't exist
-        console.log('RPC not available, using optimized parallel queries');
-        await fetchStatsParallel();
-        return;
-      }
-
-      if (data && data.length > 0) {
-        const statsData = data[0];
-        const newStats: DashboardStats = {
-          totalCustomers: statsData.total_customers || 0,
-          totalLeads: statsData.total_leads || 0,
-          totalJobs: statsData.total_jobs || 0,
-          totalEstimates: statsData.total_estimates || 0,
-          totalInvoices: statsData.total_invoices || 0,
-          totalTasks: statsData.total_tasks || 0,
-          pendingTasks: statsData.pending_tasks || 0,
-          draftEstimates: statsData.draft_estimates || 0,
-          paidInvoices: statsData.paid_invoices || 0,
-          totalRevenue: statsData.total_revenue || 0
-        };
-        
-        setStats(newStats);
-        setCachedStats(newStats);
-        console.log('Dashboard stats fetched successfully via RPC');
-      }
-    } catch (error: any) {
-      console.error('Error fetching dashboard stats:', error);
-      setError(error);
-      // Fallback to parallel queries
-      await fetchStatsParallel();
-    } finally {
-      setLoading(false);
-    }
-  }, [user, getCachedStats, setCachedStats]);
-
-  // Fallback optimized parallel queries
-  const fetchStatsParallel = useCallback(async () => {
-    if (!user) return;
-
-    try {
       // Use Promise.allSettled for better error handling
       const results = await Promise.allSettled([
         supabase.from('customers').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
@@ -183,12 +137,14 @@ export const useOptimizedDashboardStats = () => {
 
       setStats(newStats);
       setCachedStats(newStats);
-      console.log('Dashboard stats fetched successfully via parallel queries');
+      console.log('Dashboard stats fetched successfully via optimized parallel queries');
     } catch (error: any) {
-      console.error('Error in parallel stats fetch:', error);
+      console.error('Error fetching dashboard stats:', error);
       setError(error);
+    } finally {
+      setLoading(false);
     }
-  }, [user, setCachedStats]);
+  }, [user, getCachedStats, setCachedStats]);
 
   // Force refresh without cache
   const refreshStats = useCallback(() => {
