@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useInvoices } from '@/hooks/useInvoices';
@@ -88,12 +89,11 @@ const InvoicesPage = () => {
   }, [searchParams]);
 
   const filteredInvoices = invoices.filter(invoice => {
-    const customerName = customers.find(c => c.id === invoice.customer_id);
-    const customerFullName = customerName ? `${customerName.first_name} ${customerName.last_name}` : '';
+    const customerName = getCustomerName(invoice.customer_id);
     
     return invoice.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
            invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           customerFullName.toLowerCase().includes(searchTerm.toLowerCase());
+           customerName.toLowerCase().includes(searchTerm.toLowerCase());
   });
   
   const invoiceStats = {
@@ -173,15 +173,6 @@ const InvoicesPage = () => {
     const customer = customers.find(c => c.id === customerId);
     return customer ? `${customer.first_name} ${customer.last_name}` : 'N/A';
   };
-
-  if (error) {
-    return (
-      <div className="p-6 text-center text-red-500">
-        <AlertTriangle className="mx-auto h-12 w-12" />
-        <p className="mt-4 text-lg">Error loading invoices: {error.message}</p>
-      </div>
-    );
-  }
 
   return (
     <div className="p-6 space-y-6">

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { useEstimates } from '@/hooks/useEstimates';
 import { useCustomers } from '@/hooks/useCustomers';
@@ -212,15 +213,6 @@ const EstimatesPage = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-  
-  if (error) {
-    return (
-      <div className="p-6 text-center text-red-500">
-        <AlertTriangle className="mx-auto h-12 w-12" />
-        <p className="mt-4 text-lg">Error loading estimates: {error.message}</p>
       </div>
     );
   }
