@@ -92,11 +92,6 @@ const JobsPage = () => {
     }
   };
 
-  const handleEditJob = (job: any) => {
-    setEditingJob(job);
-    setEditDialogOpen(true);
-  };
-
   const handleEditSuccess = () => {
     fetchJobs(); // Refresh the jobs list
   };
@@ -260,8 +255,12 @@ const JobsPage = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEditJob(job)}>
-                          Edit Job
+                        <DropdownMenuItem asChild>
+                          <EditJobDialog 
+                            job={job} 
+                            onSuccess={handleEditSuccess}
+                            trigger={<span>Edit Job</span>}
+                          />
                         </DropdownMenuItem>
                         <DropdownMenuItem>View Details</DropdownMenuItem>
                         <DropdownMenuItem>Create Estimate</DropdownMenuItem>
