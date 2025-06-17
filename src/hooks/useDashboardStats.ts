@@ -16,6 +16,9 @@ interface DashboardStats {
   totalRevenue: number;
 }
 
+// Global map to track active subscriptions per user to prevent duplicates
+const activeSubscriptions = new Map<string, any>();
+
 export const useDashboardStats = () => {
   const [stats, setStats] = useState<DashboardStats>({
     totalCustomers: 0,
@@ -31,8 +34,8 @@ export const useDashboardStats = () => {
   });
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
-  const channelRef = useRef<any>(null);
-  const isInitializedRef = useRef(false);
+  const instanceId = useRef<string>(`instance-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+  const hasSubscribed = useRef(false);
 
   const fetchStats = useCallback(async () => {
     if (!user) return;
@@ -89,23 +92,25 @@ export const useDashboardStats = () => {
     }
   }, [user]);
 
-  // Initialize once when user is available
   useEffect(() => {
-    if (!user?.id || isInitializedRef.current) return;
-    
-    console.log('Initializing dashboard stats for user:', user.id);
-    isInitializedRef.current = true;
+    if (!user?.id || hasSubscribed.current) return;
 
-    // Clean up any existing channel first
-    if (channelRef.current) {
-      console.log('Removing existing dashboard stats channel');
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
+    // Check if there's already an active subscription for this user
+    const userKey = user.id;
+    
+    if (activeSubscriptions.has(userKey)) {
+      console.log('Dashboard stats subscription already exists for user, reusing...');
+      // Just fetch initial data without creating new subscription
+      fetchStats();
+      return;
     }
 
-    // Create a unique channel name
-    const channelName = `dashboard-stats-${user.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    console.log('Creating new dashboard stats channel:', channelName);
+    console.log('Creating new dashboard stats subscription for user:', user.id, 'instance:', instanceId.current);
+    hasSubscribed.current = true;
+
+    // Create a unique channel name that won't conflict
+    const channelName = `dashboard-stats-${user.id}-${instanceId.current}`;
+    console.log('Creating dashboard stats channel:', channelName);
     
     const channel = supabase.channel(channelName);
     
@@ -124,23 +129,25 @@ export const useDashboardStats = () => {
 
     // Subscribe to the channel
     channel.subscribe((status) => {
-      console.log('Dashboard stats subscription status:', status);
+      console.log('Dashboard stats subscription status:', status, 'for instance:', instanceId.current);
     });
 
-    channelRef.current = channel;
+    // Store the subscription in the global map
+    activeSubscriptions.set(userKey, channel);
     
     // Initial fetch
     fetchStats();
 
     return () => {
-      console.log('Cleaning up dashboard stats subscription');
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
+      console.log('Cleaning up dashboard stats subscription for instance:', instanceId.current);
+      if (activeSubscriptions.get(userKey) === channel) {
+        supabase.removeChannel(channel);
+        activeSubscriptions.delete(userKey);
+        console.log('Removed dashboard stats subscription from global map');
       }
-      isInitializedRef.current = false;
+      hasSubscribed.current = false;
     };
-  }, [user?.id]); // Removed fetchStats from dependencies to prevent circular dependency
+  }, [user?.id]);
 
   return { stats, loading, refetch: fetchStats };
 };
