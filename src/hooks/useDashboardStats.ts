@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -32,9 +32,9 @@ export const useDashboardStats = () => {
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const channelRef = useRef<any>(null);
-  const isSubscribedRef = useRef(false);
+  const isInitializedRef = useRef(false);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     if (!user) return;
     
     setLoading(true);
@@ -87,24 +87,25 @@ export const useDashboardStats = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  // Set up real-time updates with proper cleanup
+  // Initialize once when user is available
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || isInitializedRef.current) return;
+    
+    console.log('Initializing dashboard stats for user:', user.id);
+    isInitializedRef.current = true;
 
-    // Clean up any existing subscription first
-    if (channelRef.current && isSubscribedRef.current) {
-      console.log('Cleaning up existing dashboard stats subscription');
+    // Clean up any existing channel first
+    if (channelRef.current) {
+      console.log('Removing existing dashboard stats channel');
       supabase.removeChannel(channelRef.current);
-      isSubscribedRef.current = false;
       channelRef.current = null;
     }
 
-    console.log('Setting up real-time subscription for dashboard stats');
-
-    // Create a unique channel name using user ID and current timestamp
+    // Create a unique channel name
     const channelName = `dashboard-stats-${user.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    console.log('Creating new dashboard stats channel:', channelName);
     
     const channel = supabase.channel(channelName);
     
@@ -115,7 +116,7 @@ export const useDashboardStats = () => {
       channel.on('postgres_changes', 
         { event: '*', schema: 'public', table, filter: `user_id=eq.${user.id}` }, 
         () => {
-          console.log(`${table} changed, refreshing stats`);
+          console.log(`${table} changed, refreshing dashboard stats`);
           fetchStats();
         }
       );
@@ -124,9 +125,6 @@ export const useDashboardStats = () => {
     // Subscribe to the channel
     channel.subscribe((status) => {
       console.log('Dashboard stats subscription status:', status);
-      if (status === 'SUBSCRIBED') {
-        isSubscribedRef.current = true;
-      }
     });
 
     channelRef.current = channel;
@@ -136,13 +134,13 @@ export const useDashboardStats = () => {
 
     return () => {
       console.log('Cleaning up dashboard stats subscription');
-      if (channelRef.current && isSubscribedRef.current) {
+      if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
-        isSubscribedRef.current = false;
         channelRef.current = null;
       }
+      isInitializedRef.current = false;
     };
-  }, [user?.id]); // Only depend on user.id
+  }, [user?.id, fetchStats]);
 
   return { stats, loading, refetch: fetchStats };
 };
