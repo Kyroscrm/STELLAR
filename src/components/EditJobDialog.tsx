@@ -18,22 +18,12 @@ const EditJobDialog: React.FC<EditJobDialogProps> = ({
   onSuccess
 }) => {
   const [open, setOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { updateJob } = useJobs();
 
-  const handleSubmit = async (data: any) => {
-    setIsSubmitting(true);
-    try {
-      const success = await updateJob(job.id, data);
-      if (success) {
-        setOpen(false);
-        // Call onSuccess callback if provided
-        if (onSuccess) {
-          onSuccess();
-        }
-      }
-    } finally {
-      setIsSubmitting(false);
+  const handleSuccess = () => {
+    setOpen(false);
+    // Call onSuccess callback if provided
+    if (onSuccess) {
+      onSuccess();
     }
   };
 
@@ -57,10 +47,9 @@ const EditJobDialog: React.FC<EditJobDialogProps> = ({
           <DialogTitle>Edit Job</DialogTitle>
         </DialogHeader>
         <NewJobForm
-          onSuccess={handleSubmit}
+          onSuccess={handleSuccess}
           onCancel={handleCancel}
-          initialData={job}
-          isSubmitting={isSubmitting}
+          job={job}
         />
       </DialogContent>
     </Dialog>
