@@ -87,67 +87,67 @@ export const useDashboardStats = () => {
     }
   };
 
-  // Set up real-time updates with unique channel names to prevent subscription conflicts
+  // Set up real-time updates with a single channel to prevent subscription conflicts
   useEffect(() => {
     if (!user) return;
 
-    console.log('Setting up real-time subscriptions for dashboard stats');
+    console.log('Setting up real-time subscription for dashboard stats');
 
-    const channels = [
-      supabase.channel(`dashboard-customers-${user.id}`).on('postgres_changes', 
+    // Use a single channel for all table changes to avoid conflicts
+    const channel = supabase
+      .channel(`dashboard-stats-${user.id}-${Date.now()}`) // Add timestamp to ensure uniqueness
+      .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'customers', filter: `user_id=eq.${user.id}` }, 
         () => {
           console.log('Customers changed, refreshing stats');
           fetchStats();
         }
-      ),
-      supabase.channel(`dashboard-leads-${user.id}`).on('postgres_changes', 
+      )
+      .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'leads', filter: `user_id=eq.${user.id}` }, 
         () => {
           console.log('Leads changed, refreshing stats');
           fetchStats();
         }
-      ),
-      supabase.channel(`dashboard-jobs-${user.id}`).on('postgres_changes', 
+      )
+      .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'jobs', filter: `user_id=eq.${user.id}` }, 
         () => {
           console.log('Jobs changed, refreshing stats');
           fetchStats();
         }
-      ),
-      supabase.channel(`dashboard-estimates-${user.id}`).on('postgres_changes', 
+      )
+      .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'estimates', filter: `user_id=eq.${user.id}` }, 
         () => {
           console.log('Estimates changed, refreshing stats');
           fetchStats();
         }
-      ),
-      supabase.channel(`dashboard-invoices-${user.id}`).on('postgres_changes', 
+      )
+      .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'invoices', filter: `user_id=eq.${user.id}` }, 
         () => {
           console.log('Invoices changed, refreshing stats');
           fetchStats();
         }
-      ),
-      supabase.channel(`dashboard-tasks-${user.id}`).on('postgres_changes', 
+      )
+      .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${user.id}` }, 
         () => {
           console.log('Tasks changed, refreshing stats');
           fetchStats();
         }
       )
-    ];
-
-    channels.forEach(channel => channel.subscribe());
+      .subscribe();
     
     // Initial fetch
     fetchStats();
 
     return () => {
-      console.log('Cleaning up dashboard stats subscriptions');
-      channels.forEach(channel => supabase.removeChannel(channel));
+      console.log('Cleaning up dashboard stats subscription');
+      supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user?.id]); // Only depend on user.id to prevent re-subscriptions
 
   return { stats, loading, refetch: fetchStats };
 };
