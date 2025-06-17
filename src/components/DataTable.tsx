@@ -8,7 +8,8 @@ interface DataTableProps<T> {
   data: T[];
   columns: Array<{
     header: string;
-    accessor: keyof T | ((item: T) => React.ReactNode);
+    accessorKey?: keyof T;
+    accessorFn?: (item: T) => React.ReactNode;
     className?: string;
   }>;
   loading?: boolean;
@@ -66,9 +67,11 @@ export function DataTable<T>({
             <TableRow key={rowIndex}>
               {columns.map((column, colIndex) => (
                 <TableCell key={colIndex} className={column.className}>
-                  {typeof column.accessor === 'function' 
-                    ? column.accessor(item)
-                    : String(item[column.accessor] || '')
+                  {column.accessorFn 
+                    ? column.accessorFn(item)
+                    : column.accessorKey 
+                    ? String(item[column.accessorKey] || '')
+                    : ''
                   }
                 </TableCell>
               ))}

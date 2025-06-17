@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useInvoices } from '@/hooks/useInvoices';
 import { useCustomers } from '@/hooks/useCustomers';
@@ -55,10 +56,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { LoadingWrapper } from '@/components/ui/loading-wrapper';
-import { FormErrorBoundary } from '@/components/ui/form-error-boundary';
-import { DataTable } from '@/components/ui/data-table';
-import { toast } from 'react-toastify';
+import { LoadingWrapper } from '@/components/LoadingWrapper';
+import { FormErrorBoundary } from '@/components/FormErrorBoundary';
+import { DataTable } from '@/components/DataTable';
+import { toast } from 'sonner';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 const InvoicesPage = () => {
@@ -273,10 +274,10 @@ const InvoicesPage = () => {
             emptyStateEntity="invoices"
             onCreateNew={() => setIsCreateModalOpen(true)}
             columns={[
-              { header: 'Number', accessor: 'invoice_number' },
+              { header: 'Number', accessorKey: 'invoice_number' },
               { 
                 header: 'Title', 
-                accessor: (invoice) => (
+                accessorFn: (invoice) => (
                   <button
                     onClick={() => handleViewInvoice(invoice)}
                     className="hover:underline text-left"
@@ -287,13 +288,13 @@ const InvoicesPage = () => {
               },
               { 
                 header: 'Customer', 
-                accessor: (invoice) => invoice.customers ? 
+                accessorFn: (invoice) => invoice.customers ? 
                   `${invoice.customers.first_name} ${invoice.customers.last_name}` : 
                   'N/A'
               },
               { 
                 header: 'Status', 
-                accessor: (invoice) => (
+                accessorFn: (invoice) => (
                   <Badge variant={
                     invoice.status === 'paid' ? 'default' :
                     invoice.status === 'sent' ? 'secondary' :
@@ -306,16 +307,16 @@ const InvoicesPage = () => {
               },
               { 
                 header: 'Total', 
-                accessor: (invoice) => `$${(invoice.total_amount || 0).toFixed(2)}`
+                accessorFn: (invoice) => `$${(invoice.total_amount || 0).toFixed(2)}`
               },
               { 
                 header: 'Due Date', 
-                accessor: (invoice) => invoice.due_date ? 
+                accessorFn: (invoice) => invoice.due_date ? 
                   new Date(invoice.due_date).toLocaleDateString() : 'N/A'
               },
               { 
                 header: 'Actions', 
-                accessor: (invoice) => (
+                accessorFn: (invoice) => (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm">
