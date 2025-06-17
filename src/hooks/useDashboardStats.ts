@@ -140,7 +140,7 @@ export const useDashboardStats = () => {
       }
       isInitializedRef.current = false;
     };
-  }, [user?.id, fetchStats]);
+  }, [user?.id]); // Removed fetchStats from dependencies to prevent circular dependency
 
   return { stats, loading, refetch: fetchStats };
 };
