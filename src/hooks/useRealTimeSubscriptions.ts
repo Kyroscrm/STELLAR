@@ -30,28 +30,30 @@ export const useRealTimeSubscriptions = (configs: SubscriptionConfig[]) => {
     configs.forEach((config, index) => {
       const channelName = `${config.table}_${config.event}_${user.id}_${index}`;
       
-      const channel = supabase
-        .channel(channelName)
-        .on(
-          'postgres_changes',
-          {
-            event: config.event,
-            schema: 'public',
-            table: config.table,
-            filter: config.filter || `user_id=eq.${user.id}`
-          },
-          (payload) => {
-            console.log(`Real-time update on ${config.table}:`, payload);
-            config.onUpdate(payload);
-          }
-        )
-        .subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            console.log(`Subscribed to ${channelName}`);
-          } else if (status === 'CHANNEL_ERROR') {
-            console.error(`Error subscribing to ${channelName}`);
-          }
-        });
+      let channelBuilder = supabase.channel(channelName);
+      
+      channelBuilder = channelBuilder.on(
+        'postgres_changes',
+        {
+          event: config.event,
+          schema: 'public',
+          table: config.table,
+          filter: config.filter || `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log(`Real-time update on ${config.table}:`, payload);
+          config.onUpdate(payload);
+        }
+      );
+
+      const channel = channelBuilder.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log(`Subscribed to ${channelName}`);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error(`Error subscribing to ${channelName}`);
+          toast.error(`Failed to connect to real-time updates for ${config.table}`);
+        }
+      });
 
       channelsRef.current.push(channel);
     });
