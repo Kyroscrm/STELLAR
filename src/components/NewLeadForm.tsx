@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,7 +20,7 @@ const leadSchema = z.object({
   state: z.string().optional(),
   zip_code: z.string().optional(),
   status: z.enum(['new', 'contacted', 'qualified', 'proposal_sent', 'won', 'lost']),
-  source: z.enum(['website', 'referral', 'social_media', 'advertisement', 'cold_call', 'other']),
+  source: z.enum(['website', 'referral', 'google_ads', 'facebook', 'direct_mail', 'cold_call', 'trade_show', 'other']),
   estimated_value: z.coerce.number().optional(),
   expected_close_date: z.string().optional(),
   score: z.coerce.number().min(0).max(100).optional(),
@@ -33,12 +32,14 @@ type LeadFormData = z.infer<typeof leadSchema>;
 interface NewLeadFormProps {
   onSuccess: () => void;
   onCancel: () => void;
+  onClose?: () => void;
   lead?: any;
 }
 
 const NewLeadForm: React.FC<NewLeadFormProps> = ({
   onSuccess,
   onCancel,
+  onClose,
   lead
 }) => {
   const { createLead, updateLead } = useLeads();
@@ -67,12 +68,22 @@ const NewLeadForm: React.FC<NewLeadFormProps> = ({
   const handleSubmit = async (data: LeadFormData) => {
     setIsSubmitting(true);
     try {
-      // Clean up the data
+      // Ensure required fields are provided
       const cleanedData = {
-        ...data,
+        first_name: data.first_name,
+        last_name: data.last_name,
         email: data.email && data.email.trim() !== '' ? data.email : undefined,
+        phone: data.phone,
+        address: data.address,
+        city: data.city,
+        state: data.state,
+        zip_code: data.zip_code,
+        status: data.status,
+        source: data.source,
         estimated_value: data.estimated_value || undefined,
+        expected_close_date: data.expected_close_date,
         score: data.score || 0,
+        notes: data.notes,
       };
 
       let success;
@@ -86,6 +97,7 @@ const NewLeadForm: React.FC<NewLeadFormProps> = ({
       if (success) {
         toast.success(lead ? 'Lead updated successfully' : 'Lead created successfully');
         onSuccess();
+        onClose?.();
       }
     } catch (error) {
       console.error('Error saving lead:', error);
@@ -93,6 +105,11 @@ const NewLeadForm: React.FC<NewLeadFormProps> = ({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCancel = () => {
+    onCancel();
+    onClose?.();
   };
 
   return (
@@ -258,9 +275,11 @@ const NewLeadForm: React.FC<NewLeadFormProps> = ({
                   <SelectContent>
                     <SelectItem value="website">Website</SelectItem>
                     <SelectItem value="referral">Referral</SelectItem>
-                    <SelectItem value="social_media">Social Media</SelectItem>
-                    <SelectItem value="advertisement">Advertisement</SelectItem>
+                    <SelectItem value="google_ads">Google Ads</SelectItem>
+                    <SelectItem value="facebook">Facebook</SelectItem>
+                    <SelectItem value="direct_mail">Direct Mail</SelectItem>
                     <SelectItem value="cold_call">Cold Call</SelectItem>
+                    <SelectItem value="trade_show">Trade Show</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
@@ -342,7 +361,7 @@ const NewLeadForm: React.FC<NewLeadFormProps> = ({
         />
 
         <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button type="button" variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
           <Button type="submit" disabled={isSubmitting}>

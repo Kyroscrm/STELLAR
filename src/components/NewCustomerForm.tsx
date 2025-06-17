@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,12 +29,14 @@ type CustomerFormData = z.infer<typeof customerSchema>;
 interface NewCustomerFormProps {
   onSuccess: () => void;
   onCancel: () => void;
+  onClose?: () => void;
   customer?: any;
 }
 
 const NewCustomerForm: React.FC<NewCustomerFormProps> = ({
   onSuccess,
   onCancel,
+  onClose,
   customer
 }) => {
   const { createCustomer, updateCustomer } = useCustomers();
@@ -62,10 +63,20 @@ const NewCustomerForm: React.FC<NewCustomerFormProps> = ({
   const handleSubmit = async (data: CustomerFormData) => {
     setIsSubmitting(true);
     try {
-      // Clean up the data
+      // Ensure required fields are provided
       const cleanedData = {
-        ...data,
+        first_name: data.first_name,
+        last_name: data.last_name,
         email: data.email && data.email.trim() !== '' ? data.email : undefined,
+        phone: data.phone,
+        company_name: data.company_name,
+        address: data.address,
+        city: data.city,
+        state: data.state,
+        zip_code: data.zip_code,
+        notes: data.notes,
+        emergency_contact_name: data.emergency_contact_name,
+        emergency_contact_phone: data.emergency_contact_phone,
       };
 
       let success;
@@ -79,6 +90,7 @@ const NewCustomerForm: React.FC<NewCustomerFormProps> = ({
       if (success) {
         toast.success(customer ? 'Customer updated successfully' : 'Customer created successfully');
         onSuccess();
+        onClose?.();
       }
     } catch (error) {
       console.error('Error saving customer:', error);
@@ -86,6 +98,11 @@ const NewCustomerForm: React.FC<NewCustomerFormProps> = ({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCancel = () => {
+    onCancel();
+    onClose?.();
   };
 
   return (
@@ -268,7 +285,7 @@ const NewCustomerForm: React.FC<NewCustomerFormProps> = ({
         />
 
         <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button type="button" variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
           <Button type="submit" disabled={isSubmitting}>

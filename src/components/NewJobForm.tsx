@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,12 +29,14 @@ type JobFormData = z.infer<typeof jobSchema>;
 interface NewJobFormProps {
   onSuccess: () => void;
   onCancel: () => void;
+  onClose?: () => void;
   job?: Job;
 }
 
 const NewJobForm: React.FC<NewJobFormProps> = ({
   onSuccess,
   onCancel,
+  onClose,
   job
 }) => {
   const { customers } = useCustomers();
@@ -61,12 +62,18 @@ const NewJobForm: React.FC<NewJobFormProps> = ({
   const handleSubmit = async (data: JobFormData) => {
     setIsSubmitting(true);
     try {
-      // Clean up the data
+      // Ensure required fields are provided
       const cleanedData = {
-        ...data,
+        title: data.title,
+        description: data.description,
         customer_id: data.customer_id && data.customer_id.trim() !== '' ? data.customer_id : undefined,
+        address: data.address,
+        start_date: data.start_date,
+        end_date: data.end_date,
         budget: data.budget || undefined,
         estimated_hours: data.estimated_hours || undefined,
+        status: data.status,
+        notes: data.notes,
       };
 
       let success;
@@ -80,6 +87,7 @@ const NewJobForm: React.FC<NewJobFormProps> = ({
       if (success) {
         toast.success(job ? 'Job updated successfully' : 'Job created successfully');
         onSuccess();
+        onClose?.();
       }
     } catch (error) {
       console.error('Error saving job:', error);
@@ -87,6 +95,11 @@ const NewJobForm: React.FC<NewJobFormProps> = ({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCancel = () => {
+    onCancel();
+    onClose?.();
   };
 
   return (
@@ -274,7 +287,7 @@ const NewJobForm: React.FC<NewJobFormProps> = ({
         />
 
         <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button type="button" variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
           <Button type="submit" disabled={isSubmitting}>
