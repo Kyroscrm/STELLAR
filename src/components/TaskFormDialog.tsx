@@ -20,7 +20,7 @@ interface TaskFormDialogProps {
 }
 
 const TaskFormDialog: React.FC<TaskFormDialogProps> = ({ task, trigger }) => {
-  const { addTask, updateTask } = useTasks();
+  const { createTask, updateTask } = useTasks();
   const { jobs } = useJobs();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -57,7 +57,7 @@ const TaskFormDialog: React.FC<TaskFormDialogProps> = ({ task, trigger }) => {
       if (task) {
         await updateTask(task.id, taskData);
       } else {
-        await addTask(taskData);
+        await createTask(taskData);
       }
       setOpen(false);
       resetForm();

@@ -32,6 +32,7 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
     zip_code: '',
     source: 'website' as const,
     status: 'new' as const,
+    score: 0,
     estimated_value: '',
     expected_close_date: '',
     notes: ''
@@ -45,8 +46,9 @@ const NewLeadForm = ({ onClose, onSuccess }: NewLeadFormProps) => {
     try {
       const leadData = {
         ...formData,
-        estimated_value: formData.estimated_value ? parseFloat(formData.estimated_value) : null,
-        expected_close_date: formData.expected_close_date || null
+        score: formData.score || 0,
+        estimated_value: formData.estimated_value ? parseFloat(formData.estimated_value) : undefined,
+        expected_close_date: formData.expected_close_date || undefined
       };
 
       // Server-side validation

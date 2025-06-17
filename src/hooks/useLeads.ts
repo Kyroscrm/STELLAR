@@ -63,9 +63,15 @@ export const useLeads = () => {
       return null;
     }
 
+    // Ensure score is provided
+    const leadWithScore = {
+      ...leadData,
+      score: leadData.score ?? 0
+    };
+
     // Optimistic update
     const tempLead: Lead = {
-      ...leadData,
+      ...leadWithScore,
       id: `temp-${Date.now()}`,
       user_id: user.id,
       created_at: new Date().toISOString(),
@@ -74,12 +80,12 @@ export const useLeads = () => {
     setLeads(prev => [tempLead, ...prev]);
 
     try {
-      console.log('Creating lead:', leadData);
+      console.log('Creating lead:', leadWithScore);
       
       const { data, error } = await supabase
         .from('leads')
         .insert({
-          ...leadData,
+          ...leadWithScore,
           user_id: user.id
         })
         .select()
@@ -183,8 +189,35 @@ export const useLeads = () => {
     }
   };
 
+  // Set up real-time updates
   useEffect(() => {
+    if (!user) return;
+
+    console.log('Setting up real-time leads subscription for user:', user.id);
+
+    const channel = supabase
+      .channel(`leads-${user.id}`)
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'leads', 
+          filter: `user_id=eq.${user.id}` 
+        }, 
+        () => {
+          console.log('Leads data changed, refetching...');
+          fetchLeads();
+        }
+      )
+      .subscribe();
+
+    // Initial fetch
     fetchLeads();
+
+    return () => {
+      console.log('Cleaning up leads subscription');
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   return {

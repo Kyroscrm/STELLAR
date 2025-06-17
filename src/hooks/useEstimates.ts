@@ -25,10 +25,33 @@ export interface Estimate {
   updated_at: string;
 }
 
+export interface EstimateLineItem {
+  id: string;
+  estimate_id: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  total: number;
+  sort_order?: number;
+  created_at: string;
+}
+
+export interface EstimateWithLineItems extends Estimate {
+  estimate_line_items?: EstimateLineItem[];
+  customers?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email?: string;
+    phone?: string;
+    company_name?: string;
+  };
+}
+
 export const useEstimates = () => {
   const { user } = useAuth();
   const { logActivity } = useActivityLogs();
-  const [estimates, setEstimates] = useState<Estimate[]>([]);
+  const [estimates, setEstimates] = useState<EstimateWithLineItems[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetchEstimates = async () => {
@@ -40,7 +63,18 @@ export const useEstimates = () => {
       
       const { data, error } = await supabase
         .from('estimates')
-        .select('*')
+        .select(`
+          *,
+          estimate_line_items (*),
+          customers (
+            id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            company_name
+          )
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -63,7 +97,7 @@ export const useEstimates = () => {
     }
 
     // Optimistic update
-    const tempEstimate: Estimate = {
+    const tempEstimate: EstimateWithLineItems = {
       ...estimateData,
       id: `temp-${Date.now()}`,
       user_id: user.id,
@@ -81,7 +115,18 @@ export const useEstimates = () => {
           ...estimateData,
           user_id: user.id
         })
-        .select()
+        .select(`
+          *,
+          estimate_line_items (*),
+          customers (
+            id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            company_name
+          )
+        `)
         .single();
 
       if (error) throw error;
@@ -123,7 +168,18 @@ export const useEstimates = () => {
         .update(updates)
         .eq('id', id)
         .eq('user_id', user.id)
-        .select()
+        .select(`
+          *,
+          estimate_line_items (*),
+          customers (
+            id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            company_name
+          )
+        `)
         .single();
 
       if (error) throw error;
@@ -182,8 +238,35 @@ export const useEstimates = () => {
     }
   };
 
+  // Set up real-time updates
   useEffect(() => {
+    if (!user) return;
+
+    console.log('Setting up real-time estimates subscription for user:', user.id);
+
+    const channel = supabase
+      .channel(`estimates-${user.id}`)
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'estimates', 
+          filter: `user_id=eq.${user.id}` 
+        }, 
+        () => {
+          console.log('Estimates data changed, refetching...');
+          fetchEstimates();
+        }
+      )
+      .subscribe();
+
+    // Initial fetch
     fetchEstimates();
+
+    return () => {
+      console.log('Cleaning up estimates subscription');
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   return {

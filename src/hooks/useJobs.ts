@@ -11,7 +11,7 @@ export interface Job {
   customer_id?: string;
   title: string;
   description?: string;
-  status: 'quoted' | 'approved' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'quoted' | 'approved' | 'scheduled' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled';
   start_date?: string;
   end_date?: string;
   estimated_hours?: number;
@@ -24,10 +24,21 @@ export interface Job {
   updated_at: string;
 }
 
+export interface JobWithCustomer extends Job {
+  customers?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email?: string;
+    phone?: string;
+    company_name?: string;
+  };
+}
+
 export const useJobs = () => {
   const { user } = useAuth();
   const { logActivity } = useActivityLogs();
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobs, setJobs] = useState<JobWithCustomer[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetchJobs = async () => {
@@ -39,7 +50,17 @@ export const useJobs = () => {
       
       const { data, error } = await supabase
         .from('jobs')
-        .select('*')
+        .select(`
+          *,
+          customers (
+            id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            company_name
+          )
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -62,7 +83,7 @@ export const useJobs = () => {
     }
 
     // Optimistic update
-    const tempJob: Job = {
+    const tempJob: JobWithCustomer = {
       ...jobData,
       id: `temp-${Date.now()}`,
       user_id: user.id,
@@ -80,7 +101,17 @@ export const useJobs = () => {
           ...jobData,
           user_id: user.id
         })
-        .select()
+        .select(`
+          *,
+          customers (
+            id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            company_name
+          )
+        `)
         .single();
 
       if (error) throw error;
@@ -122,7 +153,17 @@ export const useJobs = () => {
         .update(updates)
         .eq('id', id)
         .eq('user_id', user.id)
-        .select()
+        .select(`
+          *,
+          customers (
+            id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            company_name
+          )
+        `)
         .single();
 
       if (error) throw error;
@@ -181,8 +222,35 @@ export const useJobs = () => {
     }
   };
 
+  // Set up real-time updates
   useEffect(() => {
+    if (!user) return;
+
+    console.log('Setting up real-time jobs subscription for user:', user.id);
+
+    const channel = supabase
+      .channel(`jobs-${user.id}`)
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'jobs', 
+          filter: `user_id=eq.${user.id}` 
+        }, 
+        () => {
+          console.log('Jobs data changed, refetching...');
+          fetchJobs();
+        }
+      )
+      .subscribe();
+
+    // Initial fetch
     fetchJobs();
+
+    return () => {
+      console.log('Cleaning up jobs subscription');
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   return {
