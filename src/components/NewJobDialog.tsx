@@ -59,10 +59,17 @@ const NewJobDialog: React.FC<NewJobDialogProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Ensure title is always present
+    if (!formData.title.trim()) {
+      toast.error('Job title is required');
+      return;
+    }
+
     try {
       // Validate with Zod schema
       const validatedData = jobSchema.parse({
         ...formData,
+        title: formData.title, // Ensure title is always included
         customer_id: formData.customer_id || undefined,
         estimated_hours: formData.estimated_hours || undefined,
         actual_hours: formData.actual_hours || undefined,

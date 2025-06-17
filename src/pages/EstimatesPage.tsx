@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useEstimates } from '@/hooks/useEstimates';
 import { useEstimateTemplates } from '@/hooks/useEstimateTemplates';
 import NewTemplateDialog from '@/components/NewTemplateDialog';
@@ -63,7 +63,7 @@ const EstimatesPage = () => {
   const { estimates, loading, error, addEstimate, updateEstimate, deleteEstimate } = useEstimates();
   const { customers } = useCustomers();
   const { generateEstimatePDF, generating } = usePDFGeneration();
-  const { estimateTemplates } = useEstimateTemplates();
+  const { templates } = useEstimateTemplates();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);

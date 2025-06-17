@@ -9,11 +9,13 @@ import { useLeads, Lead } from '@/hooks/useLeads';
 interface EditLeadDialogProps {
   lead: Lead;
   trigger?: React.ReactNode;
+  onSuccess?: () => void;
 }
 
 const EditLeadDialog: React.FC<EditLeadDialogProps> = ({ 
   lead, 
-  trigger 
+  trigger,
+  onSuccess
 }) => {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -25,6 +27,7 @@ const EditLeadDialog: React.FC<EditLeadDialogProps> = ({
       const success = await updateLead(lead.id, data);
       if (success) {
         setOpen(false);
+        onSuccess?.();
       }
     } finally {
       setIsSubmitting(false);

@@ -9,11 +9,13 @@ import { useCustomers, Customer } from '@/hooks/useCustomers';
 interface EditCustomerDialogProps {
   customer: Customer;
   trigger?: React.ReactNode;
+  onSuccess?: () => void;
 }
 
 const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({ 
   customer, 
-  trigger 
+  trigger,
+  onSuccess
 }) => {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -25,6 +27,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
       const success = await updateCustomer(customer.id, data);
       if (success) {
         setOpen(false);
+        onSuccess?.();
       }
     } finally {
       setIsSubmitting(false);
