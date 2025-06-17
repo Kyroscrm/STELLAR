@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useInvoices } from '@/hooks/useInvoices';
@@ -62,7 +61,7 @@ import {
 import { toast } from 'sonner';
 
 const InvoicesPage = () => {
-  const { invoices, loading, error, addInvoice, updateInvoice, deleteInvoice, markInvoiceAsPaid, fetchInvoices } = useInvoices();
+  const { invoices, loading, createInvoice, updateInvoice, deleteInvoice, fetchInvoices } = useInvoices();
   const { customers } = useCustomers();
   const { generateInvoicePDF, generating } = usePDFGeneration();
   const [searchParams] = useSearchParams();
@@ -88,11 +87,14 @@ const InvoicesPage = () => {
     }
   }, [searchParams]);
 
-  const filteredInvoices = invoices.filter(invoice => 
-    invoice.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (invoice.customers && `${invoice.customers.first_name} ${invoice.customers.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredInvoices = invoices.filter(invoice => {
+    const customerName = customers.find(c => c.id === invoice.customer_id);
+    const customerFullName = customerName ? `${customerName.first_name} ${customerName.last_name}` : '';
+    
+    return invoice.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           customerFullName.toLowerCase().includes(searchTerm.toLowerCase());
+  });
   
   const invoiceStats = {
     total: invoices.length,
@@ -104,7 +106,7 @@ const InvoicesPage = () => {
   const handleCreateInvoice = async (data: any) => {
     setIsSubmitting(true);
     try {
-      await addInvoice(data);
+      await createInvoice(data);
       setIsCreateModalOpen(false);
     } finally {
       setIsSubmitting(false);
@@ -149,7 +151,7 @@ const InvoicesPage = () => {
   };
 
   const handleMarkAsPaid = async (invoiceId: string) => {
-    await markInvoiceAsPaid(invoiceId);
+    await updateInvoice(invoiceId, { payment_status: 'paid', paid_at: new Date().toISOString() });
   };
 
   // Add realtime updates
@@ -166,6 +168,12 @@ const InvoicesPage = () => {
     );
   }
   
+  const getCustomerName = (customerId: string | null) => {
+    if (!customerId) return 'N/A';
+    const customer = customers.find(c => c.id === customerId);
+    return customer ? `${customer.first_name} ${customer.last_name}` : 'N/A';
+  };
+
   if (error) {
     return (
       <div className="p-6 text-center text-red-500">
@@ -300,10 +308,7 @@ const InvoicesPage = () => {
                     </button>
                   </TableCell>
                   <TableCell>
-                    {invoice.customers ? 
-                      `${invoice.customers.first_name} ${invoice.customers.last_name}` : 
-                      'N/A'
-                    }
+                    {getCustomerName(invoice.customer_id)}
                   </TableCell>
                   <TableCell>
                     <Badge variant={
@@ -407,7 +412,7 @@ const InvoicesPage = () => {
                 </div>
               </div>
               <div className="border-t pt-4">
-                <p><strong>Customer:</strong> {selectedInvoice.customers ? `${selectedInvoice.customers.first_name} ${selectedInvoice.customers.last_name}` : 'N/A'}</p>
+                <p><strong>Customer:</strong> {getCustomerName(selectedInvoice.customer_id)}</p>
                 <p><strong>Due Date:</strong> {selectedInvoice.due_date || 'N/A'}</p>
                 <p><strong>Total:</strong> ${(selectedInvoice.total_amount || 0).toFixed(2)}</p>
                 {selectedInvoice.paid_at && (

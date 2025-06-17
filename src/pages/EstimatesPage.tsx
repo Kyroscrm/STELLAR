@@ -58,7 +58,7 @@ import EstimateLineItemsDisplay from '@/components/EstimateLineItemsDisplay';
 import { toast } from 'sonner';
 
 const EstimatesPage = () => {
-  const { estimates, loading, error, addEstimate, updateEstimate, deleteEstimate } = useEstimates();
+  const { estimates, loading, createEstimate, updateEstimate, deleteEstimate } = useEstimates();
   const { customers } = useCustomers();
   const { generateEstimatePDF, generating } = usePDFGeneration();
   
@@ -145,7 +145,7 @@ const EstimatesPage = () => {
         total_amount: 0
       };
 
-      const result = await addEstimate(estimateData);
+      const result = await createEstimate(estimateData);
       
       if (result && data.lineItems && data.lineItems.length > 0) {
         await addLineItemsToEstimate(result.id, data.lineItems);

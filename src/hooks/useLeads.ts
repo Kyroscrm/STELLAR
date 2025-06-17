@@ -17,7 +17,7 @@ export interface Lead {
   state?: string;
   zip_code?: string;
   notes?: string;
-  status: 'new' | 'contacted' | 'qualified' | 'proposal' | 'proposal_sent' | 'negotiating' | 'won' | 'lost';
+  status: 'new' | 'contacted' | 'qualified' | 'proposal_sent' | 'negotiating' | 'won' | 'lost';
   source: 'website' | 'referral' | 'google_ads' | 'facebook' | 'direct_mail' | 'cold_call' | 'trade_show' | 'other';
   score: number;
   estimated_value?: number;
@@ -30,7 +30,8 @@ export interface Lead {
 const normalizeLeadStatus = (status: string): Lead['status'] => {
   const statusMap: Record<string, Lead['status']> = {
     'proposal_sent': 'proposal_sent',
-    'negotiating': 'negotiating'
+    'negotiating': 'negotiating',
+    'proposal': 'proposal_sent' // Map old 'proposal' to 'proposal_sent'
   };
   return statusMap[status] || status as Lead['status'];
 };
@@ -45,12 +46,18 @@ const normalizeLeadSource = (source: string): Lead['source'] => {
 };
 
 // Normalize frontend data to database-compatible format
-const normalizeSourceForDB = (source: string): 'website' | 'referral' | 'google_ads' | 'facebook' | 'direct_mail' | 'cold_call' | 'trade_show' | 'other' => {
-  const sourceMap: Record<string, 'website' | 'referral' | 'google_ads' | 'facebook' | 'direct_mail' | 'cold_call' | 'trade_show' | 'other'> = {
+const normalizeSourceForDB = (source: string): Lead['source'] => {
+  const sourceMap: Record<string, Lead['source']> = {
     'social': 'facebook',
     'advertising': 'google_ads'
   };
-  return sourceMap[source] || source as 'website' | 'referral' | 'google_ads' | 'facebook' | 'direct_mail' | 'cold_call' | 'trade_show' | 'other';
+  return sourceMap[source] || source as Lead['source'];
+};
+
+const normalizeStatusForDB = (status: string): Lead['status'] => {
+  // Ensure the status is valid for database
+  const validStatuses: Lead['status'][] = ['new', 'contacted', 'qualified', 'proposal_sent', 'negotiating', 'won', 'lost'];
+  return validStatuses.includes(status as Lead['status']) ? status as Lead['status'] : 'new';
 };
 
 export const useLeads = () => {
@@ -97,11 +104,12 @@ export const useLeads = () => {
       return null;
     }
 
-    // Ensure score is provided and normalize source for database
-    const leadWithScore = {
+    // Normalize data for database insertion
+    const leadWithNormalizedData = {
       ...leadData,
       score: leadData.score ?? 0,
-      source: normalizeSourceForDB(leadData.source)
+      source: normalizeSourceForDB(leadData.source),
+      status: normalizeStatusForDB(leadData.status)
     };
 
     // Optimistic update
@@ -115,12 +123,12 @@ export const useLeads = () => {
     setLeads(prev => [tempLead, ...prev]);
 
     try {
-      console.log('Creating lead:', leadWithScore);
+      console.log('Creating lead:', leadWithNormalizedData);
       
       const { data, error } = await supabase
         .from('leads')
         .insert({
-          ...leadWithScore,
+          ...leadWithNormalizedData,
           user_id: user.id
         })
         .select()
@@ -155,10 +163,11 @@ export const useLeads = () => {
       return false;
     }
 
-    // Normalize source if it's being updated
+    // Normalize data for database update
     const normalizedUpdates = {
       ...updates,
-      ...(updates.source && { source: normalizeSourceForDB(updates.source) })
+      ...(updates.source && { source: normalizeSourceForDB(updates.source) }),
+      ...(updates.status && { status: normalizeStatusForDB(updates.status) })
     };
 
     // Optimistic update
