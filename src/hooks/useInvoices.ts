@@ -14,7 +14,7 @@ export interface Invoice {
   invoice_number: string;
   title: string;
   description?: string;
-  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+  status: 'draft' | 'sent' | 'viewed' | 'paid' | 'overdue' | 'cancelled';
   subtotal: number;
   tax_rate: number;
   tax_amount: number;

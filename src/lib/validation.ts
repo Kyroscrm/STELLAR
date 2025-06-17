@@ -1,3 +1,4 @@
+
 import { z } from 'zod';
 
 // Customer validation schema
@@ -71,7 +72,7 @@ export const taskSchema = z.object({
 
 export type TaskFormData = z.infer<typeof taskSchema>;
 
-// Estimate validation schema
+// Estimate validation schema - Updated to match database schema exactly
 export const estimateSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
@@ -80,14 +81,14 @@ export const estimateSchema = z.object({
   job_id: z.string().optional(),
   valid_until: z.string().optional(),
   tax_rate: z.number().min(0).max(1).optional(),
-  status: z.enum(['draft', 'sent', 'approved', 'rejected', 'expired']).optional(),
+  status: z.enum(['draft', 'sent', 'viewed', 'approved', 'rejected', 'expired']).optional(),
   notes: z.string().optional(),
   terms: z.string().optional(),
 });
 
 export type EstimateFormData = z.infer<typeof estimateSchema>;
 
-// Invoice validation schema
+// Invoice validation schema - Updated to match database schema exactly
 export const invoiceSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
@@ -97,7 +98,7 @@ export const invoiceSchema = z.object({
   estimate_id: z.string().uuid('Invalid estimate ID').optional().or(z.literal('')),
   due_date: z.string().optional(),
   tax_rate: z.number().min(0).max(1).optional(),
-  status: z.enum(['draft', 'sent', 'paid', 'overdue', 'cancelled']).optional(),
+  status: z.enum(['draft', 'sent', 'viewed', 'paid', 'overdue', 'cancelled']).optional(),
   notes: z.string().optional(),
   payment_terms: z.string().optional(),
 });

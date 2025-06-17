@@ -13,7 +13,7 @@ export interface Estimate {
   estimate_number: string;
   title: string;
   description?: string;
-  status: 'draft' | 'sent' | 'approved' | 'rejected' | 'expired';
+  status: 'draft' | 'sent' | 'viewed' | 'approved' | 'rejected' | 'expired';
   subtotal: number;
   tax_rate: number;
   tax_amount: number;
