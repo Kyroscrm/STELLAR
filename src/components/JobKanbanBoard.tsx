@@ -8,14 +8,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useJobs, JobWithCustomer } from '@/hooks/useJobs';
-import { MapPin, DollarSign, Calendar, User, MoreVertical } from 'lucide-react';
+import { MapPin, DollarSign, Calendar, User, MoreVertical, Eye, Edit } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import ViewJobDialog from './ViewJobDialog';
 import EditJobDialog from './EditJobDialog';
+import { toast } from 'sonner';
 
 // Define job status columns
 const columns = [
@@ -30,9 +32,10 @@ const columns = [
 interface SortableJobCardProps {
   job: JobWithCustomer;
   onEdit: () => void;
+  onView: () => void;
 }
 
-const SortableJobCard: React.FC<SortableJobCardProps> = ({ job, onEdit }) => {
+const SortableJobCard: React.FC<SortableJobCardProps> = ({ job, onEdit, onView }) => {
   const {
     attributes,
     listeners,
@@ -58,15 +61,19 @@ const SortableJobCard: React.FC<SortableJobCardProps> = ({ job, onEdit }) => {
             </CardTitle>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => e.stopPropagation()}>
                   <MoreVertical className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={onEdit}>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onView(); }}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Details
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+                  <Edit className="h-4 w-4 mr-2" />
                   Edit Job
                 </DropdownMenuItem>
-                <DropdownMenuItem>View Details</DropdownMenuItem>
                 <DropdownMenuItem>Create Estimate</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -106,9 +113,11 @@ const SortableJobCard: React.FC<SortableJobCardProps> = ({ job, onEdit }) => {
 };
 
 const JobKanbanBoard: React.FC = () => {
-  const { jobs, updateJob } = useJobs();
+  const { jobs, updateJob, loading } = useJobs();
   const [activeJob, setActiveJob] = useState<JobWithCustomer | null>(null);
   const [jobsByStatus, setJobsByStatus] = useState<Record<string, JobWithCustomer[]>>({});
+  const [editingJob, setEditingJob] = useState<JobWithCustomer | null>(null);
+  const [viewingJob, setViewingJob] = useState<JobWithCustomer | null>(null);
 
   // Group jobs by status
   useEffect(() => {
@@ -145,9 +154,20 @@ const JobKanbanBoard: React.FC = () => {
     const job = jobs.find(j => j.id === jobId);
     if (!job || job.status === newStatus) return;
 
-    // Update job status
-    await updateJob(jobId, { status: newStatus as any });
+    // Update job status with optimistic UI
+    const success = await updateJob(jobId, { status: newStatus as any });
+    if (success) {
+      toast.success(`Job moved to ${newStatus.replace('_', ' ')}`);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -158,36 +178,33 @@ const JobKanbanBoard: React.FC = () => {
       >
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
           {columns.map((column) => (
-            <div key={column.id} className="flex flex-col">
-              <div className={`p-4 rounded-lg border-2 border-dashed ${column.color} min-h-[500px]`}>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-sm">{column.title}</h3>
-                  <Badge variant="secondary" className="text-xs">
-                    {jobsByStatus[column.id]?.length || 0}
-                  </Badge>
-                </div>
-                
-                <SortableContext 
-                  items={jobsByStatus[column.id]?.map(job => job.id) || []}
-                  strategy={verticalListSortingStrategy}
-                >
+            <SortableContext 
+              key={column.id}
+              items={jobsByStatus[column.id]?.map(job => job.id) || []}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="flex flex-col" id={column.id}>
+                <div className={`p-4 rounded-lg border-2 border-dashed ${column.color} min-h-[500px]`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-sm">{column.title}</h3>
+                    <Badge variant="secondary" className="text-xs">
+                      {jobsByStatus[column.id]?.length || 0}
+                    </Badge>
+                  </div>
+                  
                   <div className="space-y-3">
                     {(jobsByStatus[column.id] || []).map((job) => (
-                      <EditJobDialog
+                      <SortableJobCard
                         key={job.id}
                         job={job}
-                        trigger={
-                          <SortableJobCard
-                            job={job}
-                            onEdit={() => {}}
-                          />
-                        }
+                        onEdit={() => setEditingJob(job)}
+                        onView={() => setViewingJob(job)}
                       />
                     ))}
                   </div>
-                </SortableContext>
+                </div>
               </div>
-            </div>
+            </SortableContext>
           ))}
         </div>
 
@@ -219,6 +236,25 @@ const JobKanbanBoard: React.FC = () => {
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      {/* Edit Job Dialog */}
+      {editingJob && (
+        <EditJobDialog
+          job={editingJob}
+          open={!!editingJob}
+          onOpenChange={(open) => !open && setEditingJob(null)}
+          onSuccess={() => setEditingJob(null)}
+        />
+      )}
+
+      {/* View Job Dialog */}
+      {viewingJob && (
+        <ViewJobDialog
+          job={viewingJob}
+          open={!!viewingJob}
+          onOpenChange={(open) => !open && setViewingJob(null)}
+        />
+      )}
     </div>
   );
 };
