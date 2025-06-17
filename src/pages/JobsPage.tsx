@@ -38,8 +38,6 @@ const JobsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'files'>('kanban');
-  const [editingJob, setEditingJob] = useState<any>(null);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -351,17 +349,6 @@ const JobsPage = () => {
           )}
         </>
       )}
-
-      {/* Edit Job Dialog */}
-      <EditJobDialog
-        job={editingJob}
-        open={editDialogOpen}
-        onClose={() => {
-          setEditDialogOpen(false);
-          setEditingJob(null);
-        }}
-        onSuccess={handleEditSuccess}
-      />
     </div>
   );
 };
