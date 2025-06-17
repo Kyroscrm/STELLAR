@@ -27,7 +27,24 @@ export const useRealTimeSubscriptions = (configs: SubscriptionConfig[]) => {
 
     cleanup(); // Clean up existing channels
 
-    configs.forEach((config, index) => {
+    // Add audit trail monitoring to all subscriptions
+    const enhancedConfigs = [
+      ...configs,
+      {
+        table: 'audit_trail',
+        event: 'INSERT' as const,
+        filter: `user_id=eq.${user.id}`,
+        onUpdate: (payload: any) => {
+          console.log('New audit record:', payload);
+          // Show notification for critical compliance events
+          if (payload.new?.compliance_level === 'critical') {
+            toast.warning(`Critical action logged: ${payload.new.action} on ${payload.new.table_name}`);
+          }
+        }
+      }
+    ];
+
+    enhancedConfigs.forEach((config, index) => {
       const channelName = `${config.table}_${config.event}_${user.id}_${index}`;
       
       const channel = supabase
