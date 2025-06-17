@@ -295,6 +295,7 @@ const CustomersPage = () => {
       {showNewCustomerForm && (
         <NewCustomerForm 
           onClose={() => setShowNewCustomerForm(false)}
+          onCancel={() => setShowNewCustomerForm(false)}
           onSuccess={() => window.location.reload()}
         />
       )}

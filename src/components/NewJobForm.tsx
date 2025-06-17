@@ -20,7 +20,7 @@ const jobSchema = z.object({
   end_date: z.string().optional(),
   budget: z.coerce.number().optional(),
   estimated_hours: z.coerce.number().optional(),
-  status: z.enum(['quoted', 'approved', 'scheduled', 'in_progress', 'completed', 'cancelled']),
+  status: z.enum(['quoted', 'approved', 'scheduled', 'in_progress', 'on_hold', 'completed', 'cancelled']),
   notes: z.string().optional(),
 });
 
@@ -176,6 +176,7 @@ const NewJobForm: React.FC<NewJobFormProps> = ({
                     <SelectItem value="approved">Approved</SelectItem>
                     <SelectItem value="scheduled">Scheduled</SelectItem>
                     <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="on_hold">On Hold</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
                   </SelectContent>

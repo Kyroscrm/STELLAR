@@ -332,6 +332,7 @@ const LeadsPage = () => {
       {showNewLeadForm && (
         <NewLeadForm 
           onClose={() => setShowNewLeadForm(false)}
+          onCancel={() => setShowNewLeadForm(false)}
           onSuccess={handleFormSuccess}
         />
       )}
