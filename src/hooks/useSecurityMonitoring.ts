@@ -47,29 +47,33 @@ export const useSecurityMonitoring = () => {
     try {
       console.log('Fetching security metrics for user:', user.id);
 
-      // Get audit record counts
-      const { data: auditData, error: auditError } = await supabase
-        .from('audit_trail')
-        .select('compliance_level, action, created_at')
+      // Get activity data for metrics
+      const { data: activityData, error } = await supabase
+        .from('activity_logs')
+        .select('action, entity_type, created_at')
         .eq('user_id', user.id)
-        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()); // Last 30 days
+        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
 
-      if (auditError) throw auditError;
+      if (error) throw error;
 
-      // Calculate metrics
-      const totalAuditRecords = auditData?.length || 0;
-      const criticalActions = auditData?.filter(r => r.compliance_level === 'critical').length || 0;
-      const highRiskActions = auditData?.filter(r => r.compliance_level === 'high').length || 0;
+      // Calculate metrics from activity data
+      const totalRecords = activityData?.length || 0;
+      const criticalActions = activityData?.filter(r => 
+        ['invoices', 'payments', 'signed_documents'].includes(r.entity_type)
+      ).length || 0;
+      const highRiskActions = activityData?.filter(r => 
+        ['customers', 'jobs', 'estimates'].includes(r.entity_type) && r.action === 'DELETE'
+      ).length || 0;
       
-      // Calculate compliance score (simplified)
-      const complianceScore = Math.max(0, 100 - (criticalActions * 10) - (highRiskActions * 5));
+      // Calculate compliance score
+      const complianceScore = Math.max(0, 100 - (criticalActions * 2) - (highRiskActions * 5));
 
       const calculatedMetrics: SecurityMetrics = {
-        totalAuditRecords,
+        totalAuditRecords: totalRecords,
         criticalActions,
         highRiskActions,
-        recentLoginAttempts: 0, // Would be calculated from auth logs
-        suspiciousActivity: 0, // Would be calculated based on patterns
+        recentLoginAttempts: 1, // Current session
+        suspiciousActivity: 0,
         complianceScore
       };
 
@@ -90,40 +94,38 @@ export const useSecurityMonitoring = () => {
     try {
       console.log('Checking for security anomalies');
 
-      // Get recent audit data
+      // Get recent activity data
       const { data: recentData, error } = await supabase
-        .from('audit_trail')
+        .from('activity_logs')
         .select('*')
         .eq('user_id', user.id)
-        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Last 24 hours
+        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
       const detectedAlerts: SecurityAlert[] = [];
 
-      // Check for unusual activity patterns
       if (recentData) {
-        // Check for high volume of critical actions
-        const criticalCount = recentData.filter(r => r.compliance_level === 'critical').length;
-        if (criticalCount > 10) {
+        // Check for high volume of actions
+        if (recentData.length > 50) {
           detectedAlerts.push({
             id: `alert-${Date.now()}-1`,
             type: 'suspicious_activity',
-            severity: 'high',
-            description: `Unusual number of critical actions detected: ${criticalCount} in the last 24 hours`,
-            metadata: { criticalCount, timeframe: '24h' },
+            severity: 'medium',
+            description: `High activity detected: ${recentData.length} actions in the last 24 hours`,
+            metadata: { actionCount: recentData.length, timeframe: '24h' },
             created_at: new Date().toISOString()
           });
         }
 
         // Check for bulk delete operations
         const deleteCount = recentData.filter(r => r.action === 'DELETE').length;
-        if (deleteCount > 5) {
+        if (deleteCount > 3) {
           detectedAlerts.push({
             id: `alert-${Date.now()}-2`,
             type: 'data_breach',
-            severity: 'medium',
+            severity: 'high',
             description: `Multiple delete operations detected: ${deleteCount} records deleted`,
             metadata: { deleteCount, timeframe: '24h' },
             created_at: new Date().toISOString()
@@ -131,7 +133,7 @@ export const useSecurityMonitoring = () => {
         }
       }
 
-      setAlerts(prev => [...detectedAlerts, ...prev.slice(0, 47)]); // Keep last 50 alerts
+      setAlerts(prev => [...detectedAlerts, ...prev.slice(0, 47)]);
       
       if (detectedAlerts.length > 0) {
         toast.warning(`${detectedAlerts.length} security alert(s) detected`);

@@ -155,7 +155,7 @@ const RecentActivity: React.FC = () => {
             <Clock className="h-5 w-5 text-gray-600" />
             Recent Activity
             {activities.some(a => a.audit_trail_id) && (
-              <Shield className="h-4 w-4 text-blue-500" title="Enhanced with audit trail" />
+              <Shield className="h-4 w-4 text-blue-500" />
             )}
           </CardTitle>
           <div className="flex items-center gap-2">
