@@ -1,1 +1,42 @@
+
 project_id = "kmjgbbzbqotorocychzl"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[ingest]
+enabled = false
+
+[auth]
+enabled = true
+port = 54324
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://kmjgbbzbqotorocychzl.supabase.co"]
+jwt_expiry = 3600
+enable_signup = true
+enable_anonymous_users = false
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+
+[functions.create-stripe-checkout]
+verify_jwt = true
+
+[functions.handle-stripe-webhook]
+verify_jwt = false
+
+[functions.send-receipt-email]
+verify_jwt = false

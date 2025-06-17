@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useInvoices } from '@/hooks/useInvoices';
@@ -150,6 +149,18 @@ const InvoicesPage = () => {
   const handleMarkAsPaid = async (invoiceId: string) => {
     await markInvoiceAsPaid(invoiceId);
   };
+
+  // Add realtime updates
+  useRealtimeInvoices((updatedInvoice) => {
+    // Optimistically update the invoice in the list
+    setInvoices(prev => 
+      prev.map(invoice => 
+        invoice.id === updatedInvoice.id 
+          ? { ...invoice, ...updatedInvoice }
+          : invoice
+      )
+    );
+  });
 
   if (loading) {
     return (
