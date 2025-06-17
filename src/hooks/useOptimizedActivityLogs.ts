@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -180,12 +179,12 @@ export const useOptimizedActivityLogs = (filters: ActivityLogFilters = {}) => {
     fetchLogs(filters);
   }, [user, session, filters]);
 
-  // Real-time subscriptions
+  // Enhanced real-time subscriptions with filter matching
   useEffect(() => {
     if (!user) return;
 
     const channel = supabase
-      .channel(`activity_logs_${user.id}`)
+      .channel(`activity_logs_realtime_${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -195,25 +194,61 @@ export const useOptimizedActivityLogs = (filters: ActivityLogFilters = {}) => {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('Real-time activity log:', payload);
+          console.log('Real-time activity log received:', payload);
           const newLog = payload.new as ActivityLog;
           
-          // Check if it matches current filters
+          // Enhanced filter matching
           const matchesFilters = (!filters.entity_type || filters.entity_type === newLog.entity_type) &&
                                 (!filters.action || filters.action === newLog.action);
           
           if (matchesFilters) {
             setLogs(prev => {
-              // Avoid duplicates (in case we already have it from optimistic update)
+              // Prevent duplicates and maintain order
               const exists = prev.some(log => log.id === newLog.id);
               if (exists) return prev;
               
-              return [newLog, ...prev.slice(0, 49)];
+              // Insert at beginning and maintain limit
+              const updated = [newLog, ...prev];
+              return updated.slice(0, filters.limit || 50);
             });
+            
+            // Update total count
+            setTotalCount(prev => prev + 1);
           }
         }
       )
-      .subscribe();
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'activity_logs',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          const updatedLog = payload.new as ActivityLog;
+          setLogs(prev => prev.map(log => log.id === updatedLog.id ? updatedLog : log));
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'activity_logs',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          const deletedLog = payload.old as ActivityLog;
+          setLogs(prev => prev.filter(log => log.id !== deletedLog.id));
+          setTotalCount(prev => Math.max(0, prev - 1));
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Real-time activity logs subscription active');
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);

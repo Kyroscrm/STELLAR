@@ -11,48 +11,14 @@ import {
   AlertTriangle,
   Calendar
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { useOptimizedActivityLogs } from '@/hooks/useOptimizedActivityLogs';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
 import LoadingSpinner from './LoadingSpinner';
-
-interface ActivityItem {
-  id: string;
-  action: string;
-  description: string;
-  entity_type: string;
-  entity_id: string;
-  created_at: string;
-  metadata?: any;
-}
+import RealTimeStatusIndicator from './RealTimeStatusIndicator';
 
 const RecentActivity: React.FC = () => {
   const { user } = useAuth();
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadActivities();
-  }, [user]);
-
-  const loadActivities = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('activity_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
-
-      setActivities(data || []);
-    } catch (error) {
-      console.error('Error loading activities:', error);
-      toast.error('Failed to load recent activities');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { logs: activities, loading } = useOptimizedActivityLogs({ limit: 10 });
 
   const getActivityIcon = (entityType: string, action: string) => {
     switch (entityType) {
@@ -108,7 +74,9 @@ const RecentActivity: React.FC = () => {
     const now = new Date();
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
     
-    if (diffInMinutes < 60) {
+    if (diffInMinutes < 1) {
+      return 'Just now';
+    } else if (diffInMinutes < 60) {
       return `${diffInMinutes} minutes ago`;
     } else if (diffInMinutes < 1440) {
       return `${Math.floor(diffInMinutes / 60)} hours ago`;
@@ -130,10 +98,13 @@ const RecentActivity: React.FC = () => {
   return (
     <Card className="shadow-lg">
       <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2">
-          <Clock className="h-5 w-5 text-gray-600" />
-          Recent Activity
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-gray-600" />
+            Recent Activity
+          </CardTitle>
+          <RealTimeStatusIndicator />
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
@@ -171,17 +142,6 @@ const RecentActivity: React.FC = () => {
             ))
           )}
         </div>
-        
-        {activities.length > 0 && (
-          <div className="mt-6 pt-4 border-t">
-            <button 
-              className="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium"
-              onClick={loadActivities}
-            >
-              Refresh Activity
-            </button>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

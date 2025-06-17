@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
@@ -300,34 +299,92 @@ export const useOptimizedCustomers = (filters: CustomerFilters = {}) => {
     }
   }, [loading, customers.length, totalCount, filters, user]);
 
-  // Initial fetch and real-time subscriptions
+  // Initial fetch and enhanced real-time subscriptions
   useEffect(() => {
     fetchCustomers(filters);
   }, [fetchCustomers, filters]);
 
-  // Real-time updates
+  // Enhanced real-time updates with optimistic state management
   useEffect(() => {
     if (!user) return;
 
+    let updateTimeout: NodeJS.Timeout;
+    const debouncedUpdate = (callback: () => void) => {
+      clearTimeout(updateTimeout);
+      updateTimeout = setTimeout(callback, 500); // 500ms debounce
+    };
+
     const channel = supabase
-      .channel(`customers_${user.id}`)
+      .channel(`customers_realtime_${user.id}`)
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
+          schema: 'public',
+          table: 'customers',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Real-time customer insert:', payload);
+          const newCustomer = payload.new as Customer;
+          
+          setCustomers(prev => {
+            // Check if already exists (optimistic update)
+            const exists = prev.some(c => c.id === newCustomer.id);
+            if (exists) return prev;
+            
+            return [newCustomer, ...prev].sort((a, b) => 
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            );
+          });
+          setTotalCount(prev => prev + 1);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
           schema: 'public',
           table: 'customers',
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
           console.log('Real-time customer update:', payload);
-          // Refresh data on changes
-          fetchCustomers(filters);
+          const updatedCustomer = payload.new as Customer;
+          
+          debouncedUpdate(() => {
+            setCustomers(prev => prev.map(c => c.id === updatedCustomer.id ? updatedCustomer : c));
+          });
         }
       )
-      .subscribe();
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'customers',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Real-time customer delete:', payload);
+          const deletedCustomer = payload.old as Customer;
+          
+          setCustomers(prev => prev.filter(c => c.id !== deletedCustomer.id));
+          setTotalCount(prev => Math.max(0, prev - 1));
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Real-time customers subscription active');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Real-time customers subscription error');
+          // Fallback to periodic refresh
+          debouncedUpdate(() => fetchCustomers(filters));
+        }
+      });
 
     return () => {
+      clearTimeout(updateTimeout);
       supabase.removeChannel(channel);
     };
   }, [user, filters, fetchCustomers]);

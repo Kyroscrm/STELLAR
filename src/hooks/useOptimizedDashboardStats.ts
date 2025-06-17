@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -159,16 +158,22 @@ export const useOptimizedDashboardStats = () => {
     fetchStats();
   }, [fetchStats]);
 
-  // Set up real-time subscriptions for automatic updates
+  // Enhanced real-time subscriptions with intelligent debouncing
   useEffect(() => {
     if (!user) return;
+
+    let refreshTimeout: NodeJS.Timeout;
+    const debouncedRefresh = () => {
+      clearTimeout(refreshTimeout);
+      refreshTimeout = setTimeout(() => refreshStats(), 2000); // 2 second debounce
+    };
 
     const channels = [
       'customers', 'leads', 'jobs', 'estimates', 
       'invoices', 'tasks'
-    ].map(table => {
+    ].map((table, index) => {
       const channel = supabase
-        .channel(`${table}_changes_${user.id}`)
+        .channel(`${table}_stats_${user.id}_${index}`)
         .on(
           'postgres_changes',
           {
@@ -177,17 +182,22 @@ export const useOptimizedDashboardStats = () => {
             table,
             filter: `user_id=eq.${user.id}`
           },
-          () => {
-            // Debounce updates to avoid excessive refreshes
-            setTimeout(() => refreshStats(), 1000);
+          (payload) => {
+            console.log(`Real-time stats update from ${table}:`, payload.eventType);
+            debouncedRefresh();
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log(`Stats subscription active for ${table}`);
+          }
+        });
 
       return channel;
     });
 
     return () => {
+      clearTimeout(refreshTimeout);
       channels.forEach(channel => supabase.removeChannel(channel));
     };
   }, [user, refreshStats]);
