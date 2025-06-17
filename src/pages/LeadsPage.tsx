@@ -1,14 +1,16 @@
+
 import React, { useState } from 'react';
 import { useLeads } from '@/hooks/useLeads';
 import ViewLeadDialog from '@/components/ViewLeadDialog';
 import EditLeadDialog from '@/components/EditLeadDialog';
+import CreateLeadDialog from '@/components/CreateLeadDialog';
 import CreateEstimateFromLeadDialog from '@/components/CreateEstimateFromLeadDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { LeadGridSkeleton, StatsCardSkeleton } from '@/components/ui/loading-skeleton';
 import { 
-  Plus, 
   Search, 
   Filter, 
   MoreHorizontal,
@@ -92,14 +94,6 @@ const LeadsPage = () => {
     fetchLeads(); // Refresh the leads list
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -109,50 +103,51 @@ const LeadsPage = () => {
           <p className="text-gray-600">Track and manage potential customers</p>
         </div>
         <div className="flex gap-2">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            New Lead
-          </Button>
+          <CreateLeadDialog onSuccess={fetchLeads} />
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-sm font-medium text-gray-600">Total Leads</p>
-            <p className="text-2xl font-bold">{leadStats.total}</p>
-          </CardContent>
-        </Card>
+      {loading ? (
+        <StatsCardSkeleton />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-sm font-medium text-gray-600">Total Leads</p>
+              <p className="text-2xl font-bold">{leadStats.total}</p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-sm font-medium text-gray-600">New Leads</p>
-            <p className="text-2xl font-bold">{leadStats.new}</p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-sm font-medium text-gray-600">New Leads</p>
+              <p className="text-2xl font-bold">{leadStats.new}</p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-sm font-medium text-gray-600">Contacted</p>
-            <p className="text-2xl font-bold">{leadStats.contacted}</p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-sm font-medium text-gray-600">Contacted</p>
+              <p className="text-2xl font-bold">{leadStats.contacted}</p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-sm font-medium text-gray-600">Qualified</p>
-            <p className="text-2xl font-bold">{leadStats.qualified}</p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-sm font-medium text-gray-600">Qualified</p>
+              <p className="text-2xl font-bold">{leadStats.qualified}</p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-sm font-medium text-gray-600">Potential Revenue</p>
-            <p className="text-2xl font-bold">${leadStats.potentialRevenue.toLocaleString()}</p>
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-sm font-medium text-gray-600">Potential Revenue</p>
+              <p className="text-2xl font-bold">${leadStats.potentialRevenue.toLocaleString()}</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex gap-4">
@@ -200,116 +195,124 @@ const LeadsPage = () => {
       </div>
 
       {/* Leads Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredLeads.map((lead) => (
-          <Card key={lead.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <CardTitle className="text-lg">
-                    {lead.first_name} {lead.last_name}
-                  </CardTitle>
-                  <div className="flex gap-2 mt-2">
-                    <Badge className={getStatusColor(lead.status || 'new')}>
-                      {lead.status}
-                    </Badge>
-                    <Badge className={getSourceColor(lead.source || 'website')}>
-                      {lead.source}
-                    </Badge>
+      {loading ? (
+        <LeadGridSkeleton />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredLeads.map((lead) => (
+            <Card key={lead.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg">
+                      {lead.first_name} {lead.last_name}
+                    </CardTitle>
+                    <div className="flex gap-2 mt-2">
+                      <Badge className={getStatusColor(lead.status || 'new')}>
+                        {lead.status}
+                      </Badge>
+                      <Badge className={getSourceColor(lead.source || 'website')}>
+                        {lead.source}
+                      </Badge>
+                    </div>
                   </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem asChild>
+                        <ViewLeadDialog 
+                          lead={lead}
+                          trigger={<span className="w-full cursor-pointer">View Details</span>}
+                        />
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <EditLeadDialog 
+                          lead={lead} 
+                          onSuccess={handleEditSuccess}
+                          trigger={<span className="w-full cursor-pointer">Edit Lead</span>}
+                        />
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <CreateEstimateFromLeadDialog 
+                          lead={lead}
+                          onSuccess={fetchLeads}
+                          trigger={<span className="w-full cursor-pointer">Create Estimate</span>}
+                        />
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange(lead.id, 'contacted')}>
+                        Mark Contacted
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange(lead.id, 'qualified')}>
+                        Mark Qualified
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange(lead.id, 'converted')}>
+                        Convert to Customer
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        className="text-red-600"
+                        onClick={() => handleDeleteLead(lead.id)}
+                      >
+                        Delete Lead
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <ViewLeadDialog 
-                        lead={lead}
-                        trigger={<span className="w-full cursor-pointer">View Details</span>}
-                      />
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <EditLeadDialog 
-                        lead={lead} 
-                        onSuccess={handleEditSuccess}
-                        trigger={<span className="w-full cursor-pointer">Edit Lead</span>}
-                      />
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <CreateEstimateFromLeadDialog 
-                        lead={lead}
-                        onSuccess={fetchLeads}
-                        trigger={<span className="w-full cursor-pointer">Create Estimate</span>}
-                      />
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleStatusChange(lead.id, 'contacted')}>
-                      Mark Contacted
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleStatusChange(lead.id, 'qualified')}>
-                      Mark Qualified
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleStatusChange(lead.id, 'converted')}>
-                      Convert to Customer
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      className="text-red-600"
-                      onClick={() => handleDeleteLead(lead.id)}
-                    >
-                      Delete Lead
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center text-sm text-gray-600">
-                  <Mail className="h-4 w-4 mr-2" />
-                  {lead.email || 'N/A'}
-                </div>
-                <div className="flex items-center text-sm text-gray-600">
-                  <Phone className="h-4 w-4 mr-2" />
-                  {lead.phone || 'N/A'}
-                </div>
-                {lead.address && (
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
                   <div className="flex items-center text-sm text-gray-600">
-                    <MapPin className="h-4 w-4 mr-2" />
-                    {lead.address}, {lead.city}, {lead.state}, {lead.zip_code}
+                    <Mail className="h-4 w-4 mr-2" />
+                    {lead.email || 'N/A'}
                   </div>
-                )}
-                {lead.estimated_value && (
-                  <div className="flex items-center text-sm font-medium text-green-600">
-                    <DollarSign className="h-4 w-4 mr-2" />
-                    Est. Value: ${lead.estimated_value.toLocaleString()}
-                  </div>
-                )}
-                {lead.expected_close_date && (
                   <div className="flex items-center text-sm text-gray-600">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Close Date: {new Date(lead.expected_close_date).toLocaleDateString()}
+                    <Phone className="h-4 w-4 mr-2" />
+                    {lead.phone || 'N/A'}
                   </div>
-                )}
-                {lead.notes && (
-                  <p className="text-sm text-gray-500 bg-gray-50 p-2 rounded line-clamp-3">
-                    {lead.notes}
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                  {lead.address && (
+                    <div className="flex items-center text-sm text-gray-600">
+                      <MapPin className="h-4 w-4 mr-2" />
+                      {lead.address}, {lead.city}, {lead.state}, {lead.zip_code}
+                    </div>
+                  )}
+                  {lead.estimated_value && (
+                    <div className="flex items-center text-sm font-medium text-green-600">
+                      <DollarSign className="h-4 w-4 mr-2" />
+                      Est. Value: ${lead.estimated_value.toLocaleString()}
+                    </div>
+                  )}
+                  {lead.expected_close_date && (
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Close Date: {new Date(lead.expected_close_date).toLocaleDateString()}
+                    </div>
+                  )}
+                  {lead.notes && (
+                    <p className="text-sm text-gray-500 bg-gray-50 p-2 rounded line-clamp-3">
+                      {lead.notes}
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
-      {filteredLeads.length === 0 && (
+      {filteredLeads.length === 0 && !loading && (
         <div className="text-center py-12">
           <p className="text-gray-500">No leads found matching your criteria.</p>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Your First Lead
-          </Button>
+          <CreateLeadDialog 
+            trigger={
+              <Button className="mt-4">
+                Create Your First Lead
+              </Button>
+            }
+            onSuccess={fetchLeads}
+          />
         </div>
       )}
     </div>
