@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -31,6 +31,8 @@ export const useDashboardStats = () => {
   });
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
+  const channelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
 
   const fetchStats = async () => {
     if (!user) return;
@@ -87,67 +89,60 @@ export const useDashboardStats = () => {
     }
   };
 
-  // Set up real-time updates with a single channel to prevent subscription conflicts
+  // Set up real-time updates with proper cleanup
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
+
+    // Clean up any existing subscription first
+    if (channelRef.current && isSubscribedRef.current) {
+      console.log('Cleaning up existing dashboard stats subscription');
+      supabase.removeChannel(channelRef.current);
+      isSubscribedRef.current = false;
+      channelRef.current = null;
+    }
 
     console.log('Setting up real-time subscription for dashboard stats');
 
-    // Use a single channel for all table changes to avoid conflicts
-    const channel = supabase
-      .channel(`dashboard-stats-${user.id}-${Date.now()}`) // Add timestamp to ensure uniqueness
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'customers', filter: `user_id=eq.${user.id}` }, 
+    // Create a unique channel name using user ID and current timestamp
+    const channelName = `dashboard-stats-${user.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    const channel = supabase.channel(channelName);
+    
+    // Add all table listeners to the single channel
+    const tables = ['customers', 'leads', 'jobs', 'estimates', 'invoices', 'tasks'];
+    
+    tables.forEach(table => {
+      channel.on('postgres_changes', 
+        { event: '*', schema: 'public', table, filter: `user_id=eq.${user.id}` }, 
         () => {
-          console.log('Customers changed, refreshing stats');
+          console.log(`${table} changed, refreshing stats`);
           fetchStats();
         }
-      )
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'leads', filter: `user_id=eq.${user.id}` }, 
-        () => {
-          console.log('Leads changed, refreshing stats');
-          fetchStats();
-        }
-      )
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'jobs', filter: `user_id=eq.${user.id}` }, 
-        () => {
-          console.log('Jobs changed, refreshing stats');
-          fetchStats();
-        }
-      )
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'estimates', filter: `user_id=eq.${user.id}` }, 
-        () => {
-          console.log('Estimates changed, refreshing stats');
-          fetchStats();
-        }
-      )
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'invoices', filter: `user_id=eq.${user.id}` }, 
-        () => {
-          console.log('Invoices changed, refreshing stats');
-          fetchStats();
-        }
-      )
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${user.id}` }, 
-        () => {
-          console.log('Tasks changed, refreshing stats');
-          fetchStats();
-        }
-      )
-      .subscribe();
+      );
+    });
+
+    // Subscribe to the channel
+    channel.subscribe((status) => {
+      console.log('Dashboard stats subscription status:', status);
+      if (status === 'SUBSCRIBED') {
+        isSubscribedRef.current = true;
+      }
+    });
+
+    channelRef.current = channel;
     
     // Initial fetch
     fetchStats();
 
     return () => {
       console.log('Cleaning up dashboard stats subscription');
-      supabase.removeChannel(channel);
+      if (channelRef.current && isSubscribedRef.current) {
+        supabase.removeChannel(channelRef.current);
+        isSubscribedRef.current = false;
+        channelRef.current = null;
+      }
     };
-  }, [user?.id]); // Only depend on user.id to prevent re-subscriptions
+  }, [user?.id]); // Only depend on user.id
 
   return { stats, loading, refetch: fetchStats };
 };
