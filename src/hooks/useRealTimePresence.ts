@@ -42,22 +42,27 @@ export const useRealTimePresence = (roomId: string = 'main') => {
       .on('presence', { event: 'sync' }, () => {
         const newState = channel.presenceState();
         
-        // Convert Supabase presence state to our format
+        // Convert Supabase presence state to our format safely
         const convertedState: Record<string, UserPresence[]> = {};
         Object.entries(newState).forEach(([key, presences]) => {
-          convertedState[key] = presences as UserPresence[];
+          // Filter and validate presence objects
+          const validPresences = (presences as any[]).filter((presence: any) => 
+            presence && 
+            typeof presence === 'object' && 
+            'user_id' in presence && 
+            'status' in presence && 
+            'last_seen' in presence
+          ) as UserPresence[];
+          
+          if (validPresences.length > 0) {
+            convertedState[key] = validPresences;
+          }
         });
         
         setPresenceState(convertedState);
         
         // Flatten presence state to get all online users
-        const users = Object.values(convertedState).flat().filter((presence): presence is UserPresence => 
-          presence && 
-          typeof presence === 'object' && 
-          'user_id' in presence && 
-          'status' in presence && 
-          'last_seen' in presence
-        );
+        const users = Object.values(convertedState).flat();
         setOnlineUsers(users);
         console.log('Presence sync:', users);
       })
