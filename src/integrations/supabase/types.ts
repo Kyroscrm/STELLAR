@@ -398,6 +398,47 @@ export type Database = {
         }
         Relationships: []
       }
+      client_portal_tokens: {
+        Row: {
+          created_at: string
+          customer_id: string
+          expires_at: string
+          id: string
+          metadata: Json | null
+          token: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          expires_at: string
+          id?: string
+          metadata?: Json | null
+          token: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          expires_at?: string
+          id?: string
+          metadata?: Json | null
+          token?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_client_portal_tokens_customer"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           created_at: string | null
@@ -2352,6 +2393,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_client_portal_token: {
+        Args: {
+          p_customer_id: string
+          p_user_id: string
+          p_expires_hours?: number
+        }
+        Returns: string
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -2373,6 +2422,14 @@ export type Database = {
           p_metadata?: Json
         }
         Returns: undefined
+      }
+      validate_client_portal_token: {
+        Args: { p_token: string }
+        Returns: {
+          customer_id: string
+          user_id: string
+          is_valid: boolean
+        }[]
       }
     }
     Enums: {

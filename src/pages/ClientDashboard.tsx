@@ -1,10 +1,12 @@
 
 import React, { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useClientPortalAuth, useClientPortalData } from '@/hooks/useClientPortal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Home, 
   FileText, 
@@ -14,89 +16,67 @@ import {
   DollarSign,
   Clock,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  LogOut
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const ClientDashboard = () => {
-  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token');
+  
+  const { customerId, isAuthenticated, isLoading: authLoading, logout } = useClientPortalAuth(token || undefined);
+  const { customer, jobs, estimates, invoices, documents, loading: dataLoading, error } = useClientPortalData(customerId);
+  
   const [activeTab, setActiveTab] = useState('projects');
 
-  // Mock client data
-  const projects = [
-    {
-      id: '1',
-      name: 'Complete Roof Replacement',
-      status: 'in-progress',
-      progress: 65,
-      startDate: '2024-01-15',
-      estimatedCompletion: '2024-02-28',
-      budget: 45000,
-      spent: 29250
-    },
-    {
-      id: '2',
-      name: 'Roof Repair & Gutters',
-      status: 'completed',
-      progress: 100,
-      startDate: '2023-11-01',
-      estimatedCompletion: '2023-12-15',
-      budget: 25000,
-      spent: 24500
+  // Redirect if not authenticated
+  React.useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate(`/client/login${token ? `?token=${token}` : ''}`);
     }
-  ];
+  }, [authLoading, isAuthenticated, navigate, token]);
 
-  const invoices = [
-    {
-      id: 'INV-001',
-      project: 'Complete Roof Replacement',
-      amount: 15000,
-      date: '2024-01-15',
-      status: 'paid',
-      dueDate: '2024-01-30'
-    },
-    {
-      id: 'INV-002',
-      project: 'Complete Roof Replacement',
-      amount: 14250,
-      date: '2024-02-01',
-      status: 'paid',
-      dueDate: '2024-02-15'
-    },
-    {
-      id: 'INV-003',
-      project: 'Complete Roof Replacement',
-      amount: 15750,
-      date: '2024-02-10',
-      status: 'pending',
-      dueDate: '2024-02-25'
-    }
-  ];
+  if (authLoading || dataLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white shadow-sm border-b">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-heading font-bold text-primary">
+                  Final Roofing<span className="text-secondary"> & Retro-Fit</span>
+                </h1>
+                <p className="text-gray-600">Client Portal</p>
+              </div>
+              <Skeleton className="h-8 w-20" />
+            </div>
+          </div>
+        </header>
+        <div className="container mx-auto px-4 py-8">
+          <div className="space-y-4">
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-40 w-full" />
+            <Skeleton className="h-40 w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  const messages = [
-    {
-      id: '1',
-      from: 'Project Manager',
-      subject: 'Roof Progress Update',
-      date: '2024-02-10',
-      preview: 'The new shingles installation is complete and we\'re moving on to gutters...',
-      unread: true
-    },
-    {
-      id: '2',
-      from: 'Admin Team',
-      subject: 'Final Invoice - Roof Repair Project',
-      date: '2024-01-20',
-      preview: 'Please find attached the final invoice for your roof repair project...',
-      unread: false
-    }
-  ];
+  if (!isAuthenticated) {
+    return null; // Will redirect
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'bg-green-500';
       case 'in-progress': return 'bg-blue-500';
+      case 'active': return 'bg-blue-500';
       case 'pending': return 'bg-yellow-500';
       case 'paid': return 'bg-green-500';
+      case 'approved': return 'bg-green-500';
       default: return 'bg-gray-500';
     }
   };
@@ -105,30 +85,37 @@ const ClientDashboard = () => {
     switch (status) {
       case 'completed': return <CheckCircle className="h-4 w-4" />;
       case 'in-progress': return <Clock className="h-4 w-4" />;
+      case 'active': return <Clock className="h-4 w-4" />;
       case 'pending': return <AlertCircle className="h-4 w-4" />;
+      case 'approved': return <CheckCircle className="h-4 w-4" />;
       default: return <Clock className="h-4 w-4" />;
     }
   };
 
+  const calculateProgress = (job: any) => {
+    if (job.status === 'completed') return 100;
+    if (job.status === 'active' || job.status === 'in-progress') return 65;
+    if (job.status === 'quoted') return 25;
+    return 0;
+  };
+
+  const handleDownloadEstimate = (estimateId: string) => {
+    toast.info('PDF download functionality would be implemented here');
+  };
+
   const handleDownloadInvoice = (invoiceId: string) => {
-    // Implement invoice download functionality
-    console.log('Downloading invoice:', invoiceId);
+    toast.info('PDF download functionality would be implemented here');
+  };
+
+  const handleApproveEstimate = async (estimateId: string) => {
+    toast.info('Estimate approval functionality would be implemented here');
   };
 
   const handlePayInvoice = (invoiceId: string) => {
-    // Implement payment functionality
-    console.log('Processing payment for invoice:', invoiceId);
+    toast.info('Payment processing would be implemented here');
   };
 
-  const handleProjectDetails = (projectId: string) => {
-    // Implement project details view
-    console.log('Viewing project details:', projectId);
-  };
-
-  const handleDownloadReports = (projectId: string) => {
-    // Implement report download functionality
-    console.log('Downloading reports for project:', projectId);
-  };
+  const unreadMessages = 2; // This would come from a messages system
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -143,8 +130,11 @@ const ClientDashboard = () => {
               <p className="text-gray-600">Client Portal</p>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">Welcome, {user?.name}</span>
-              <Button variant="outline" onClick={logout}>
+              <span className="text-sm text-gray-600">
+                Welcome, {customer?.first_name} {customer?.last_name}
+              </span>
+              <Button variant="outline" onClick={logout} size="sm">
+                <LogOut className="h-4 w-4 mr-2" />
                 Logout
               </Button>
             </div>
@@ -160,10 +150,10 @@ const ClientDashboard = () => {
               <CardContent className="p-0">
                 <nav className="space-y-1">
                   {[
-                    { id: 'projects', label: 'My Projects', icon: Home },
-                    { id: 'invoices', label: 'Invoices', icon: FileText },
-                    { id: 'schedule', label: 'Schedule', icon: Calendar },
-                    { id: 'messages', label: 'Messages', icon: MessageSquare }
+                    { id: 'projects', label: 'My Projects', icon: Home, count: jobs.length },
+                    { id: 'estimates', label: 'Estimates', icon: FileText, count: estimates.length },
+                    { id: 'invoices', label: 'Invoices', icon: DollarSign, count: invoices.length },
+                    { id: 'messages', label: 'Messages', icon: MessageSquare, count: unreadMessages }
                   ].map(item => (
                     <button
                       key={item.id}
@@ -174,9 +164,9 @@ const ClientDashboard = () => {
                     >
                       <item.icon className="h-5 w-5" />
                       {item.label}
-                      {item.id === 'messages' && (
+                      {item.count > 0 && (
                         <Badge variant="secondary" className="ml-auto">
-                          {messages.filter(m => m.unread).length}
+                          {item.count}
                         </Badge>
                       )}
                     </button>
@@ -193,64 +183,145 @@ const ClientDashboard = () => {
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-primary">My Projects</h2>
                 
-                {projects.map(project => (
-                  <Card key={project.id} className="shadow-lg">
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="text-xl">{project.name}</CardTitle>
-                          <div className="flex items-center gap-2 mt-2">
-                            <Badge className={`${getStatusColor(project.status)} text-white`}>
-                              {getStatusIcon(project.status)}
-                              <span className="ml-1 capitalize">{project.status.replace('-', ' ')}</span>
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="text-right text-sm text-gray-600">
-                          <div>Started: {new Date(project.startDate).toLocaleDateString()}</div>
-                          <div>Est. Completion: {new Date(project.estimatedCompletion).toLocaleDateString()}</div>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div>
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm font-medium">Progress</span>
-                            <span className="text-sm text-gray-600">{project.progress}%</span>
-                          </div>
-                          <Progress value={project.progress} className="h-2" />
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="bg-gray-50 p-3 rounded-lg">
-                            <div className="text-sm text-gray-600">Budget</div>
-                            <div className="text-lg font-semibold text-primary">
-                              ${project.budget.toLocaleString()}
-                            </div>
-                          </div>
-                          <div className="bg-gray-50 p-3 rounded-lg">
-                            <div className="text-sm text-gray-600">Spent</div>
-                            <div className="text-lg font-semibold text-secondary">
-                              ${project.spent.toLocaleString()}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => handleProjectDetails(project.id)}>
-                            <FileText className="h-4 w-4 mr-2" />
-                            View Details
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => handleDownloadReports(project.id)}>
-                            <Download className="h-4 w-4 mr-2" />
-                            Download Reports
-                          </Button>
-                        </div>
-                      </div>
+                {jobs.length === 0 ? (
+                  <Card>
+                    <CardContent className="p-6 text-center">
+                      <Home className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold mb-2">No Projects Yet</h3>
+                      <p className="text-gray-600">Your projects will appear here once they're created.</p>
                     </CardContent>
                   </Card>
-                ))}
+                ) : (
+                  jobs.map(project => (
+                    <Card key={project.id} className="shadow-lg">
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <CardTitle className="text-xl">{project.title}</CardTitle>
+                            <div className="flex items-center gap-2 mt-2">
+                              <Badge className={`${getStatusColor(project.status)} text-white`}>
+                                {getStatusIcon(project.status)}
+                                <span className="ml-1 capitalize">{project.status.replace('-', ' ')}</span>
+                              </Badge>
+                            </div>
+                            {project.description && (
+                              <p className="text-gray-600 mt-2">{project.description}</p>
+                            )}
+                          </div>
+                          <div className="text-right text-sm text-gray-600">
+                            {project.start_date && (
+                              <div>Started: {new Date(project.start_date).toLocaleDateString()}</div>
+                            )}
+                            {project.end_date && (
+                              <div>Est. Completion: {new Date(project.end_date).toLocaleDateString()}</div>
+                            )}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div>
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-sm font-medium">Progress</span>
+                              <span className="text-sm text-gray-600">{calculateProgress(project)}%</span>
+                            </div>
+                            <Progress value={calculateProgress(project)} className="h-2" />
+                          </div>
+                          
+                          {(project.budget || project.total_cost) && (
+                            <div className="grid grid-cols-2 gap-4">
+                              {project.budget && (
+                                <div className="bg-gray-50 p-3 rounded-lg">
+                                  <div className="text-sm text-gray-600">Budget</div>
+                                  <div className="text-lg font-semibold text-primary">
+                                    ${Number(project.budget).toLocaleString()}
+                                  </div>
+                                </div>
+                              )}
+                              {project.total_cost && (
+                                <div className="bg-gray-50 p-3 rounded-lg">
+                                  <div className="text-sm text-gray-600">Total Cost</div>
+                                  <div className="text-lg font-semibold text-secondary">
+                                    ${Number(project.total_cost).toLocaleString()}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm">
+                              <FileText className="h-4 w-4 mr-2" />
+                              View Details
+                            </Button>
+                            <Button variant="outline" size="sm">
+                              <Download className="h-4 w-4 mr-2" />
+                              Download Reports
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* Estimates Tab */}
+            {activeTab === 'estimates' && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-primary">Estimates</h2>
+                
+                {estimates.length === 0 ? (
+                  <Card>
+                    <CardContent className="p-6 text-center">
+                      <FileText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold mb-2">No Estimates Yet</h3>
+                      <p className="text-gray-600">Your estimates will appear here once they're created.</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="space-y-4">
+                    {estimates.map(estimate => (
+                      <Card key={estimate.id}>
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <div className="font-semibold">{estimate.estimate_number}</div>
+                              <div className="text-sm text-gray-600">{estimate.title}</div>
+                              <div className="text-xs text-gray-500">
+                                Created: {new Date(estimate.created_at).toLocaleDateString()}
+                                {estimate.valid_until && (
+                                  <> • Valid until: {new Date(estimate.valid_until).toLocaleDateString()}</>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-semibold">
+                                ${Number(estimate.total_amount || 0).toLocaleString()}
+                              </div>
+                              <Badge className={`${getStatusColor(estimate.status)} text-white`}>
+                                {estimate.status?.toUpperCase()}
+                              </Badge>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button variant="outline" size="sm" onClick={() => handleDownloadEstimate(estimate.id)}>
+                                <Download className="h-4 w-4 mr-2" />
+                                Download
+                              </Button>
+                              {estimate.status === 'draft' && (
+                                <Button size="sm" className="bg-secondary text-primary hover:bg-secondary/90" onClick={() => handleApproveEstimate(estimate.id)}>
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  Approve
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -259,44 +330,56 @@ const ClientDashboard = () => {
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-primary">Invoices & Payments</h2>
                 
-                <div className="space-y-4">
-                  {invoices.map(invoice => (
-                    <Card key={invoice.id}>
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <div className="font-semibold">{invoice.id}</div>
-                            <div className="text-sm text-gray-600">{invoice.project}</div>
-                            <div className="text-xs text-gray-500">
-                              Issued: {new Date(invoice.date).toLocaleDateString()} • 
-                              Due: {new Date(invoice.dueDate).toLocaleDateString()}
+                {invoices.length === 0 ? (
+                  <Card>
+                    <CardContent className="p-6 text-center">
+                      <DollarSign className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold mb-2">No Invoices Yet</h3>
+                      <p className="text-gray-600">Your invoices will appear here once they're created.</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="space-y-4">
+                    {invoices.map(invoice => (
+                      <Card key={invoice.id}>
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <div className="font-semibold">{invoice.invoice_number}</div>
+                              <div className="text-sm text-gray-600">{invoice.title}</div>
+                              <div className="text-xs text-gray-500">
+                                Issued: {new Date(invoice.created_at).toLocaleDateString()}
+                                {invoice.due_date && (
+                                  <> • Due: {new Date(invoice.due_date).toLocaleDateString()}</>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-lg font-semibold">
-                              ${invoice.amount.toLocaleString()}
+                            <div className="text-right">
+                              <div className="text-lg font-semibold">
+                                ${Number(invoice.total_amount || 0).toLocaleString()}
+                              </div>
+                              <Badge className={`${getStatusColor(invoice.payment_status || invoice.status)} text-white`}>
+                                {(invoice.payment_status || invoice.status)?.toUpperCase()}
+                              </Badge>
                             </div>
-                            <Badge className={`${getStatusColor(invoice.status)} text-white`}>
-                              {invoice.status.toUpperCase()}
-                            </Badge>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={() => handleDownloadInvoice(invoice.id)}>
-                              <Download className="h-4 w-4 mr-2" />
-                              Download
-                            </Button>
-                            {invoice.status === 'pending' && (
-                              <Button size="sm" className="bg-secondary text-primary hover:bg-secondary/90" onClick={() => handlePayInvoice(invoice.id)}>
-                                <DollarSign className="h-4 w-4 mr-2" />
-                                Pay Now
+                            <div className="flex gap-2">
+                              <Button variant="outline" size="sm" onClick={() => handleDownloadInvoice(invoice.id)}>
+                                <Download className="h-4 w-4 mr-2" />
+                                Download
                               </Button>
-                            )}
+                              {invoice.payment_status === 'unpaid' && (
+                                <Button size="sm" className="bg-secondary text-primary hover:bg-secondary/90" onClick={() => handlePayInvoice(invoice.id)}>
+                                  <DollarSign className="h-4 w-4 mr-2" />
+                                  Pay Now
+                                </Button>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -305,44 +388,13 @@ const ClientDashboard = () => {
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-primary">Messages</h2>
                 
-                <div className="space-y-4">
-                  {messages.map(message => (
-                    <Card key={message.id} className={message.unread ? 'ring-2 ring-secondary/20' : ''}>
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <div className="font-semibold">{message.subject}</div>
-                              {message.unread && (
-                                <Badge variant="secondary" className="text-xs">New</Badge>
-                              )}
-                            </div>
-                            <div className="text-sm text-gray-600">{message.from}</div>
-                            <div className="text-sm text-gray-500 mt-2">{message.preview}</div>
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {new Date(message.date).toLocaleDateString()}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Schedule Tab */}
-            {activeTab === 'schedule' && (
-              <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-primary">Upcoming Schedule</h2>
-                
                 <Card>
-                  <CardContent className="p-6">
-                    <div className="text-center text-gray-500">
-                      <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                      <h3 className="text-lg font-semibold mb-2">No Upcoming Appointments</h3>
-                      <p>Your project team will schedule appointments as needed and notify you in advance.</p>
-                    </div>
+                  <CardContent className="p-6 text-center">
+                    <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Messages Coming Soon</h3>
+                    <p className="text-gray-500">
+                      Direct messaging with your project team will be available soon.
+                    </p>
                   </CardContent>
                 </Card>
               </div>

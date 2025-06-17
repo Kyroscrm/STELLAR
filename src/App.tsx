@@ -5,112 +5,82 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { ErrorBoundary } from "@/components/ui/error-boundary";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import AdminLayout from "@/components/AdminLayout";
+import { LoadingProvider } from "@/components/LoadingProvider";
+import { ToastProvider } from "@/components/ToastProvider";
 import Index from "./pages/Index";
-import ServicesPage from "./pages/ServicesPage";
-import GalleryPage from "./pages/GalleryPage";
-import ReviewsPage from "./pages/ReviewsPage";
-import AboutPage from "./pages/AboutPage";
-import ContactPage from "./pages/ContactPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import PasswordReset from "./pages/PasswordReset";
-import ProfilePage from "./pages/ProfilePage";
 import AdminDashboard from "./pages/AdminDashboard";
-import ClientDashboard from "./pages/ClientDashboard";
-import LeadsPage from "./pages/LeadsPage";
 import CustomersPage from "./pages/CustomersPage";
+import LeadsPage from "./pages/LeadsPage";
 import JobsPage from "./pages/JobsPage";
 import TasksPage from "./pages/TasksPage";
 import EstimatesPage from "./pages/EstimatesPage";
 import InvoicesPage from "./pages/InvoicesPage";
+import CalendarPage from "./pages/CalendarPage";
 import SettingsPage from "./pages/SettingsPage";
+import ProfilePage from "./pages/ProfilePage";
 import IntegrationsPage from "./pages/IntegrationsPage";
+import ReviewsPage from "./pages/ReviewsPage";
+import ServicesPage from "./pages/ServicesPage";
+import AboutPage from "./pages/AboutPage";
+import ContactPage from "./pages/ContactPage";
+import GalleryPage from "./pages/GalleryPage";
 import NotFound from "./pages/NotFound";
+import ClientLogin from "./pages/ClientLogin";
+import ClientDashboard from "./pages/ClientDashboard";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 3,
-      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      refetchOnWindowFocus: false,
-    },
-    mutations: {
-      retry: 1,
-    },
-  },
-});
+const queryClient = new QueryClient();
 
-function App() {
-  return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <LoadingProvider>
+        <ToastProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AuthProvider>
               <Routes>
-                {/* Public Pages */}
+                {/* Public routes */}
                 <Route path="/" element={<Index />} />
-                <Route path="/services" element={<ServicesPage />} />
-                <Route path="/gallery" element={<GalleryPage />} />
-                <Route path="/reviews" element={<ReviewsPage />} />
-                <Route path="/about" element={<AboutPage />} />
-                <Route path="/contact" element={<ContactPage />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/password-reset" element={<PasswordReset />} />
+                <Route path="/services" element={<ServicesPage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/contact" element={<ContactPage />} />
+                <Route path="/gallery" element={<GalleryPage />} />
+                <Route path="/reviews" element={<ReviewsPage />} />
                 
-                {/* Protected Profile Route */}
-                <Route path="/profile" element={
-                  <ErrorBoundary>
-                    <ProtectedRoute>
-                      <ProfilePage />
-                    </ProtectedRoute>
-                  </ErrorBoundary>
-                } />
+                {/* Client Portal routes */}
+                <Route path="/client/login" element={<ClientLogin />} />
+                <Route path="/client/dashboard" element={<ClientDashboard />} />
                 
-                {/* Admin Routes with Layout */}
-                <Route path="/admin" element={
-                  <ErrorBoundary>
-                    <ProtectedRoute allowedRoles={['admin', 'staff']}>
-                      <AdminLayout />
-                    </ProtectedRoute>
-                  </ErrorBoundary>
-                }>
-                  <Route index element={<AdminDashboard />} />
-                  <Route path="leads" element={<LeadsPage />} />
-                  <Route path="customers" element={<CustomersPage />} />
-                  <Route path="jobs" element={<JobsPage />} />
-                  <Route path="tasks" element={<TasksPage />} />
-                  <Route path="estimates" element={<EstimatesPage />} />
-                  <Route path="invoices" element={<InvoicesPage />} />
-                  <Route path="integrations" element={<IntegrationsPage />} />
-                  <Route path="settings" element={<SettingsPage />} />
-                </Route>
+                {/* Protected admin routes */}
+                <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+                <Route path="/admin/customers" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
+                <Route path="/admin/leads" element={<ProtectedRoute><LeadsPage /></ProtectedRoute>} />
+                <Route path="/admin/jobs" element={<ProtectedRoute><JobsPage /></ProtectedRoute>} />
+                <Route path="/admin/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
+                <Route path="/admin/estimates" element={<ProtectedRoute><EstimatesPage /></ProtectedRoute>} />
+                <Route path="/admin/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
+                <Route path="/admin/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
+                <Route path="/admin/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+                <Route path="/admin/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                <Route path="/admin/integrations" element={<ProtectedRoute><IntegrationsPage /></ProtectedRoute>} />
                 
-                {/* Client Routes */}
-                <Route path="/client" element={
-                  <ErrorBoundary>
-                    <ProtectedRoute allowedRoles={['client']}>
-                      <ClientDashboard />
-                    </ProtectedRoute>
-                  </ErrorBoundary>
-                } />
-                
-                {/* Catch all route */}
+                {/* 404 */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
-  );
-}
+            </AuthProvider>
+          </BrowserRouter>
+        </ToastProvider>
+      </LoadingProvider>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;
