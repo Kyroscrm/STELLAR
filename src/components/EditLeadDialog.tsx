@@ -3,26 +3,26 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Edit } from 'lucide-react';
-import NewJobForm from '@/components/NewJobForm';
-import { useJobs, Job } from '@/hooks/useJobs';
+import LeadForm from '@/components/LeadForm';
+import { useLeads, Lead } from '@/hooks/useLeads';
 
-interface EditJobDialogProps {
-  job: Job;
+interface EditLeadDialogProps {
+  lead: Lead;
   trigger?: React.ReactNode;
 }
 
-const EditJobDialog: React.FC<EditJobDialogProps> = ({ 
-  job, 
+const EditLeadDialog: React.FC<EditLeadDialogProps> = ({ 
+  lead, 
   trigger 
 }) => {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { updateJob } = useJobs();
+  const { updateLead } = useLeads();
 
   const handleSubmit = async (data: any) => {
     setIsSubmitting(true);
     try {
-      const success = await updateJob(job.id, data);
+      const success = await updateLead(lead.id, data);
       if (success) {
         setOpen(false);
       }
@@ -46,12 +46,12 @@ const EditJobDialog: React.FC<EditJobDialogProps> = ({
       )}
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Job</DialogTitle>
+          <DialogTitle>Edit Lead</DialogTitle>
         </DialogHeader>
-        <NewJobForm
-          onSuccess={handleSubmit}
+        <LeadForm
+          onSubmit={handleSubmit}
           onCancel={handleCancel}
-          initialData={job}
+          initialData={lead}
           isSubmitting={isSubmitting}
         />
       </DialogContent>
@@ -59,4 +59,4 @@ const EditJobDialog: React.FC<EditJobDialogProps> = ({
   );
 };
 
-export default EditJobDialog;
+export default EditLeadDialog;

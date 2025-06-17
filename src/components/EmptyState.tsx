@@ -1,42 +1,35 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { LucideIcon } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 interface EmptyStateProps {
-  icon: LucideIcon;
   title: string;
   description: string;
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
+  actionLabel?: string;
+  onAction?: () => void;
+  icon?: React.ReactNode;
 }
 
-const EmptyState: React.FC<EmptyStateProps> = ({ 
-  icon: Icon, 
-  title, 
-  description, 
-  action 
+const EmptyState: React.FC<EmptyStateProps> = ({
+  title,
+  description,
+  actionLabel,
+  onAction,
+  icon
 }) => {
   return (
-    <Card className="border-dashed border-2 border-gray-200">
-      <CardHeader className="text-center py-12">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
-          <Icon className="h-6 w-6 text-gray-400" />
-        </div>
-        <CardTitle className="text-gray-600">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="text-center pb-12">
-        <p className="text-sm text-gray-500 mb-6">{description}</p>
-        {action && (
-          <Button onClick={action.onClick}>
-            {action.label}
-          </Button>
-        )}
-      </CardContent>
-    </Card>
+    <div className="flex flex-col items-center justify-center p-8 text-center">
+      {icon && <div className="mb-4 text-gray-400">{icon}</div>}
+      <h3 className="text-lg font-medium text-gray-900 mb-2">{title}</h3>
+      <p className="text-gray-600 mb-4 max-w-md">{description}</p>
+      {actionLabel && onAction && (
+        <Button onClick={onAction}>
+          <Plus className="h-4 w-4 mr-2" />
+          {actionLabel}
+        </Button>
+      )}
+    </div>
   );
 };
 

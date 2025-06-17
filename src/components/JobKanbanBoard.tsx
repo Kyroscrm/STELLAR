@@ -4,11 +4,12 @@ import { useJobs } from '@/hooks/useJobs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, MoreHorizontal, Calendar, DollarSign, Clock } from 'lucide-react';
+import { Plus, MoreHorizontal, Calendar, DollarSign, Clock, Edit, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -17,11 +18,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import NewJobForm from '@/components/NewJobForm';
+import EditJobDialog from '@/components/EditJobDialog';
+import { toast } from 'sonner';
 
 const JobKanbanBoard = () => {
-  const { jobs, loading, updateJob } = useJobs();
+  const { jobs, loading, updateJob, deleteJob } = useJobs();
   const [showNewJobForm, setShowNewJobForm] = useState(false);
+  const [deleteJobId, setDeleteJobId] = useState<string | null>(null);
 
   const columns = [
     { status: 'quoted', title: 'Quoted', color: 'bg-gray-100' },
@@ -36,7 +50,21 @@ const JobKanbanBoard = () => {
   };
 
   const handleStatusChange = async (jobId: string, newStatus: string) => {
-    await updateJob(jobId, { status: newStatus as any });
+    const success = await updateJob(jobId, { status: newStatus as any });
+    if (success) {
+      toast.success(`Job moved to ${newStatus}`);
+    }
+  };
+
+  const handleDeleteJob = async () => {
+    if (!deleteJobId) return;
+    
+    try {
+      await deleteJob(deleteJobId);
+      setDeleteJobId(null);
+    } catch (error) {
+      console.error('Error deleting job:', error);
+    }
   };
 
   const getStatusBadgeColor = (status: string) => {
@@ -103,10 +131,19 @@ const JobKanbanBoard = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <EditJobDialog 
+                            job={job}
+                            trigger={
+                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Job
+                              </DropdownMenuItem>
+                            }
+                          />
                           <DropdownMenuItem>View Details</DropdownMenuItem>
-                          <DropdownMenuItem>Edit Job</DropdownMenuItem>
                           <DropdownMenuItem>Create Estimate</DropdownMenuItem>
                           <DropdownMenuItem>Create Task</DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           {columns.map((col) => (
                             col.status !== job.status && (
                               <DropdownMenuItem 
@@ -117,6 +154,14 @@ const JobKanbanBoard = () => {
                               </DropdownMenuItem>
                             )
                           ))}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            className="text-red-600"
+                            onClick={() => setDeleteJobId(job.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Job
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -172,6 +217,23 @@ const JobKanbanBoard = () => {
           />
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleteJobId} onOpenChange={() => setDeleteJobId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Job</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this job? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteJob} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

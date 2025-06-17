@@ -3,26 +3,26 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Edit } from 'lucide-react';
-import NewJobForm from '@/components/NewJobForm';
-import { useJobs, Job } from '@/hooks/useJobs';
+import CustomerForm from '@/components/CustomerForm';
+import { useCustomers, Customer } from '@/hooks/useCustomers';
 
-interface EditJobDialogProps {
-  job: Job;
+interface EditCustomerDialogProps {
+  customer: Customer;
   trigger?: React.ReactNode;
 }
 
-const EditJobDialog: React.FC<EditJobDialogProps> = ({ 
-  job, 
+const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({ 
+  customer, 
   trigger 
 }) => {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { updateJob } = useJobs();
+  const { updateCustomer } = useCustomers();
 
   const handleSubmit = async (data: any) => {
     setIsSubmitting(true);
     try {
-      const success = await updateJob(job.id, data);
+      const success = await updateCustomer(customer.id, data);
       if (success) {
         setOpen(false);
       }
@@ -46,12 +46,12 @@ const EditJobDialog: React.FC<EditJobDialogProps> = ({
       )}
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Job</DialogTitle>
+          <DialogTitle>Edit Customer</DialogTitle>
         </DialogHeader>
-        <NewJobForm
-          onSuccess={handleSubmit}
+        <CustomerForm
+          onSubmit={handleSubmit}
           onCancel={handleCancel}
-          initialData={job}
+          initialData={customer}
           isSubmitting={isSubmitting}
         />
       </DialogContent>
@@ -59,4 +59,4 @@ const EditJobDialog: React.FC<EditJobDialogProps> = ({
   );
 };
 
-export default EditJobDialog;
+export default EditCustomerDialog;

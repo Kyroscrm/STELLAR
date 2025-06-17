@@ -1,188 +1,250 @@
 
-import React from 'react';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import React, { useState } from 'react';
 import { useTasks } from '@/hooks/useTasks';
-import { useJobs } from '@/hooks/useJobs';
-import TaskFormDialog from '@/components/TaskFormDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { 
-  Calendar, 
-  Clock, 
-  User, 
-  MoreHorizontal 
-} from 'lucide-react';
+import { Plus, MoreHorizontal, Calendar, Clock, User, Edit, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import TaskForm from '@/components/TaskForm';
+import EditTaskDialog from '@/components/EditTaskDialog';
+import { toast } from 'sonner';
 
 const TaskKanbanBoard = () => {
   const { tasks, loading, updateTask, deleteTask } = useTasks();
-  const { jobs } = useJobs();
+  const [showNewTaskForm, setShowNewTaskForm] = useState(false);
+  const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null);
 
-  const columns = {
-    pending: { title: 'To Do', color: 'bg-gray-100' },
-    in_progress: { title: 'In Progress', color: 'bg-blue-100' },
-    completed: { title: 'Completed', color: 'bg-green-100' }
-  };
+  const columns = [
+    { status: 'pending', title: 'Pending', color: 'bg-gray-100' },
+    { status: 'in_progress', title: 'In Progress', color: 'bg-blue-100' },
+    { status: 'completed', title: 'Completed', color: 'bg-green-100' },
+    { status: 'cancelled', title: 'Cancelled', color: 'bg-red-100' },
+  ];
 
   const getTasksByStatus = (status: string) => {
     return tasks.filter(task => task.status === status);
   };
 
+  const handleStatusChange = async (taskId: string, newStatus: string) => {
+    const success = await updateTask(taskId, { status: newStatus as any });
+    if (success) {
+      toast.success(`Task moved to ${newStatus}`);
+    }
+  };
+
+  const handleDeleteTask = async () => {
+    if (!deleteTaskId) return;
+    
+    try {
+      await deleteTask(deleteTaskId);
+      setDeleteTaskId(null);
+    } catch (error) {
+      console.error('Error deleting task:', error);
+    }
+  };
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-gray-100 text-gray-800';
+      case 'in_progress': return 'bg-blue-100 text-blue-800';
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'bg-red-100 text-red-800 border-red-200';
-      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'low': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'high': return 'text-red-600';
+      case 'medium': return 'text-yellow-600';
+      case 'low': return 'text-green-600';
+      default: return 'text-gray-600';
     }
   };
 
-  const onDragEnd = async (result: any) => {
-    if (!result.destination) return;
-
-    const { draggableId, destination } = result;
-    const newStatus = destination.droppableId as 'pending' | 'in_progress' | 'completed';
-    
-    await updateTask(draggableId, { status: newStatus });
+  const handleTaskSuccess = () => {
+    setShowNewTaskForm(false);
   };
 
-  const getJobTitle = (jobId: string | null) => {
-    if (!jobId) return 'No Job';
-    const job = jobs.find(j => j.id === jobId);
-    return job?.title || 'Unknown Job';
-  };
-
-  const handleDeleteTask = async (taskId: string) => {
-    if (window.confirm('Are you sure you want to delete this task?')) {
-      await deleteTask(taskId);
-    }
+  const handleTaskCancel = () => {
+    setShowNewTaskForm(false);
   };
 
   if (loading) {
-    return <div className="flex justify-center p-8">Loading tasks...</div>;
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {Object.entries(columns).map(([status, column]) => (
-          <div key={status} className={`${column.color} rounded-lg p-4`}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-lg">{column.title}</h3>
-              <Badge variant="outline">
-                {getTasksByStatus(status).length}
-              </Badge>
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold">Tasks</h2>
+          <p className="text-gray-600">Manage your project tasks</p>
+        </div>
+        <Button onClick={() => setShowNewTaskForm(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          New Task
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 min-h-screen">
+        {columns.map((column) => (
+          <div key={column.status} className="space-y-4">
+            <div className={`p-4 rounded-lg ${column.color}`}>
+              <h3 className="font-semibold text-center">
+                {column.title} ({getTasksByStatus(column.status).length})
+              </h3>
             </div>
-
-            <Droppable droppableId={status}>
-              {(provided, snapshot) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  className={`min-h-[400px] space-y-3 ${
-                    snapshot.isDraggingOver ? 'bg-blue-50 rounded-lg' : ''
-                  }`}
-                >
-                  {getTasksByStatus(status).map((task, index) => (
-                    <Draggable key={task.id} draggableId={task.id} index={index}>
-                      {(provided, snapshot) => (
-                        <Card
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          className={`cursor-move ${
-                            snapshot.isDragging ? 'rotate-3 shadow-lg' : 'hover:shadow-md'
-                          } transition-all`}
-                        >
-                          <CardHeader className="pb-3">
-                            <div className="flex items-start justify-between">
-                              <CardTitle className="text-sm font-medium line-clamp-2">
-                                {task.title}
-                              </CardTitle>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <TaskFormDialog 
-                                    task={task}
-                                    trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}>Edit Task</DropdownMenuItem>}
-                                  />
-                                  <DropdownMenuItem 
-                                    className="text-red-600"
-                                    onClick={() => handleDeleteTask(task.id)}
-                                  >
-                                    Delete Task
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                            
-                            <Badge className={getPriorityColor(task.priority || 'medium')}>
-                              {task.priority}
-                            </Badge>
-                          </CardHeader>
-                          
-                          <CardContent className="space-y-3">
-                            {task.description && (
-                              <p className="text-sm text-gray-600 line-clamp-3">
-                                {task.description}
-                              </p>
-                            )}
-
-                            <div className="flex items-center text-xs text-gray-500">
-                              <User className="h-3 w-3 mr-1" />
-                              {getJobTitle(task.job_id)}
-                            </div>
-
-                            {task.due_date && (
-                              <div className="flex items-center text-xs text-gray-500">
-                                <Calendar className="h-3 w-3 mr-1" />
-                                {new Date(task.due_date).toLocaleDateString()}
-                              </div>
-                            )}
-
-                            {task.estimated_hours && (
-                              <div className="flex items-center text-xs text-gray-500">
-                                <Clock className="h-3 w-3 mr-1" />
-                                {task.estimated_hours}h estimated
-                                {task.actual_hours && ` / ${task.actual_hours}h actual`}
-                              </div>
-                            )}
-
-                            {task.assigned_to && (
-                              <div className="flex items-center justify-between">
-                                <span className="text-xs text-gray-500">Assigned to:</span>
-                                <Avatar className="h-6 w-6">
-                                  <AvatarFallback className="text-xs">
-                                    {task.assigned_to.slice(0, 2).toUpperCase()}
-                                  </AvatarFallback>
-                                </Avatar>
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
+            
+            <div className="space-y-3">
+              {getTasksByStatus(column.status).map((task) => (
+                <Card key={task.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between">
+                      <CardTitle className="text-sm font-medium line-clamp-2">
+                        {task.title}
+                      </CardTitle>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <EditTaskDialog 
+                            task={task}
+                            trigger={
+                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Task
+                              </DropdownMenuItem>
+                            }
+                          />
+                          <DropdownMenuItem>View Details</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          {columns.map((col) => (
+                            col.status !== task.status && (
+                              <DropdownMenuItem 
+                                key={col.status}
+                                onClick={() => handleStatusChange(task.id, col.status)}
+                              >
+                                Move to {col.title}
+                              </DropdownMenuItem>
+                            )
+                          ))}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            className="text-red-600"
+                            onClick={() => setDeleteTaskId(task.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Task
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <div className="flex gap-2">
+                      <Badge className={getStatusBadgeColor(task.status)} variant="outline">
+                        {task.status}
+                      </Badge>
+                      <Badge className={getPriorityColor(task.priority)} variant="outline">
+                        {task.priority}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    {task.description && (
+                      <p className="text-xs text-gray-600 mb-3 line-clamp-2">
+                        {task.description}
+                      </p>
+                    )}
+                    
+                    <div className="space-y-2">
+                      {task.estimated_hours && (
+                        <div className="flex items-center text-xs text-gray-500">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {task.estimated_hours}h estimated
+                        </div>
                       )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
+                      
+                      {task.due_date && (
+                        <div className="flex items-center text-xs text-gray-500">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          {new Date(task.due_date).toLocaleDateString()}
+                        </div>
+                      )}
+
+                      {task.assigned_to && (
+                        <div className="flex items-center text-xs text-gray-500">
+                          <User className="h-3 w-3 mr-1" />
+                          Assigned
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         ))}
       </div>
-    </DragDropContext>
+
+      <Dialog open={showNewTaskForm} onOpenChange={setShowNewTaskForm}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create New Task</DialogTitle>
+          </DialogHeader>
+          <TaskForm 
+            onSubmit={handleTaskSuccess}
+            onCancel={handleTaskCancel}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!deleteTaskId} onOpenChange={() => setDeleteTaskId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this task? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteTask} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 };
 
