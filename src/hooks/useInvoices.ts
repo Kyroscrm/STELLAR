@@ -73,7 +73,8 @@ export const useInvoices = () => {
         customer_id: invoiceFields.customer_id && invoiceFields.customer_id.trim() !== '' ? invoiceFields.customer_id : undefined,
         job_id: invoiceFields.job_id && invoiceFields.job_id.trim() !== '' ? invoiceFields.job_id : undefined,
         estimate_id: invoiceFields.estimate_id && invoiceFields.estimate_id.trim() !== '' ? invoiceFields.estimate_id : undefined,
-        user_id: user.id
+        user_id: user.id,
+        payment_status: 'unpaid' // Default payment status
       };
 
       // Remove undefined fields to prevent sending them to Supabase
@@ -208,6 +209,14 @@ export const useInvoices = () => {
     }
   };
 
+  const markInvoiceAsPaid = async (invoiceId: string, sessionId?: string) => {
+    return await updateInvoice(invoiceId, {
+      payment_status: 'paid',
+      paid_at: new Date().toISOString(),
+      ...(sessionId && { stripe_session_id: sessionId })
+    });
+  };
+
   useEffect(() => {
     fetchInvoices();
   }, [user]);
@@ -219,6 +228,7 @@ export const useInvoices = () => {
     fetchInvoices,
     addInvoice,
     updateInvoice,
-    deleteInvoice
+    deleteInvoice,
+    markInvoiceAsPaid
   };
 };

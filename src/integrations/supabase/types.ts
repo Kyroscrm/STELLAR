@@ -1047,8 +1047,11 @@ export type Database = {
           invoice_number: string
           job_id: string | null
           notes: string | null
+          paid_at: string | null
+          payment_status: string | null
           payment_terms: string | null
           status: Database["public"]["Enums"]["invoice_status"] | null
+          stripe_session_id: string | null
           subtotal: number | null
           tax_amount: number | null
           tax_rate: number | null
@@ -1067,8 +1070,11 @@ export type Database = {
           invoice_number: string
           job_id?: string | null
           notes?: string | null
+          paid_at?: string | null
+          payment_status?: string | null
           payment_terms?: string | null
           status?: Database["public"]["Enums"]["invoice_status"] | null
+          stripe_session_id?: string | null
           subtotal?: number | null
           tax_amount?: number | null
           tax_rate?: number | null
@@ -1087,8 +1093,11 @@ export type Database = {
           invoice_number?: string
           job_id?: string | null
           notes?: string | null
+          paid_at?: string | null
+          payment_status?: string | null
           payment_terms?: string | null
           status?: Database["public"]["Enums"]["invoice_status"] | null
+          stripe_session_id?: string | null
           subtotal?: number | null
           tax_amount?: number | null
           tax_rate?: number | null
