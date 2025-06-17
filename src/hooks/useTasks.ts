@@ -1,35 +1,36 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useActivityLogs } from '@/hooks/useActivityLogs';
 import { toast } from 'sonner';
 
-export type Task = Tables<'tasks'>;
-type TaskInsert = Omit<TablesInsert<'tasks'>, 'user_id'>;
-type TaskUpdate = TablesUpdate<'tasks'>;
+export interface Task {
+  id: string;
+  user_id: string;
+  job_id?: string;
+  title: string;
+  description?: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  due_date?: string;
+  estimated_hours?: number;
+  actual_hours?: number;
+  assigned_to?: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export const useTasks = () => {
+  const { user } = useAuth();
+  const { logActivity } = useActivityLogs();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  const { user, session } = useAuth();
-
-  const validateUserAndSession = () => {
-    if (!user || !session) {
-      const errorMsg = 'Authentication required. Please log in again.';
-      setError(new Error(errorMsg));
-      toast.error(errorMsg);
-      return false;
-    }
-    return true;
-  };
 
   const fetchTasks = async () => {
-    if (!validateUserAndSession()) return;
-    
+    if (!user) return;
+
     setLoading(true);
-    setError(null);
     try {
       console.log('Fetching tasks for user:', user.id);
       
@@ -45,76 +46,70 @@ export const useTasks = () => {
       console.log(`Successfully fetched ${data?.length || 0} tasks`);
     } catch (error: any) {
       console.error('Error fetching tasks:', error);
-      setError(error);
       toast.error('Failed to fetch tasks');
-      setTasks([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const createTask = async (taskData: TaskInsert) => {
-    if (!validateUserAndSession()) return null;
+  const createTask = async (taskData: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+    if (!user) {
+      toast.error('Authentication required');
+      return null;
+    }
 
-    const optimisticTask: Task = {
-      id: `temp-${Date.now()}`,
+    // Optimistic update
+    const tempTask: Task = {
       ...taskData,
+      id: `temp-${Date.now()}`,
       user_id: user.id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
-    } as Task;
-
-    // Optimistic update
-    setTasks(prev => [optimisticTask, ...prev]);
+    };
+    setTasks(prev => [tempTask, ...prev]);
 
     try {
       console.log('Creating task:', taskData);
       
       const { data, error } = await supabase
         .from('tasks')
-        .insert({ ...taskData, user_id: user.id })
+        .insert({
+          ...taskData,
+          user_id: user.id
+        })
         .select()
         .single();
 
       if (error) throw error;
-      
-      // Replace optimistic with real data
-      setTasks(prev => prev.map(t => t.id === optimisticTask.id ? data : t));
-      
-      // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'task',
-        entity_id: data.id,
-        action: 'created',
-        description: `Task created: ${data.title}`
-      });
 
+      // Replace optimistic update with real data
+      setTasks(prev => prev.map(t => t.id === tempTask.id ? data : t));
+      
+      await logActivity('create', 'task', data.id, `Created task: ${data.title}`);
       toast.success('Task created successfully');
-      console.log('Task created successfully:', data);
       return data;
     } catch (error: any) {
       console.error('Error creating task:', error);
       // Rollback optimistic update
-      setTasks(prev => prev.filter(t => t.id !== optimisticTask.id));
-      toast.error(error.message || 'Failed to create task');
+      setTasks(prev => prev.filter(t => t.id !== tempTask.id));
+      toast.error('Failed to create task');
       return null;
     }
   };
 
-  const updateTask = async (id: string, updates: TaskUpdate) => {
-    if (!validateUserAndSession()) return false;
-
-    // Store original for rollback
-    const originalTask = tasks.find(t => t.id === id);
-    if (!originalTask) {
-      toast.error('Task not found');
+  const updateTask = async (id: string, updates: Partial<Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => {
+    if (!user) {
+      toast.error('Authentication required');
       return false;
     }
 
     // Optimistic update
-    const optimisticTask = { ...originalTask, ...updates, updated_at: new Date().toISOString() };
-    setTasks(prev => prev.map(t => t.id === id ? optimisticTask : t));
+    const optimisticTask = tasks.find(t => t.id === id);
+    if (optimisticTask) {
+      setTasks(prev => prev.map(t => 
+        t.id === id ? { ...t, ...updates, updated_at: new Date().toISOString() } : t
+      ));
+    }
 
     try {
       console.log('Updating task:', id, updates);
@@ -132,38 +127,28 @@ export const useTasks = () => {
       // Update with real data
       setTasks(prev => prev.map(t => t.id === id ? data : t));
       
-      // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'task',
-        entity_id: id,
-        action: 'updated',
-        description: `Task updated: ${data.title}`
-      });
-
+      await logActivity('update', 'task', id, `Updated task: ${data.title}`);
       toast.success('Task updated successfully');
-      console.log('Task updated successfully:', data);
       return true;
     } catch (error: any) {
       console.error('Error updating task:', error);
       // Rollback optimistic update
-      setTasks(prev => prev.map(t => t.id === id ? originalTask : t));
-      toast.error(error.message || 'Failed to update task');
+      if (optimisticTask) {
+        setTasks(prev => prev.map(t => t.id === id ? optimisticTask : t));
+      }
+      toast.error('Failed to update task');
       return false;
     }
   };
 
   const deleteTask = async (id: string) => {
-    if (!validateUserAndSession()) return;
-
-    // Store original for rollback
-    const originalTask = tasks.find(t => t.id === id);
-    if (!originalTask) {
-      toast.error('Task not found');
-      return;
+    if (!user) {
+      toast.error('Authentication required');
+      return false;
     }
 
     // Optimistic update
+    const taskToDelete = tasks.find(t => t.id === id);
     setTasks(prev => prev.filter(t => t.id !== id));
 
     try {
@@ -177,42 +162,32 @@ export const useTasks = () => {
 
       if (error) throw error;
       
-      // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'task',
-        entity_id: id,
-        action: 'deleted',
-        description: `Task deleted: ${originalTask.title}`
-      });
-
+      await logActivity('delete', 'task', id, `Deleted task: ${taskToDelete?.title}`);
       toast.success('Task deleted successfully');
-      console.log('Task deleted successfully');
+      return true;
     } catch (error: any) {
       console.error('Error deleting task:', error);
       // Rollback optimistic update
-      setTasks(prev => [...prev, originalTask].sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      ));
-      toast.error(error.message || 'Failed to delete task');
+      if (taskToDelete) {
+        setTasks(prev => [...prev, taskToDelete].sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        ));
+      }
+      toast.error('Failed to delete task');
+      return false;
     }
   };
 
-  // Alias for addTask to match component expectations
-  const addTask = createTask;
-
   useEffect(() => {
     fetchTasks();
-  }, [user, session]);
+  }, [user]);
 
   return {
     tasks,
     loading,
-    error,
-    fetchTasks,
     createTask,
-    addTask,
     updateTask,
-    deleteTask
+    deleteTask,
+    fetchTasks
   };
 };

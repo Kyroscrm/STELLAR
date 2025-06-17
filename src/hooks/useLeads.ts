@@ -1,35 +1,41 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useActivityLogs } from '@/hooks/useActivityLogs';
 import { toast } from 'sonner';
 
-export type Lead = Tables<'leads'>;
-type LeadInsert = Omit<TablesInsert<'leads'>, 'user_id'>;
-type LeadUpdate = TablesUpdate<'leads'>;
+export interface Lead {
+  id: string;
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  notes?: string;
+  status: 'new' | 'contacted' | 'qualified' | 'proposal' | 'won' | 'lost';
+  source: 'website' | 'referral' | 'social' | 'advertising' | 'cold_call' | 'other';
+  score: number;
+  estimated_value?: number;
+  expected_close_date?: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export const useLeads = () => {
+  const { user } = useAuth();
+  const { logActivity } = useActivityLogs();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  const { user, session } = useAuth();
-
-  const validateUserAndSession = () => {
-    if (!user || !session) {
-      const errorMsg = 'Authentication required. Please log in again.';
-      setError(new Error(errorMsg));
-      toast.error(errorMsg);
-      return false;
-    }
-    return true;
-  };
 
   const fetchLeads = async () => {
-    if (!validateUserAndSession()) return;
-    
+    if (!user) return;
+
     setLoading(true);
-    setError(null);
     try {
       console.log('Fetching leads for user:', user.id);
       
@@ -45,76 +51,70 @@ export const useLeads = () => {
       console.log(`Successfully fetched ${data?.length || 0} leads`);
     } catch (error: any) {
       console.error('Error fetching leads:', error);
-      setError(error);
       toast.error('Failed to fetch leads');
-      setLeads([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const createLead = async (leadData: LeadInsert) => {
-    if (!validateUserAndSession()) return null;
+  const createLead = async (leadData: Omit<Lead, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+    if (!user) {
+      toast.error('Authentication required');
+      return null;
+    }
 
-    const optimisticLead: Lead = {
-      id: `temp-${Date.now()}`,
+    // Optimistic update
+    const tempLead: Lead = {
       ...leadData,
+      id: `temp-${Date.now()}`,
       user_id: user.id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
-    } as Lead;
-
-    // Optimistic update
-    setLeads(prev => [optimisticLead, ...prev]);
+    };
+    setLeads(prev => [tempLead, ...prev]);
 
     try {
       console.log('Creating lead:', leadData);
       
       const { data, error } = await supabase
         .from('leads')
-        .insert({ ...leadData, user_id: user.id })
+        .insert({
+          ...leadData,
+          user_id: user.id
+        })
         .select()
         .single();
 
       if (error) throw error;
-      
-      // Replace optimistic with real data
-      setLeads(prev => prev.map(l => l.id === optimisticLead.id ? data : l));
-      
-      // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'lead',
-        entity_id: data.id,
-        action: 'created',
-        description: `Lead created: ${data.first_name} ${data.last_name}`
-      });
 
+      // Replace optimistic update with real data
+      setLeads(prev => prev.map(l => l.id === tempLead.id ? data : l));
+      
+      await logActivity('create', 'lead', data.id, `Created lead: ${data.first_name} ${data.last_name}`);
       toast.success('Lead created successfully');
-      console.log('Lead created successfully:', data);
       return data;
     } catch (error: any) {
       console.error('Error creating lead:', error);
       // Rollback optimistic update
-      setLeads(prev => prev.filter(l => l.id !== optimisticLead.id));
-      toast.error(error.message || 'Failed to create lead');
+      setLeads(prev => prev.filter(l => l.id !== tempLead.id));
+      toast.error('Failed to create lead');
       return null;
     }
   };
 
-  const updateLead = async (id: string, updates: LeadUpdate) => {
-    if (!validateUserAndSession()) return false;
-
-    // Store original for rollback
-    const originalLead = leads.find(l => l.id === id);
-    if (!originalLead) {
-      toast.error('Lead not found');
+  const updateLead = async (id: string, updates: Partial<Omit<Lead, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => {
+    if (!user) {
+      toast.error('Authentication required');
       return false;
     }
 
     // Optimistic update
-    const optimisticLead = { ...originalLead, ...updates, updated_at: new Date().toISOString() };
-    setLeads(prev => prev.map(l => l.id === id ? optimisticLead : l));
+    const optimisticLead = leads.find(l => l.id === id);
+    if (optimisticLead) {
+      setLeads(prev => prev.map(l => 
+        l.id === id ? { ...l, ...updates, updated_at: new Date().toISOString() } : l
+      ));
+    }
 
     try {
       console.log('Updating lead:', id, updates);
@@ -132,38 +132,28 @@ export const useLeads = () => {
       // Update with real data
       setLeads(prev => prev.map(l => l.id === id ? data : l));
       
-      // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'lead',
-        entity_id: id,
-        action: 'updated',
-        description: `Lead updated: ${data.first_name} ${data.last_name}`
-      });
-
+      await logActivity('update', 'lead', id, `Updated lead: ${data.first_name} ${data.last_name}`);
       toast.success('Lead updated successfully');
-      console.log('Lead updated successfully:', data);
       return true;
     } catch (error: any) {
       console.error('Error updating lead:', error);
       // Rollback optimistic update
-      setLeads(prev => prev.map(l => l.id === id ? originalLead : l));
-      toast.error(error.message || 'Failed to update lead');
+      if (optimisticLead) {
+        setLeads(prev => prev.map(l => l.id === id ? optimisticLead : l));
+      }
+      toast.error('Failed to update lead');
       return false;
     }
   };
 
   const deleteLead = async (id: string) => {
-    if (!validateUserAndSession()) return;
-
-    // Store original for rollback
-    const originalLead = leads.find(l => l.id === id);
-    if (!originalLead) {
-      toast.error('Lead not found');
-      return;
+    if (!user) {
+      toast.error('Authentication required');
+      return false;
     }
 
     // Optimistic update
+    const leadToDelete = leads.find(l => l.id === id);
     setLeads(prev => prev.filter(l => l.id !== id));
 
     try {
@@ -177,38 +167,32 @@ export const useLeads = () => {
 
       if (error) throw error;
       
-      // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'lead',
-        entity_id: id,
-        action: 'deleted',
-        description: `Lead deleted: ${originalLead.first_name} ${originalLead.last_name}`
-      });
-
+      await logActivity('delete', 'lead', id, `Deleted lead: ${leadToDelete?.first_name} ${leadToDelete?.last_name}`);
       toast.success('Lead deleted successfully');
-      console.log('Lead deleted successfully');
+      return true;
     } catch (error: any) {
       console.error('Error deleting lead:', error);
       // Rollback optimistic update
-      setLeads(prev => [...prev, originalLead].sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      ));
-      toast.error(error.message || 'Failed to delete lead');
+      if (leadToDelete) {
+        setLeads(prev => [...prev, leadToDelete].sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        ));
+      }
+      toast.error('Failed to delete lead');
+      return false;
     }
   };
 
   useEffect(() => {
     fetchLeads();
-  }, [user, session]);
+  }, [user]);
 
   return {
     leads,
     loading,
-    error,
-    fetchLeads,
     createLead,
     updateLead,
-    deleteLead
+    deleteLead,
+    fetchLeads
   };
 };
