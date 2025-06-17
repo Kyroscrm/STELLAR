@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useInvoices } from '@/hooks/useInvoices';
 import { useCustomers } from '@/hooks/useCustomers';
 import { usePDFGeneration } from '@/hooks/usePDFGeneration';
+import { useRealtimeInvoices } from '@/hooks/useRealtimeInvoices';
 import { createStripeCheckoutSession, getPaymentStatusBadgeVariant, getPaymentStatusLabel } from '@/utils/stripe';
 import InvoiceForm from '@/components/InvoiceForm';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,7 +46,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -60,7 +60,7 @@ import {
 import { toast } from 'sonner';
 
 const InvoicesPage = () => {
-  const { invoices, loading, error, addInvoice, updateInvoice, deleteInvoice, markInvoiceAsPaid } = useInvoices();
+  const { invoices, loading, error, addInvoice, updateInvoice, deleteInvoice, markInvoiceAsPaid, fetchInvoices } = useInvoices();
   const { customers } = useCustomers();
   const { generateInvoicePDF, generating } = usePDFGeneration();
   const [searchParams] = useSearchParams();
@@ -152,14 +152,8 @@ const InvoicesPage = () => {
 
   // Add realtime updates
   useRealtimeInvoices((updatedInvoice) => {
-    // Optimistically update the invoice in the list
-    setInvoices(prev => 
-      prev.map(invoice => 
-        invoice.id === updatedInvoice.id 
-          ? { ...invoice, ...updatedInvoice }
-          : invoice
-      )
-    );
+    // Refresh invoices when payment status changes
+    fetchInvoices();
   });
 
   if (loading) {
