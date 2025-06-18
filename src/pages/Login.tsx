@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -20,6 +19,15 @@ const Login = () => {
   const { login, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Check for access permission and redirect if not granted
+  useEffect(() => {
+    const hasAccess = sessionStorage.getItem('loginAccess') === 'granted';
+    if (!hasAccess) {
+      navigate('/', { replace: true });
+      return;
+    }
+  }, [navigate]);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -65,6 +73,9 @@ const Login = () => {
       console.log('Submitting login form...');
       const success = await login(formData.email, formData.password);
       if (success) {
+        // Clear access permission on successful login
+        sessionStorage.removeItem('loginAccess');
+        
         toast({
           title: "Login Successful",
           description: "Welcome back! Redirecting to your dashboard..."

@@ -17,8 +17,6 @@ const Header = () => {
       } else {
         navigate('/client');
       }
-    } else {
-      navigate('/login');
     }
   };
 
@@ -95,12 +93,7 @@ const Header = () => {
                   Logout
                 </Button>
               </div>
-            ) : (
-              <Button variant="outline" onClick={handleAuthClick} className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Login
-              </Button>
-            )}
+            ) : null}
             <Button className="bg-secondary text-primary hover:bg-secondary/90 font-semibold">
               Get Free Estimate
             </Button>
@@ -147,12 +140,7 @@ const Header = () => {
                     Logout
                   </Button>
                 </>
-              ) : (
-                <Button variant="outline" onClick={handleAuthClick} className="w-full justify-start">
-                  <User className="h-4 w-4 mr-2" />
-                  Login
-                </Button>
-              )}
+              ) : null}
               <Button className="bg-secondary text-primary hover:bg-secondary/90 font-semibold">
                 Get Free Estimate
               </Button>

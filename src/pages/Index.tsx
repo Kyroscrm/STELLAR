@@ -1,13 +1,19 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '@/components/Header';
 import EstimateCalculator from '@/components/EstimateCalculator';
 import BookingScheduler from '@/components/BookingScheduler';
+import LoginAccessDialog from '@/components/LoginAccessDialog';
 import { Button } from '@/components/ui/button';
 import { Shield, Star, Users, Phone, Mail, MapPin, ArrowRight } from 'lucide-react';
 
 const Index = () => {
+  const [showLoginAccess, setShowLoginAccess] = useState(false);
+
+  const handleImageClick = () => {
+    setShowLoginAccess(true);
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <Header />
@@ -227,11 +233,32 @@ const Index = () => {
               </div>
             </div>
           </div>
-          <div className="border-t border-white/20 mt-8 pt-8 text-center text-white/60">
-            <p>&copy; 2024 Final Roofing & Retro-Fit. All rights reserved.</p>
+          <div className="border-t border-white/20 mt-8 pt-8 flex justify-between items-center">
+            <div className="text-white/60">
+              <p>&copy; 2024 Final Roofing & Retro-Fit. All rights reserved.</p>
+            </div>
+            <div className="flex items-center">
+              <button
+                onClick={handleImageClick}
+                className="opacity-50 hover:opacity-100 transition-opacity duration-300 cursor-pointer"
+                aria-label="Access login"
+              >
+                <img 
+                  src="/lovable-uploads/f6ae6373-2ac3-4ff4-8436-389ab0da2914.png" 
+                  alt=""
+                  className="h-8 w-auto"
+                />
+              </button>
+            </div>
           </div>
         </div>
       </footer>
+
+      {/* Login Access Dialog */}
+      <LoginAccessDialog 
+        isOpen={showLoginAccess} 
+        onClose={() => setShowLoginAccess(false)} 
+      />
     </div>
   );
 };
