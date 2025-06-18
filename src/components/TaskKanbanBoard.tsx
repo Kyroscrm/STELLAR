@@ -24,11 +24,54 @@ import {
 } from '@/components/ui/alert-dialog';
 import TaskFormDialog from '@/components/TaskFormDialog';
 import ViewTaskDialog from '@/components/ViewTaskDialog';
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCorners } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCorners, DragOverEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { toast } from 'sonner';
+
+// Define valid task statuses that match Supabase enum
+const VALID_TASK_STATUSES = ['pending', 'in_progress', 'completed', 'cancelled'] as const;
+type ValidTaskStatus = typeof VALID_TASK_STATUSES[number];
+
+// Define kanban columns with proper status mapping
+const columns = [
+  { status: 'pending', title: 'Pending', color: 'bg-gray-100' },
+  { status: 'in_progress', title: 'In Progress', color: 'bg-blue-100' },
+  { status: 'completed', title: 'Completed', color: 'bg-green-100' },
+  { status: 'cancelled', title: 'Cancelled', color: 'bg-red-100' },
+];
+
+// Droppable Column Component
+interface DroppableColumnProps {
+  column: typeof columns[0];
+  children: React.ReactNode;
+  taskCount: number;
+}
+
+const DroppableColumn: React.FC<DroppableColumnProps> = ({ column, children, taskCount }) => {
+  const { setNodeRef } = useSortable({
+    id: column.status,
+    data: {
+      type: 'column',
+      status: column.status
+    }
+  });
+
+  return (
+    <div ref={setNodeRef} className="space-y-4" id={column.status}>
+      <div className={`p-4 rounded-lg ${column.color}`}>
+        <h3 className="font-semibold text-center">
+          {column.title} ({taskCount})
+        </h3>
+      </div>
+      
+      <div className="space-y-3 min-h-[400px]">
+        {children}
+      </div>
+    </div>
+  );
+};
 
 // Sortable Task Card Component
 interface SortableTaskCardProps {
@@ -46,7 +89,13 @@ const SortableTaskCard: React.FC<SortableTaskCardProps> = ({ task, onEdit, onVie
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task.id });
+  } = useSortable({ 
+    id: task.id,
+    data: {
+      type: 'task',
+      task: task
+    }
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -109,7 +158,7 @@ const SortableTaskCard: React.FC<SortableTaskCardProps> = ({ task, onEdit, onVie
           </div>
           <div className="flex gap-2">
             <Badge className={getStatusBadgeColor(task.status)} variant="outline">
-              {task.status}
+              {task.status?.replace('_', ' ')}
             </Badge>
             <Badge className={getPriorityColor(task.priority)} variant="outline">
               {task.priority}
@@ -159,43 +208,90 @@ const TaskKanbanBoard = () => {
   const [viewingTask, setViewingTask] = useState<any>(null);
   const [activeTask, setActiveTask] = useState<any>(null);
 
-  const columns = [
-    { status: 'pending', title: 'Pending', color: 'bg-gray-100' },
-    { status: 'in_progress', title: 'In Progress', color: 'bg-blue-100' },
-    { status: 'completed', title: 'Completed', color: 'bg-green-100' },
-    { status: 'cancelled', title: 'Cancelled', color: 'bg-red-100' },
-  ];
-
   const getTasksByStatus = (status: string) => {
     return tasks.filter(task => task.status === status);
   };
 
   const handleDragStart = (event: DragStartEvent) => {
-    const task = tasks.find(t => t.id === event.active.id);
+    const { active } = event;
+    const task = tasks.find(t => t.id === active.id);
+    console.log('Drag start:', { taskId: active.id, task });
     setActiveTask(task || null);
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+    console.log('Drag end:', { active: active.id, over: over?.id });
+    
     setActiveTask(null);
 
-    if (!over) return;
+    if (!over) {
+      console.log('No drop target');
+      return;
+    }
 
     const taskId = active.id as string;
-    const newStatus = over.id as string;
-
-    // Check if we're dropping over a valid column
-    const validStatuses = columns.map(col => col.status);
-    if (!validStatuses.includes(newStatus)) return;
-
     const task = tasks.find(t => t.id === taskId);
-    if (!task || task.status === newStatus) return;
-
-    // Optimistically update UI
-    const success = await updateTask(taskId, { status: newStatus as any });
-    if (success) {
-      toast.success(`Task moved to ${newStatus.replace('_', ' ')}`);
+    
+    if (!task) {
+      console.log('Task not found:', taskId);
+      return;
     }
+
+    // Determine the new status based on drop target
+    let newStatus: ValidTaskStatus;
+    
+    // Check if dropping over a column
+    if (VALID_TASK_STATUSES.includes(over.id as ValidTaskStatus)) {
+      newStatus = over.id as ValidTaskStatus;
+    } else {
+      // If dropping over another task, find which column it belongs to
+      const targetTask = tasks.find(t => t.id === over.id);
+      if (targetTask && VALID_TASK_STATUSES.includes(targetTask.status as ValidTaskStatus)) {
+        newStatus = targetTask.status as ValidTaskStatus;
+      } else {
+        console.log('Invalid drop target:', over.id);
+        return;
+      }
+    }
+
+    // Don't update if status hasn't changed
+    if (task.status === newStatus) {
+      console.log('Status unchanged:', task.status, '->', newStatus);
+      return;
+    }
+
+    console.log('Updating task status:', { taskId, oldStatus: task.status, newStatus });
+
+    try {
+      // Update task status with optimistic UI
+      const success = await updateTask(taskId, { status: newStatus });
+      
+      if (success) {
+        const statusDisplay = newStatus.replace('_', ' ');
+        toast.success(`Task moved to ${statusDisplay}`);
+        console.log('Task status updated successfully');
+      } else {
+        toast.error('Failed to update task status');
+        console.error('Task update failed');
+      }
+    } catch (error) {
+      console.error('Error updating task status:', error);
+      toast.error('Failed to update task status');
+    }
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    
+    if (!over) return;
+    
+    // Allow dropping over columns or other tasks
+    const isValidDropTarget = 
+      VALID_TASK_STATUSES.includes(over.id as ValidTaskStatus) ||
+      tasks.some(t => t.id === over.id);
+      
+    console.log('Drag over:', { active: active.id, over: over.id, isValid: isValidDropTarget });
   };
 
   const handleDeleteTask = async () => {
@@ -244,33 +340,32 @@ const TaskKanbanBoard = () => {
         collisionDetection={closestCorners}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        onDragOver={handleDragOver}
       >
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 min-h-screen">
           {columns.map((column) => (
             <SortableContext 
               key={column.status}
-              items={getTasksByStatus(column.status).map(task => task.id)}
+              items={[
+                column.status, // Add column as droppable target
+                ...getTasksByStatus(column.status).map(task => task.id)
+              ]}
               strategy={verticalListSortingStrategy}
             >
-              <div className="space-y-4" id={column.status}>
-                <div className={`p-4 rounded-lg ${column.color}`}>
-                  <h3 className="font-semibold text-center">
-                    {column.title} ({getTasksByStatus(column.status).length})
-                  </h3>
-                </div>
-                
-                <div className="space-y-3 min-h-[400px]">
-                  {getTasksByStatus(column.status).map((task) => (
-                    <SortableTaskCard
-                      key={task.id}
-                      task={task}
-                      onEdit={() => setEditingTask(task)}
-                      onView={() => setViewingTask(task)}
-                      onDelete={() => setDeleteTaskId(task.id)}
-                    />
-                  ))}
-                </div>
-              </div>
+              <DroppableColumn 
+                column={column}
+                taskCount={getTasksByStatus(column.status).length}
+              >
+                {getTasksByStatus(column.status).map((task) => (
+                  <SortableTaskCard
+                    key={task.id}
+                    task={task}
+                    onEdit={() => setEditingTask(task)}
+                    onView={() => setViewingTask(task)}
+                    onDelete={() => setDeleteTaskId(task.id)}
+                  />
+                ))}
+              </DroppableColumn>
             </SortableContext>
           ))}
         </div>
