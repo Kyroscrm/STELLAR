@@ -1,10 +1,11 @@
-
 import React, { useState } from 'react';
 import { useInvoices } from '@/hooks/useInvoices';
 import { useCustomers } from '@/hooks/useCustomers';
 import { usePDFGeneration } from '@/hooks/usePDFGeneration';
 import InvoiceForm from '@/components/InvoiceForm';
 import EditInvoiceDialog from '@/components/EditInvoiceDialog';
+import InvoiceStatusBadge from '@/components/InvoiceStatusBadge';
+import InvoiceFilters from '@/components/InvoiceFilters';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -69,23 +70,58 @@ const InvoicesPage = () => {
   const { handleError } = useErrorHandler();
   
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
+  const [amountRange, setAmountRange] = useState({ min: 0, max: 10000 });
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const filteredInvoices = invoices.filter(invoice => 
-    invoice.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (invoice.customers && `${invoice.customers.first_name} ${invoice.customers.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  // Enhanced filtering logic
+  const filteredInvoices = invoices.filter(invoice => {
+    // Text search
+    const matchesSearch = !searchTerm || (
+      invoice.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (invoice.customers && `${invoice.customers.first_name} ${invoice.customers.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    // Status filter (with auto-overdue detection)
+    const isOverdue = invoice.due_date && invoice.status !== 'paid' && new Date(invoice.due_date) < new Date();
+    const actualStatus = isOverdue ? 'overdue' : invoice.status;
+    const matchesStatus = statusFilter.length === 0 || statusFilter.includes(actualStatus);
+
+    // Date range filter
+    const invoiceDate = new Date(invoice.created_at);
+    const matchesDateRange = (!dateRange.from || invoiceDate >= dateRange.from) &&
+                            (!dateRange.to || invoiceDate <= dateRange.to);
+
+    // Amount range filter
+    const amount = invoice.total_amount || 0;
+    const matchesAmount = amount >= amountRange.min && amount <= amountRange.max;
+
+    return matchesSearch && matchesStatus && matchesDateRange && matchesAmount;
+  });
   
+  // Updated stats with overdue detection
   const invoiceStats = {
     total: invoices.length,
     draft: invoices.filter(i => i.status === 'draft').length,
     sent: invoices.filter(i => i.status === 'sent').length,
     paid: invoices.filter(i => i.status === 'paid').length,
+    overdue: invoices.filter(i => {
+      const isOverdue = i.due_date && i.status !== 'paid' && new Date(i.due_date) < new Date();
+      return isOverdue;
+    }).length
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setStatusFilter([]);
+    setDateRange({});
+    setAmountRange({ min: 0, max: 10000 });
   };
 
   const handleCreateInvoice = async (data: any) => {
@@ -196,8 +232,8 @@ const InvoicesPage = () => {
         </Dialog>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Enhanced Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center">
@@ -212,7 +248,7 @@ const InvoicesPage = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center">
-              <Eye className="h-8 w-8 text-yellow-500" />
+              <Eye className="h-8 w-8 text-gray-500" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Draft</p>
                 <p className="text-2xl font-bold">{invoiceStats.draft}</p>
@@ -223,7 +259,7 @@ const InvoicesPage = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center">
-              <Send className="h-8 w-8 text-purple-600" />
+              <Send className="h-8 w-8 text-blue-600" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Sent</p>
                 <p className="text-2xl font-bold">{invoiceStats.sent}</p>
@@ -242,29 +278,36 @@ const InvoicesPage = () => {
             </div>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <AlertTriangle className="h-8 w-8 text-red-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Overdue</p>
+                <p className="text-2xl font-bold">{invoiceStats.overdue}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Search and Filters */}
-      <div className="flex gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input 
-            placeholder="Search invoices by title, number, or customer..." 
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <Button variant="outline">
-          <Filter className="h-4 w-4 mr-2" />
-          Filter
-        </Button>
-      </div>
+      {/* Enhanced Filters */}
+      <InvoiceFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
+        amountRange={amountRange}
+        onAmountRangeChange={setAmountRange}
+        onClearFilters={handleClearFilters}
+      />
 
       {/* Invoices Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Invoice List</CardTitle>
+          <CardTitle>Invoice List ({filteredInvoices.length} of {invoices.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <DataTable
@@ -295,14 +338,10 @@ const InvoicesPage = () => {
               { 
                 header: 'Status', 
                 accessorFn: (invoice) => (
-                  <Badge variant={
-                    invoice.status === 'paid' ? 'default' :
-                    invoice.status === 'sent' ? 'secondary' :
-                    invoice.status === 'overdue' ? 'destructive' :
-                    'outline'
-                  } className="capitalize">
-                    {invoice.status}
-                  </Badge>
+                  <InvoiceStatusBadge 
+                    status={invoice.status} 
+                    dueDate={invoice.due_date}
+                  />
                 )
               },
               { 
@@ -383,9 +422,13 @@ const InvoicesPage = () => {
                   <p className="text-gray-600">{selectedInvoice.title}</p>
                 </div>
                 <div className="text-right">
-                  <Badge className="capitalize">{selectedInvoice.status}</Badge>
+                  <InvoiceStatusBadge 
+                    status={selectedInvoice.status} 
+                    dueDate={selectedInvoice.due_date}
+                  />
                 </div>
               </div>
+              
               <div className="border-t pt-4">
                 <p><strong>Customer:</strong> {selectedInvoice.customers ? `${selectedInvoice.customers.first_name} ${selectedInvoice.customers.last_name}` : 'N/A'}</p>
                 <p><strong>Due Date:</strong> {selectedInvoice.due_date || 'N/A'}</p>

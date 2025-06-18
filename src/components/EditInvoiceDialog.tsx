@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ import { Plus, Trash2, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { FormErrorBoundary } from '@/components/ui/form-error-boundary';
 import { useErrorHandler, useOptimisticUpdate } from '@/hooks';
+import { supabase } from '@/integrations/supabase/client';
 
 interface EditInvoiceDialogProps {
   invoice: InvoiceWithCustomer;
@@ -22,6 +24,7 @@ interface EditInvoiceDialogProps {
 }
 
 interface LineItem {
+  id?: string;
   description: string;
   quantity: number;
   unit_price: number;
@@ -61,6 +64,7 @@ const EditInvoiceDialog: React.FC<EditInvoiceDialogProps> = ({
   useEffect(() => {
     if (invoice.invoice_line_items && invoice.invoice_line_items.length > 0) {
       const items = invoice.invoice_line_items.map(item => ({
+        id: item.id,
         description: item.description,
         quantity: Number(item.quantity),
         unit_price: Number(item.unit_price),
@@ -93,6 +97,40 @@ const EditInvoiceDialog: React.FC<EditInvoiceDialogProps> = ({
     return lineItems.reduce((sum, item) => sum + item.total, 0);
   };
 
+  const saveLineItems = async (invoiceId: string) => {
+    try {
+      // Delete existing line items
+      const { error: deleteError } = await supabase
+        .from('invoice_line_items')
+        .delete()
+        .eq('invoice_id', invoiceId);
+
+      if (deleteError) throw deleteError;
+
+      // Insert new line items
+      if (lineItems.length > 0) {
+        const lineItemsToInsert = lineItems.map(item => ({
+          invoice_id: invoiceId,
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: item.unit_price
+          // total is calculated by database trigger
+        }));
+
+        const { error: insertError } = await supabase
+          .from('invoice_line_items')
+          .insert(lineItemsToInsert);
+
+        if (insertError) throw insertError;
+      }
+
+      console.log('Line items saved successfully');
+    } catch (error) {
+      console.error('Error saving line items:', error);
+      throw error;
+    }
+  };
+
   const handleSubmit = async (data: InvoiceFormData) => {
     setIsSubmitting(true);
     try {
@@ -108,7 +146,15 @@ const EditInvoiceDialog: React.FC<EditInvoiceDialogProps> = ({
         () => {
           // Optimistic update would go here if we had local state
         },
-        () => updateInvoice(invoice.id, data),
+        async () => {
+          // Update invoice first
+          const success = await updateInvoice(invoice.id, data);
+          if (success) {
+            // Then update line items
+            await saveLineItems(invoice.id);
+          }
+          return success;
+        },
         () => {
           // Rollback would go here if we had local state
         },
