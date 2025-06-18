@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus } from 'lucide-react';
 import { useJobs } from '@/hooks/useJobs';
 import { useCustomers } from '@/hooks/useCustomers';
 import { toast } from 'sonner';
@@ -128,9 +126,9 @@ const NewJobDialog: React.FC<NewJobDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={setOpen}>
-      {!isControlled && (
+      {!isControlled && trigger && (
         <DialogTrigger asChild>
-          {trigger || defaultTrigger}
+          {trigger}
         </DialogTrigger>
       )}
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
