@@ -4,7 +4,6 @@ import { useEstimates } from '@/hooks/useEstimates';
 import { useEstimateTemplates } from '@/hooks/useEstimateTemplates';
 import NewTemplateDialog from '@/components/NewTemplateDialog';
 import NewEstimateDialog from '@/components/NewEstimateDialog';
-import CreateInvoiceFromEstimateDialog from '@/components/CreateInvoiceFromEstimateDialog';
 import { useCustomers } from '@/hooks/useCustomers';
 import { usePDFGeneration } from '@/hooks/usePDFGeneration';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -326,17 +325,6 @@ const EstimatesPage = () => {
                               Mark as Rejected
                             </DropdownMenuItem>
                           </>
-                        )}
-                        {estimate.status === 'approved' && (
-                          <CreateInvoiceFromEstimateDialog
-                            estimate={estimate}
-                            trigger={
-                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                <FileText className="h-4 w-4 mr-2" />
-                                Create Invoice
-                              </DropdownMenuItem>
-                            }
-                          />
                         )}
                         <DropdownMenuItem 
                           className="text-red-600"

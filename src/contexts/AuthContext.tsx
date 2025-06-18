@@ -15,7 +15,6 @@ interface AuthContextType {
   user: AuthUser | null;
   session: Session | null;
   login: (email: string, password: string) => Promise<boolean>;
-  signIn: (email: string, password: string) => Promise<{ error?: any }>;
   logout: () => void;
   register: (email: string, password: string, name: string, role?: 'client' | 'admin') => Promise<boolean>;
   isLoading: boolean;
@@ -149,34 +148,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signIn = async (email: string, password: string): Promise<{ error?: any }> => {
-    setIsLoading(true);
-    try {
-      console.log('Attempting signIn for:', email);
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (error) {
-        console.error('SignIn error:', error.message);
-        return { error };
-      }
-
-      if (data.user) {
-        console.log('SignIn successful for:', data.user.email);
-        return {};
-      }
-
-      return { error: new Error('Unknown error') };
-    } catch (error: any) {
-      console.error('SignIn error:', error);
-      return { error };
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const register = async (email: string, password: string, name: string, role: 'client' | 'admin' = 'client'): Promise<boolean> => {
     setIsLoading(true);
     try {
@@ -242,7 +213,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, login, signIn, logout, register, isLoading }}>
+    <AuthContext.Provider value={{ user, session, login, logout, register, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
