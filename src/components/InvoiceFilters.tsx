@@ -16,6 +16,7 @@ import {
 import { Calendar as CalendarIcon, Filter, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { DateRange } from 'react-day-picker';
 
 interface InvoiceFiltersProps {
   searchTerm: string;
@@ -61,6 +62,18 @@ const InvoiceFilters: React.FC<InvoiceFiltersProps> = ({
     dateRange.to || 
     amountRange.min > 0 || 
     amountRange.max < 10000;
+
+  // Handle date range selection with proper typing
+  const handleDateRangeSelect = (range: DateRange | undefined) => {
+    if (range) {
+      onDateRangeChange({
+        from: range.from,
+        to: range.to
+      });
+    } else {
+      onDateRangeChange({});
+    }
+  };
 
   return (
     <Card>
@@ -138,8 +151,11 @@ const InvoiceFilters: React.FC<InvoiceFiltersProps> = ({
                   initialFocus
                   mode="range"
                   defaultMonth={dateRange.from}
-                  selected={dateRange}
-                  onSelect={(range) => onDateRangeChange(range || {})}
+                  selected={{
+                    from: dateRange.from,
+                    to: dateRange.to
+                  } as DateRange}
+                  onSelect={handleDateRangeSelect}
                   numberOfMonths={2}
                 />
               </PopoverContent>
