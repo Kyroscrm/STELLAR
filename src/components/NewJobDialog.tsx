@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -46,13 +47,6 @@ const NewJobDialog: React.FC<NewJobDialogProps> = ({
     address: '',
     notes: ''
   });
-
-  const defaultTrigger = (
-    <Button>
-      <Plus className="h-4 w-4 mr-2" />
-      New Job
-    </Button>
-  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
