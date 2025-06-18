@@ -5,11 +5,13 @@ import ViewLeadDialog from '@/components/ViewLeadDialog';
 import EditLeadDialog from '@/components/EditLeadDialog';
 import CreateLeadDialog from '@/components/CreateLeadDialog';
 import CreateEstimateFromLeadDialog from '@/components/CreateEstimateFromLeadDialog';
+import ConvertLeadDialog from '@/components/ConvertLeadDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { LeadGridSkeleton, StatsCardSkeleton } from '@/components/ui/loading-skeleton';
+import { LEAD_STATUS_COLORS } from '@/types/supabase-enums';
 import { 
   Search, 
   Filter, 
@@ -32,24 +34,17 @@ const LeadsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
+  const [convertLeadDialogOpen, setConvertLeadDialogOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<any>(null);
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'new': return 'bg-blue-100 text-blue-800';
-      case 'contacted': return 'bg-yellow-100 text-yellow-800';
-      case 'qualified': return 'bg-green-100 text-green-800';
-      case 'won': return 'bg-emerald-100 text-emerald-800';
-      case 'lost': return 'bg-red-100 text-red-800';
-      case 'converted': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+    return LEAD_STATUS_COLORS[status as keyof typeof LEAD_STATUS_COLORS] || 'bg-gray-100 text-gray-800';
   };
 
   const getSourceColor = (source: string) => {
     switch (source) {
       case 'website': return 'bg-purple-100 text-purple-800';
       case 'referral': return 'bg-orange-100 text-orange-800';
-      case 'social_media': return 'bg-pink-100 text-pink-800';
       case 'google_ads': return 'bg-indigo-100 text-indigo-800';
       case 'facebook': return 'bg-blue-100 text-blue-800';
       case 'direct_mail': return 'bg-yellow-100 text-yellow-800';
@@ -91,7 +86,18 @@ const LeadsPage = () => {
   };
 
   const handleEditSuccess = () => {
-    fetchLeads(); // Refresh the leads list
+    fetchLeads();
+  };
+
+  const handleConvertLead = (lead: any) => {
+    setSelectedLead(lead);
+    setConvertLeadDialogOpen(true);
+  };
+
+  const handleConvertSuccess = () => {
+    setConvertLeadDialogOpen(false);
+    setSelectedLead(null);
+    fetchLeads();
   };
 
   return (
@@ -181,12 +187,12 @@ const LeadsPage = () => {
           <option value="all">All Sources</option>
           <option value="website">Website</option>
           <option value="referral">Referral</option>
-          <option value="social_media">Social Media</option>
           <option value="google_ads">Google Ads</option>
           <option value="facebook">Facebook</option>
           <option value="direct_mail">Direct Mail</option>
           <option value="cold_call">Cold Call</option>
           <option value="trade_show">Trade Show</option>
+          <option value="other">Other</option>
         </select>
         <Button variant="outline">
           <Filter className="h-4 w-4 mr-2" />
@@ -249,7 +255,7 @@ const LeadsPage = () => {
                       <DropdownMenuItem onClick={() => handleStatusChange(lead.id, 'qualified')}>
                         Mark Qualified
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleStatusChange(lead.id, 'converted')}>
+                      <DropdownMenuItem onClick={() => handleConvertLead(lead)}>
                         Convert to Customer
                       </DropdownMenuItem>
                       <DropdownMenuItem 
@@ -315,6 +321,13 @@ const LeadsPage = () => {
           />
         </div>
       )}
+
+      <ConvertLeadDialog
+        open={convertLeadDialogOpen}
+        onOpenChange={setConvertLeadDialogOpen}
+        lead={selectedLead}
+        onSuccess={handleConvertSuccess}
+      />
     </div>
   );
 };

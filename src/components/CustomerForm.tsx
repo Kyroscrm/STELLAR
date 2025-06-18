@@ -2,25 +2,42 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { customerSchema, CustomerFormData } from '@/lib/validation';
 import { Customer } from '@/hooks/useCustomers';
+
+const customerSchema = z.object({
+  first_name: z.string().min(1, 'First name is required'),
+  last_name: z.string().min(1, 'Last name is required'),
+  email: z.string().email('Invalid email').optional().or(z.literal('')),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zip_code: z.string().optional(),
+  company_name: z.string().optional(),
+  notes: z.string().optional(),
+  emergency_contact_name: z.string().optional(),
+  emergency_contact_phone: z.string().optional(),
+});
+
+type CustomerFormData = z.infer<typeof customerSchema>;
 
 interface CustomerFormProps {
   onSubmit: (data: CustomerFormData) => Promise<void>;
   onCancel: () => void;
-  initialData?: Partial<Customer>;
-  isSubmitting?: boolean;
+  initialData?: Customer;
+  isSubmitting: boolean;
 }
 
 const CustomerForm: React.FC<CustomerFormProps> = ({
   onSubmit,
   onCancel,
   initialData,
-  isSubmitting = false
+  isSubmitting
 }) => {
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
@@ -29,21 +46,20 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
       last_name: initialData?.last_name || '',
       email: initialData?.email || '',
       phone: initialData?.phone || '',
-      company_name: initialData?.company_name || '',
       address: initialData?.address || '',
       city: initialData?.city || '',
       state: initialData?.state || '',
       zip_code: initialData?.zip_code || '',
+      company_name: initialData?.company_name || '',
       notes: initialData?.notes || '',
       emergency_contact_name: initialData?.emergency_contact_name || '',
-      emergency_contact_phone: initialData?.emergency_contact_phone || ''
+      emergency_contact_phone: initialData?.emergency_contact_phone || '',
     },
   });
 
   const handleSubmit = async (data: CustomerFormData) => {
     try {
       await onSubmit(data);
-      form.reset();
     } catch (error) {
       console.error('Error submitting customer form:', error);
     }
@@ -52,7 +68,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="first_name"
@@ -82,7 +98,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="email"
@@ -90,7 +106,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="Enter email address" {...field} />
+                  <Input type="email" placeholder="Enter email" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -133,14 +149,14 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
             <FormItem>
               <FormLabel>Address</FormLabel>
               <FormControl>
-                <Textarea placeholder="Enter address" {...field} />
+                <Input placeholder="Enter address" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <FormField
             control={form.control}
             name="city"
@@ -184,7 +200,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="emergency_contact_name"
@@ -221,19 +237,19 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
             <FormItem>
               <FormLabel>Notes</FormLabel>
               <FormControl>
-                <Textarea placeholder="Enter any additional notes" {...field} />
+                <Textarea placeholder="Additional notes..." {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <div className="flex gap-2 pt-4">
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : initialData?.id ? 'Update Customer' : 'Save Customer'}
-          </Button>
+        <div className="flex justify-end gap-2 pt-4">
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Saving...' : (initialData ? 'Update Customer' : 'Create Customer')}
           </Button>
         </div>
       </form>

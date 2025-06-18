@@ -2477,6 +2477,7 @@ export type Database = {
         | "negotiating"
         | "won"
         | "lost"
+        | "converted"
       media_type: "photo" | "video" | "barcode" | "qr_code" | "document"
       payment_method_type: "stripe" | "paypal" | "ach" | "credit_card"
       payment_status: "pending" | "completed" | "failed" | "refunded"
@@ -2647,6 +2648,7 @@ export const Constants = {
         "negotiating",
         "won",
         "lost",
+        "converted",
       ],
       media_type: ["photo", "video", "barcode", "qr_code", "document"],
       payment_method_type: ["stripe", "paypal", "ach", "credit_card"],

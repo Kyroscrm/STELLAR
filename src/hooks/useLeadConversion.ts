@@ -65,10 +65,10 @@ export const useLeadConversion = () => {
         throw customerError;
       }
 
-      // Update lead status to won
+      // Update lead status to converted (now supported in enum)
       const { error: updateError } = await supabase
         .from('leads')
-        .update({ status: 'won' })
+        .update({ status: 'converted' })
         .eq('id', leadId)
         .eq('user_id', user.id);
 

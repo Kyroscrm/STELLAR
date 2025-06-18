@@ -20,7 +20,7 @@ const leadSchema = z.object({
   city: z.string().optional(),
   state: z.string().optional(),
   zip_code: z.string().optional(),
-  status: z.enum(['new', 'contacted', 'qualified', 'proposal_sent', 'won', 'lost']),
+  status: z.enum(['new', 'contacted', 'qualified', 'proposal_sent', 'won', 'lost', 'converted']),
   source: z.enum(['website', 'referral', 'google_ads', 'facebook', 'direct_mail', 'cold_call', 'trade_show', 'other']),
   estimated_value: z.coerce.number().optional(),
   expected_close_date: z.string().optional(),
@@ -199,7 +199,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Status</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue />
@@ -212,6 +212,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
                     <SelectItem value="proposal_sent">Proposal Sent</SelectItem>
                     <SelectItem value="won">Won</SelectItem>
                     <SelectItem value="lost">Lost</SelectItem>
+                    <SelectItem value="converted">Converted</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -225,7 +226,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Source</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue />
