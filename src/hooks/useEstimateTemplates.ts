@@ -14,13 +14,20 @@ export const useEstimateTemplates = () => {
   const [templates, setTemplates] = useState<EstimateTemplate[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const { user } = useAuth();
+  const { user, session } = useAuth();
+
+  const validateUserAndSession = () => {
+    if (!user || !session) {
+      const errorMsg = 'Authentication required. Please log in again.';
+      setError(new Error(errorMsg));
+      toast.error(errorMsg);
+      return false;
+    }
+    return true;
+  };
 
   const fetchTemplates = async () => {
-    if (!user) {
-      setTemplates([]);
-      return;
-    }
+    if (!validateUserAndSession()) return;
     
     setLoading(true);
     setError(null);
@@ -36,18 +43,30 @@ export const useEstimateTemplates = () => {
       if (error) throw error;
       
       // Convert Json line_items to array for frontend use
-      const templatesWithParsedLineItems = (data || []).map(template => ({
-        ...template,
-        line_items: (() => {
-          try {
-            return Array.isArray(template.line_items) 
-              ? template.line_items 
-              : JSON.parse(template.line_items as string);
-          } catch {
-            return [];
+      const templatesWithParsedLineItems = (data || []).map(template => {
+        let lineItems = [];
+        
+        try {
+          if (template.line_items) {
+            if (Array.isArray(template.line_items)) {
+              lineItems = template.line_items;
+            } else if (typeof template.line_items === 'string') {
+              lineItems = JSON.parse(template.line_items);
+            } else {
+              // It's already an object/array from JSONB
+              lineItems = template.line_items;
+            }
           }
-        })()
-      }));
+        } catch (parseError) {
+          console.error('Error parsing line items for template:', template.id, parseError);
+          lineItems = [];
+        }
+        
+        return {
+          ...template,
+          line_items: Array.isArray(lineItems) ? lineItems : []
+        };
+      });
       
       setTemplates(templatesWithParsedLineItems);
       console.log(`Successfully fetched ${templatesWithParsedLineItems.length} estimate templates`);
@@ -62,15 +81,19 @@ export const useEstimateTemplates = () => {
   };
 
   const createTemplate = async (templateData: Omit<EstimateTemplate, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!user) return null;
+    if (!validateUserAndSession()) return null;
 
     try {
-      // Convert line_items array to Json for storage
+      console.log('Creating template with data:', templateData);
+      
+      // Ensure line_items is properly formatted for database storage
       const dataForStorage = {
         ...templateData,
         user_id: user.id,
-        line_items: JSON.stringify(templateData.line_items)
+        line_items: templateData.line_items || []
       };
+
+      console.log('Data for storage:', dataForStorage);
 
       const { data, error } = await supabase
         .from('estimate_templates')
@@ -81,17 +104,25 @@ export const useEstimateTemplates = () => {
       if (error) throw error;
       
       // Convert back to frontend format
+      let lineItems = [];
+      try {
+        if (data.line_items) {
+          if (Array.isArray(data.line_items)) {
+            lineItems = data.line_items;
+          } else if (typeof data.line_items === 'string') {
+            lineItems = JSON.parse(data.line_items);
+          } else {
+            lineItems = data.line_items;
+          }
+        }
+      } catch (parseError) {
+        console.error('Error parsing returned line items:', parseError);
+        lineItems = [];
+      }
+      
       const templateWithParsedLineItems = {
         ...data,
-        line_items: (() => {
-          try {
-            return Array.isArray(data.line_items) 
-              ? data.line_items 
-              : JSON.parse(data.line_items as string);
-          } catch {
-            return [];
-          }
-        })()
+        line_items: Array.isArray(lineItems) ? lineItems : []
       };
       
       setTemplates(prev => [templateWithParsedLineItems, ...prev]);
@@ -105,13 +136,13 @@ export const useEstimateTemplates = () => {
   };
 
   const updateTemplate = async (id: string, updates: Partial<EstimateTemplate>) => {
-    if (!user) return false;
+    if (!validateUserAndSession()) return false;
 
     try {
-      // Convert line_items array to Json for storage if present
+      // Ensure line_items is properly formatted if present
       const updatesForStorage = {
         ...updates,
-        ...(updates.line_items && { line_items: JSON.stringify(updates.line_items) })
+        ...(updates.line_items && { line_items: updates.line_items })
       };
 
       const { data, error } = await supabase
@@ -125,17 +156,25 @@ export const useEstimateTemplates = () => {
       if (error) throw error;
       
       // Convert back to frontend format
+      let lineItems = [];
+      try {
+        if (data.line_items) {
+          if (Array.isArray(data.line_items)) {
+            lineItems = data.line_items;
+          } else if (typeof data.line_items === 'string') {
+            lineItems = JSON.parse(data.line_items);
+          } else {
+            lineItems = data.line_items;
+          }
+        }
+      } catch (parseError) {
+        console.error('Error parsing updated line items:', parseError);
+        lineItems = [];
+      }
+      
       const templateWithParsedLineItems = {
         ...data,
-        line_items: (() => {
-          try {
-            return Array.isArray(data.line_items) 
-              ? data.line_items 
-              : JSON.parse(data.line_items as string);
-          } catch {
-            return [];
-          }
-        })()
+        line_items: Array.isArray(lineItems) ? lineItems : []
       };
       
       setTemplates(prev => prev.map(t => t.id === id ? templateWithParsedLineItems : t));
@@ -149,7 +188,7 @@ export const useEstimateTemplates = () => {
   };
 
   const deleteTemplate = async (id: string) => {
-    if (!user) return;
+    if (!validateUserAndSession()) return;
 
     try {
       const { error } = await supabase
@@ -170,7 +209,7 @@ export const useEstimateTemplates = () => {
 
   useEffect(() => {
     fetchTemplates();
-  }, [user]);
+  }, [user, session]);
 
   return {
     templates,

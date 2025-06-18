@@ -33,6 +33,19 @@ const EstimateTemplateSelector: React.FC<EstimateTemplateSelectorProps> = ({
     );
   }
 
+  const handleSelectTemplate = (template: EstimateTemplate) => {
+    console.log('Selected template:', template);
+    console.log('Template line items:', template.line_items);
+    
+    // Ensure line_items is properly parsed
+    const templateWithValidLineItems = {
+      ...template,
+      line_items: Array.isArray(template.line_items) ? template.line_items : []
+    };
+    
+    onSelectTemplate(templateWithValidLineItems);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -44,30 +57,50 @@ const EstimateTemplateSelector: React.FC<EstimateTemplateSelectorProps> = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {templates.map((template) => (
-          <Card key={template.id} className="cursor-pointer hover:shadow-md transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                {template.name}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm text-gray-600">
-                <p>Tax Rate: {(template.tax_rate * 100).toFixed(1)}%</p>
-                <p>Line Items: {template.line_items.length}</p>
-                {template.notes && <p>Notes: {template.notes}</p>}
-                {template.description && <p>Description: {template.description}</p>}
-              </div>
-              <Button 
-                className="w-full mt-4" 
-                onClick={() => onSelectTemplate(template)}
-              >
-                Use This Template
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
+        {templates.map((template) => {
+          // Ensure line_items is an array for display
+          const lineItems = Array.isArray(template.line_items) ? template.line_items : [];
+          
+          return (
+            <Card key={template.id} className="cursor-pointer hover:shadow-md transition-shadow">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  {template.name}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <p>Tax Rate: {(template.tax_rate * 100).toFixed(1)}%</p>
+                  <p>Line Items: {lineItems.length}</p>
+                  {lineItems.length > 0 && (
+                    <div className="mt-2">
+                      <p className="font-medium text-xs text-gray-500 mb-1">Sample items:</p>
+                      <ul className="text-xs space-y-1">
+                        {lineItems.slice(0, 3).map((item: any, index: number) => (
+                          <li key={index} className="truncate">
+                            • {item.description} - ${item.unit_price}
+                          </li>
+                        ))}
+                        {lineItems.length > 3 && (
+                          <li className="text-gray-400">+ {lineItems.length - 3} more items</li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+                  {template.notes && <p>Notes: {template.notes}</p>}
+                  {template.description && <p>Description: {template.description}</p>}
+                </div>
+                <Button 
+                  className="w-full mt-4" 
+                  onClick={() => handleSelectTemplate(template)}
+                >
+                  Use This Template
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {templates.length === 0 && (

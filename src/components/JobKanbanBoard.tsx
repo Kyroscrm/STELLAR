@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCorners } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCorners, DragOverEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -8,16 +8,31 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useJobs, JobWithCustomer } from '@/hooks/useJobs';
-import { MapPin, DollarSign, Calendar, User, MoreVertical, Eye, Edit } from 'lucide-react';
+import { MapPin, DollarSign, Calendar, User, MoreVertical, Eye, Edit, Plus } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import ViewJobDialog from './ViewJobDialog';
 import EditJobDialog from './EditJobDialog';
+import JobForm from './JobForm';
 import { toast } from 'sonner';
+
+// Define valid job statuses that match Supabase enum
+const VALID_JOB_STATUSES = ['quoted', 'approved', 'scheduled', 'in_progress', 'completed', 'cancelled'] as const;
+type ValidJobStatus = typeof VALID_JOB_STATUSES[number];
 
 // Define job status columns
 const columns = [
@@ -29,13 +44,47 @@ const columns = [
   { id: 'cancelled', title: 'Cancelled', color: 'bg-red-50 border-red-200' },
 ];
 
+// Droppable Column Component
+interface DroppableColumnProps {
+  column: typeof columns[0];
+  children: React.ReactNode;
+  jobCount: number;
+}
+
+const DroppableColumn: React.FC<DroppableColumnProps> = ({ column, children, jobCount }) => {
+  const { setNodeRef, isOver } = useSortable({
+    id: column.id,
+    data: {
+      type: 'column',
+      status: column.id
+    }
+  });
+
+  return (
+    <div ref={setNodeRef} className="space-y-4" id={column.id}>
+      <div className={`p-4 rounded-lg transition-colors ${column.color} ${isOver ? 'ring-2 ring-primary ring-opacity-50' : ''}`}>
+        <h3 className="font-semibold text-center">
+          {column.title} ({jobCount})
+        </h3>
+      </div>
+      
+      <div className="space-y-3 min-h-[400px] transition-colors rounded-lg p-2" 
+           style={{ backgroundColor: isOver ? 'rgba(59, 130, 246, 0.05)' : 'transparent' }}>
+        {children}
+      </div>
+    </div>
+  );
+};
+
+// Sortable Job Card Component
 interface SortableJobCardProps {
   job: JobWithCustomer;
   onEdit: () => void;
   onView: () => void;
+  onDelete: () => void;
 }
 
-const SortableJobCard: React.FC<SortableJobCardProps> = ({ job, onEdit, onView }) => {
+const SortableJobCard: React.FC<SortableJobCardProps> = ({ job, onEdit, onView, onDelete }) => {
   const {
     attributes,
     listeners,
@@ -43,12 +92,30 @@ const SortableJobCard: React.FC<SortableJobCardProps> = ({ job, onEdit, onView }
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: job.id });
+  } = useSortable({ 
+    id: job.id,
+    data: {
+      type: 'job',
+      job: job
+    }
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+  };
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'quoted': return 'bg-blue-100 text-blue-800';
+      case 'approved': return 'bg-green-100 text-green-800';
+      case 'scheduled': return 'bg-purple-100 text-purple-800';
+      case 'in_progress': return 'bg-yellow-100 text-yellow-800';
+      case 'completed': return 'bg-emerald-100 text-emerald-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
 
   return (
@@ -61,11 +128,11 @@ const SortableJobCard: React.FC<SortableJobCardProps> = ({ job, onEdit, onView }
             </CardTitle>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => e.stopPropagation()}>
-                  <MoreVertical className="h-3 w-3" />
+                <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
+                  <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="bg-white border shadow-md">
                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onView(); }}>
                   <Eye className="h-4 w-4 mr-2" />
                   View Details
@@ -74,33 +141,44 @@ const SortableJobCard: React.FC<SortableJobCardProps> = ({ job, onEdit, onView }
                   <Edit className="h-4 w-4 mr-2" />
                   Edit Job
                 </DropdownMenuItem>
-                <DropdownMenuItem>Create Estimate</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          <Badge className={getStatusBadgeColor(job.status)} variant="outline">
+            {job.status?.replace('_', ' ')}
+          </Badge>
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="space-y-2 text-xs">
+          {job.description && (
+            <p className="text-xs text-gray-600 mb-3 line-clamp-2">
+              {job.description}
+            </p>
+          )}
+          
+          <div className="space-y-2">
             {job.customers && (
-              <div className="flex items-center text-gray-600">
+              <div className="flex items-center text-xs text-gray-500">
                 <User className="h-3 w-3 mr-1" />
                 {job.customers.first_name} {job.customers.last_name}
               </div>
             )}
-            {job.address && (
-              <div className="flex items-center text-gray-600">
-                <MapPin className="h-3 w-3 mr-1" />
-                <span className="truncate">{job.address}</span>
-              </div>
-            )}
+
             {job.budget && (
-              <div className="flex items-center text-green-600 font-medium">
+              <div className="flex items-center text-xs text-gray-500">
                 <DollarSign className="h-3 w-3 mr-1" />
                 ${job.budget.toLocaleString()}
               </div>
             )}
+            
+            {job.address && (
+              <div className="flex items-center text-xs text-gray-500">
+                <MapPin className="h-3 w-3 mr-1" />
+                {job.address}
+              </div>
+            )}
+
             {job.start_date && (
-              <div className="flex items-center text-gray-600">
+              <div className="flex items-center text-xs text-gray-500">
                 <Calendar className="h-3 w-3 mr-1" />
                 {new Date(job.start_date).toLocaleDateString()}
               </div>
@@ -112,53 +190,133 @@ const SortableJobCard: React.FC<SortableJobCardProps> = ({ job, onEdit, onView }
   );
 };
 
-const JobKanbanBoard: React.FC = () => {
-  const { jobs, updateJob, loading } = useJobs();
-  const [activeJob, setActiveJob] = useState<JobWithCustomer | null>(null);
-  const [jobsByStatus, setJobsByStatus] = useState<Record<string, JobWithCustomer[]>>({});
+const JobKanbanBoard = () => {
+  const { jobs, loading, updateJob, deleteJob } = useJobs();
+  const [showNewJobForm, setShowNewJobForm] = useState(false);
+  const [deleteJobId, setDeleteJobId] = useState<string | null>(null);
   const [editingJob, setEditingJob] = useState<JobWithCustomer | null>(null);
   const [viewingJob, setViewingJob] = useState<JobWithCustomer | null>(null);
+  const [activeJob, setActiveJob] = useState<JobWithCustomer | null>(null);
 
-  // Group jobs by status
-  useEffect(() => {
-    const grouped = jobs.reduce((acc, job) => {
-      const status = job.status || 'quoted';
-      if (!acc[status]) {
-        acc[status] = [];
-      }
-      acc[status].push(job);
-      return acc;
-    }, {} as Record<string, JobWithCustomer[]>);
-
-    setJobsByStatus(grouped);
-  }, [jobs]);
+  const getJobsByStatus = (status: string) => {
+    return jobs.filter(job => job.status === status);
+  };
 
   const handleDragStart = (event: DragStartEvent) => {
-    const job = jobs.find(j => j.id === event.active.id);
+    const { active } = event;
+    const job = jobs.find(j => j.id === active.id);
+    console.log('Drag start:', { jobId: active.id, job });
     setActiveJob(job || null);
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+    console.log('Drag end:', { active: active.id, over: over?.id });
+    
     setActiveJob(null);
 
-    if (!over) return;
+    if (!over) {
+      console.log('No drop target');
+      return;
+    }
 
     const jobId = active.id as string;
-    const newStatus = over.id as string;
-
-    // Check if we're dropping over a valid column
-    const validStatuses = columns.map(col => col.id);
-    if (!validStatuses.includes(newStatus)) return;
-
     const job = jobs.find(j => j.id === jobId);
-    if (!job || job.status === newStatus) return;
-
-    // Update job status with optimistic UI
-    const success = await updateJob(jobId, { status: newStatus as any });
-    if (success) {
-      toast.success(`Job moved to ${newStatus.replace('_', ' ')}`);
+    
+    if (!job) {
+      console.log('Job not found:', jobId);
+      return;
     }
+
+    // Determine the new status based on drop target
+    let newStatus: ValidJobStatus | null = null;
+    
+    // Check if dropping directly over a column
+    if (VALID_JOB_STATUSES.includes(over.id as ValidJobStatus)) {
+      newStatus = over.id as ValidJobStatus;
+    } 
+    // Check if dropping over another job, get its column status
+    else {
+      const targetJob = jobs.find(j => j.id === over.id);
+      if (targetJob && VALID_JOB_STATUSES.includes(targetJob.status as ValidJobStatus)) {
+        newStatus = targetJob.status as ValidJobStatus;
+      }
+    }
+
+    // If we still don't have a valid status, try to find it from the drop zone
+    if (!newStatus) {
+      // Check if the over.id corresponds to any column container
+      const column = columns.find(col => over.id.toString().includes(col.id));
+      if (column) {
+        newStatus = column.id as ValidJobStatus;
+      }
+    }
+
+    if (!newStatus) {
+      console.log('Invalid drop target - no valid status found:', over.id);
+      toast.error('Invalid drop target');
+      return;
+    }
+
+    // Don't update if status hasn't changed
+    if (job.status === newStatus) {
+      console.log('Status unchanged:', job.status, '->', newStatus);
+      return;
+    }
+
+    console.log('Updating job status:', { jobId, oldStatus: job.status, newStatus });
+
+    try {
+      // Update job status with optimistic UI
+      const success = await updateJob(jobId, { status: newStatus });
+      
+      if (success) {
+        const statusDisplay = newStatus.replace('_', ' ');
+        toast.success(`Job moved to ${statusDisplay}`);
+        console.log('Job status updated successfully');
+      } else {
+        toast.error('Failed to update job status');
+        console.error('Job update failed');
+      }
+    } catch (error) {
+      console.error('Error updating job status:', error);
+      toast.error('Failed to update job status');
+    }
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    
+    if (!over) return;
+    
+    // Allow dropping over columns, jobs, or any valid drop target
+    const isValidDropTarget = 
+      VALID_JOB_STATUSES.includes(over.id as ValidJobStatus) ||
+      jobs.some(j => j.id === over.id) ||
+      columns.some(col => over.id.toString().includes(col.id));
+      
+    console.log('Drag over:', { active: active.id, over: over.id, isValid: isValidDropTarget });
+  };
+
+  const handleDeleteJob = async () => {
+    if (!deleteJobId) return;
+    
+    try {
+      await deleteJob(deleteJobId);
+      setDeleteJobId(null);
+    } catch (error) {
+      console.error('Error deleting job:', error);
+    }
+  };
+
+  const handleJobSuccess = () => {
+    setShowNewJobForm(false);
+    setEditingJob(null);
+  };
+
+  const handleJobCancel = () => {
+    setShowNewJobForm(false);
+    setEditingJob(null);
   };
 
   if (loading) {
@@ -171,39 +329,47 @@ const JobKanbanBoard: React.FC = () => {
 
   return (
     <div className="p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold">Jobs</h2>
+          <p className="text-gray-600">Manage your project jobs</p>
+        </div>
+        <Button onClick={() => setShowNewJobForm(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          New Job
+        </Button>
+      </div>
+
       <DndContext
         collisionDetection={closestCorners}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        onDragOver={handleDragOver}
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-6 min-h-screen">
           {columns.map((column) => (
             <SortableContext 
               key={column.id}
-              items={jobsByStatus[column.id]?.map(job => job.id) || []}
+              items={[
+                column.id, // Add column as droppable target
+                ...getJobsByStatus(column.id).map(job => job.id)
+              ]}
               strategy={verticalListSortingStrategy}
             >
-              <div className="flex flex-col" id={column.id}>
-                <div className={`p-4 rounded-lg border-2 border-dashed ${column.color} min-h-[500px]`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-sm">{column.title}</h3>
-                    <Badge variant="secondary" className="text-xs">
-                      {jobsByStatus[column.id]?.length || 0}
-                    </Badge>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    {(jobsByStatus[column.id] || []).map((job) => (
-                      <SortableJobCard
-                        key={job.id}
-                        job={job}
-                        onEdit={() => setEditingJob(job)}
-                        onView={() => setViewingJob(job)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <DroppableColumn 
+                column={column}
+                jobCount={getJobsByStatus(column.id).length}
+              >
+                {getJobsByStatus(column.id).map((job) => (
+                  <SortableJobCard
+                    key={job.id}
+                    job={job}
+                    onEdit={() => setEditingJob(job)}
+                    onView={() => setViewingJob(job)}
+                    onDelete={() => setDeleteJobId(job.id)}
+                  />
+                ))}
+              </DroppableColumn>
             </SortableContext>
           ))}
         </div>
@@ -218,14 +384,8 @@ const JobKanbanBoard: React.FC = () => {
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="space-y-2 text-xs">
-                  {activeJob.customers && (
-                    <div className="flex items-center text-gray-600">
-                      <User className="h-3 w-3 mr-1" />
-                      {activeJob.customers.first_name} {activeJob.customers.last_name}
-                    </div>
-                  )}
                   {activeJob.budget && (
-                    <div className="flex items-center text-green-600 font-medium">
+                    <div className="flex items-center text-gray-600">
                       <DollarSign className="h-3 w-3 mr-1" />
                       ${activeJob.budget.toLocaleString()}
                     </div>
@@ -237,13 +397,22 @@ const JobKanbanBoard: React.FC = () => {
         </DragOverlay>
       </DndContext>
 
+      {/* New Job Dialog */}
+      <JobForm
+        open={showNewJobForm}
+        onOpenChange={setShowNewJobForm}
+        onSuccess={handleJobSuccess}
+        onCancel={handleJobCancel}
+      />
+
       {/* Edit Job Dialog */}
       {editingJob && (
-        <EditJobDialog
+        <JobForm
           job={editingJob}
           open={!!editingJob}
           onOpenChange={(open) => !open && setEditingJob(null)}
-          onSuccess={() => setEditingJob(null)}
+          onSuccess={handleJobSuccess}
+          onCancel={handleJobCancel}
         />
       )}
 
@@ -255,6 +424,24 @@ const JobKanbanBoard: React.FC = () => {
           onOpenChange={(open) => !open && setViewingJob(null)}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteJobId} onOpenChange={() => setDeleteJobId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Job</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this job? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteJob} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogFooter>
+      </AlertDialog>
     </div>
   );
 };
