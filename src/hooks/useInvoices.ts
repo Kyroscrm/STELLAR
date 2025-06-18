@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
@@ -112,9 +111,11 @@ export const useInvoices = () => {
           invoice_id: invoice.id,
           description: item.description,
           quantity: item.quantity,
-          unit_price: item.unit_price,
-          total: item.quantity * item.unit_price
+          unit_price: item.unit_price
+          // Remove total - let the database trigger calculate it
         }));
+
+        console.log('Inserting line items:', lineItemsToInsert);
 
         const { error: lineItemsError } = await supabase
           .from('invoice_line_items')
