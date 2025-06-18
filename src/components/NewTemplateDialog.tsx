@@ -9,7 +9,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus, FileText } from 'lucide-react';
-import { useEstimateTemplates } from '@/hooks/useEstimateTemplates';
+import { useEstimateTemplates, EstimateTemplate } from '@/hooks/useEstimateTemplates';
 import { toast } from 'sonner';
 
 const templateSchema = z.object({
@@ -18,6 +18,7 @@ const templateSchema = z.object({
   tax_rate: z.number().min(0).max(1),
   terms: z.string().optional(),
   notes: z.string().optional(),
+  line_items: z.array(z.any()).default([])
 });
 
 type TemplateFormData = z.infer<typeof templateSchema>;
@@ -43,16 +44,24 @@ const NewTemplateDialog: React.FC<NewTemplateDialogProps> = ({
       tax_rate: 0.08,
       terms: '',
       notes: '',
+      line_items: [] // Ensure this is an empty array, not undefined
     },
   });
 
   const handleSubmit = async (data: TemplateFormData) => {
     setIsSubmitting(true);
     try {
-      const result = await createTemplate({
-        ...data,
-        line_items: [] // Start with empty line items
-      });
+      // Ensure the data matches the EstimateTemplate type requirements
+      const templateData: Omit<EstimateTemplate, 'id' | 'user_id' | 'created_at' | 'updated_at'> = {
+        name: data.name, // Required field
+        description: data.description || null,
+        tax_rate: data.tax_rate,
+        terms: data.terms || null,
+        notes: data.notes || null,
+        line_items: data.line_items || [] // Ensure it's always an array
+      };
+      
+      const result = await createTemplate(templateData);
       
       if (result) {
         setOpen(false);

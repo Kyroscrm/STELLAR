@@ -1,20 +1,13 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Tables } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-export type EstimateTemplate = {
-  id: string;
-  name: string;
-  description?: string;
-  tax_rate: number;
-  terms?: string;
-  notes?: string;
+// Override the Supabase type to have proper line_items type for frontend
+export type EstimateTemplate = Omit<Tables<'estimate_templates'>, 'line_items'> & {
   line_items: any[];
-  user_id: string;
-  created_at: string;
-  updated_at: string;
 };
 
 export const useEstimateTemplates = () => {
@@ -24,11 +17,16 @@ export const useEstimateTemplates = () => {
   const { user } = useAuth();
 
   const fetchTemplates = async () => {
-    if (!user) return;
+    if (!user) {
+      setTemplates([]);
+      return;
+    }
     
     setLoading(true);
     setError(null);
     try {
+      console.log('Fetching estimate templates for user:', user.id);
+      
       const { data, error } = await supabase
         .from('estimate_templates')
         .select('*')
@@ -37,11 +35,27 @@ export const useEstimateTemplates = () => {
 
       if (error) throw error;
       
-      setTemplates(data || []);
+      // Convert Json line_items to array for frontend use
+      const templatesWithParsedLineItems = (data || []).map(template => ({
+        ...template,
+        line_items: (() => {
+          try {
+            return Array.isArray(template.line_items) 
+              ? template.line_items 
+              : JSON.parse(template.line_items as string);
+          } catch {
+            return [];
+          }
+        })()
+      }));
+      
+      setTemplates(templatesWithParsedLineItems);
+      console.log(`Successfully fetched ${templatesWithParsedLineItems.length} estimate templates`);
     } catch (error: any) {
       console.error('Error fetching estimate templates:', error);
       setError(error);
       toast.error('Failed to fetch estimate templates');
+      setTemplates([]);
     } finally {
       setLoading(false);
     }
@@ -51,17 +65,38 @@ export const useEstimateTemplates = () => {
     if (!user) return null;
 
     try {
+      // Convert line_items array to Json for storage
+      const dataForStorage = {
+        ...templateData,
+        user_id: user.id,
+        line_items: JSON.stringify(templateData.line_items)
+      };
+
       const { data, error } = await supabase
         .from('estimate_templates')
-        .insert({ ...templateData, user_id: user.id })
+        .insert(dataForStorage)
         .select()
         .single();
 
       if (error) throw error;
       
-      setTemplates(prev => [data, ...prev]);
+      // Convert back to frontend format
+      const templateWithParsedLineItems = {
+        ...data,
+        line_items: (() => {
+          try {
+            return Array.isArray(data.line_items) 
+              ? data.line_items 
+              : JSON.parse(data.line_items as string);
+          } catch {
+            return [];
+          }
+        })()
+      };
+      
+      setTemplates(prev => [templateWithParsedLineItems, ...prev]);
       toast.success('Template created successfully');
-      return data;
+      return templateWithParsedLineItems;
     } catch (error: any) {
       console.error('Error creating template:', error);
       toast.error('Failed to create template');
@@ -73,9 +108,15 @@ export const useEstimateTemplates = () => {
     if (!user) return false;
 
     try {
+      // Convert line_items array to Json for storage if present
+      const updatesForStorage = {
+        ...updates,
+        ...(updates.line_items && { line_items: JSON.stringify(updates.line_items) })
+      };
+
       const { data, error } = await supabase
         .from('estimate_templates')
-        .update(updates)
+        .update(updatesForStorage)
         .eq('id', id)
         .eq('user_id', user.id)
         .select()
@@ -83,7 +124,21 @@ export const useEstimateTemplates = () => {
 
       if (error) throw error;
       
-      setTemplates(prev => prev.map(t => t.id === id ? data : t));
+      // Convert back to frontend format
+      const templateWithParsedLineItems = {
+        ...data,
+        line_items: (() => {
+          try {
+            return Array.isArray(data.line_items) 
+              ? data.line_items 
+              : JSON.parse(data.line_items as string);
+          } catch {
+            return [];
+          }
+        })()
+      };
+      
+      setTemplates(prev => prev.map(t => t.id === id ? templateWithParsedLineItems : t));
       toast.success('Template updated successfully');
       return true;
     } catch (error: any) {
