@@ -5,9 +5,39 @@ import DashboardStats from '@/components/DashboardStats';
 import RecentActivity from '@/components/RecentActivity';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, Users, FileText, Calendar } from 'lucide-react';
+import { useCustomers } from '@/hooks/useCustomers';
+import { useLeads } from '@/hooks/useLeads';
+import { useJobs } from '@/hooks/useJobs';
+import { useEstimates } from '@/hooks/useEstimates';
+import { useInvoices } from '@/hooks/useInvoices';
+import { useTasks } from '@/hooks/useTasks';
 
 const DashboardPage = () => {
   const { user } = useAuth();
+  const { customers, loading: customersLoading } = useCustomers();
+  const { leads, loading: leadsLoading } = useLeads();
+  const { jobs, loading: jobsLoading } = useJobs();
+  const { estimates, loading: estimatesLoading } = useEstimates();
+  const { invoices, loading: invoicesLoading } = useInvoices();
+  const { tasks, loading: tasksLoading } = useTasks();
+
+  const isLoading = customersLoading || leadsLoading || jobsLoading || estimatesLoading || invoicesLoading || tasksLoading;
+
+  if (isLoading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-48 mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded w-64"></div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-24 bg-gray-200 rounded animate-pulse"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -20,7 +50,14 @@ const DashboardPage = () => {
       </div>
 
       {/* Stats Cards */}
-      <DashboardStats />
+      <DashboardStats
+        customers={customers || []}
+        leads={leads || []}
+        jobs={jobs || []}
+        estimates={estimates || []}
+        invoices={invoices || []}
+        tasks={tasks || []}
+      />
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
