@@ -26,6 +26,35 @@ export const useEstimateTemplates = () => {
     return true;
   };
 
+  const parseLineItems = (lineItems: any): any[] => {
+    if (!lineItems) return [];
+    
+    if (Array.isArray(lineItems)) {
+      return lineItems;
+    }
+    
+    if (typeof lineItems === 'string') {
+      try {
+        const parsed = JSON.parse(lineItems);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (error) {
+        console.error('Error parsing line items string:', error);
+        return [];
+      }
+    }
+    
+    if (typeof lineItems === 'object') {
+      // If it's a JSON object, try to extract array-like data
+      if (lineItems.length !== undefined && typeof lineItems.length === 'number') {
+        return Array.from(lineItems);
+      }
+      // If it's a regular object, wrap it in an array
+      return [lineItems];
+    }
+    
+    return [];
+  };
+
   const fetchTemplates = async () => {
     if (!validateUserAndSession()) return;
     
@@ -44,27 +73,11 @@ export const useEstimateTemplates = () => {
       
       // Convert Json line_items to array for frontend use
       const templatesWithParsedLineItems = (data || []).map(template => {
-        let lineItems = [];
-        
-        try {
-          if (template.line_items) {
-            if (Array.isArray(template.line_items)) {
-              lineItems = template.line_items;
-            } else if (typeof template.line_items === 'string') {
-              lineItems = JSON.parse(template.line_items);
-            } else {
-              // It's already an object/array from JSONB
-              lineItems = template.line_items;
-            }
-          }
-        } catch (parseError) {
-          console.error('Error parsing line items for template:', template.id, parseError);
-          lineItems = [];
-        }
+        const lineItems = parseLineItems(template.line_items);
         
         return {
           ...template,
-          line_items: Array.isArray(lineItems) ? lineItems : []
+          line_items: lineItems
         };
       });
       
@@ -104,25 +117,11 @@ export const useEstimateTemplates = () => {
       if (error) throw error;
       
       // Convert back to frontend format
-      let lineItems = [];
-      try {
-        if (data.line_items) {
-          if (Array.isArray(data.line_items)) {
-            lineItems = data.line_items;
-          } else if (typeof data.line_items === 'string') {
-            lineItems = JSON.parse(data.line_items);
-          } else {
-            lineItems = data.line_items;
-          }
-        }
-      } catch (parseError) {
-        console.error('Error parsing returned line items:', parseError);
-        lineItems = [];
-      }
+      const lineItems = parseLineItems(data.line_items);
       
       const templateWithParsedLineItems = {
         ...data,
-        line_items: Array.isArray(lineItems) ? lineItems : []
+        line_items: lineItems
       };
       
       setTemplates(prev => [templateWithParsedLineItems, ...prev]);
@@ -156,25 +155,11 @@ export const useEstimateTemplates = () => {
       if (error) throw error;
       
       // Convert back to frontend format
-      let lineItems = [];
-      try {
-        if (data.line_items) {
-          if (Array.isArray(data.line_items)) {
-            lineItems = data.line_items;
-          } else if (typeof data.line_items === 'string') {
-            lineItems = JSON.parse(data.line_items);
-          } else {
-            lineItems = data.line_items;
-          }
-        }
-      } catch (parseError) {
-        console.error('Error parsing updated line items:', parseError);
-        lineItems = [];
-      }
+      const lineItems = parseLineItems(data.line_items);
       
       const templateWithParsedLineItems = {
         ...data,
-        line_items: Array.isArray(lineItems) ? lineItems : []
+        line_items: lineItems
       };
       
       setTemplates(prev => prev.map(t => t.id === id ? templateWithParsedLineItems : t));

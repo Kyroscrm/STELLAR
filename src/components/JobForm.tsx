@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useJobs, JobWithCustomer } from '@/hooks/useJobs';
 import { useCustomers } from '@/hooks/useCustomers';
 import { toast } from 'sonner';
+import { JobStatus } from '@/types/supabase-enums';
 
 interface JobFormProps {
   open: boolean;
@@ -33,7 +34,7 @@ const JobForm: React.FC<JobFormProps> = ({
     title: '',
     description: '',
     customer_id: 'none',
-    status: 'quoted' as const,
+    status: 'quoted' as JobStatus,
     address: '',
     start_date: '',
     end_date: '',
@@ -162,7 +163,7 @@ const JobForm: React.FC<JobFormProps> = ({
               <Label htmlFor="status">Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as any }))}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as JobStatus }))}
               >
                 <SelectTrigger>
                   <SelectValue />
