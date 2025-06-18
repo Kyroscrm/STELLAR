@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,7 +49,7 @@ interface DroppableColumnProps {
 }
 
 const DroppableColumn: React.FC<DroppableColumnProps> = ({ column, children, taskCount }) => {
-  const { setNodeRef } = useSortable({
+  const { setNodeRef, isOver } = useSortable({
     id: column.status,
     data: {
       type: 'column',
@@ -60,13 +59,14 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({ column, children, tas
 
   return (
     <div ref={setNodeRef} className="space-y-4" id={column.status}>
-      <div className={`p-4 rounded-lg ${column.color}`}>
+      <div className={`p-4 rounded-lg transition-colors ${column.color} ${isOver ? 'ring-2 ring-primary ring-opacity-50' : ''}`}>
         <h3 className="font-semibold text-center">
           {column.title} ({taskCount})
         </h3>
       </div>
       
-      <div className="space-y-3 min-h-[400px]">
+      <div className="space-y-3 min-h-[400px] transition-colors rounded-lg p-2" 
+           style={{ backgroundColor: isOver ? 'rgba(59, 130, 246, 0.05)' : 'transparent' }}>
         {children}
       </div>
     </div>
@@ -239,20 +239,33 @@ const TaskKanbanBoard = () => {
     }
 
     // Determine the new status based on drop target
-    let newStatus: ValidTaskStatus;
+    let newStatus: ValidTaskStatus | null = null;
     
-    // Check if dropping over a column
+    // Check if dropping directly over a column
     if (VALID_TASK_STATUSES.includes(over.id as ValidTaskStatus)) {
       newStatus = over.id as ValidTaskStatus;
-    } else {
-      // If dropping over another task, find which column it belongs to
+    } 
+    // Check if dropping over another task, get its column status
+    else {
       const targetTask = tasks.find(t => t.id === over.id);
       if (targetTask && VALID_TASK_STATUSES.includes(targetTask.status as ValidTaskStatus)) {
         newStatus = targetTask.status as ValidTaskStatus;
-      } else {
-        console.log('Invalid drop target:', over.id);
-        return;
       }
+    }
+
+    // If we still don't have a valid status, try to find it from the drop zone
+    if (!newStatus) {
+      // Check if the over.id corresponds to any column container
+      const column = columns.find(col => over.id.toString().includes(col.status));
+      if (column) {
+        newStatus = column.status as ValidTaskStatus;
+      }
+    }
+
+    if (!newStatus) {
+      console.log('Invalid drop target - no valid status found:', over.id);
+      toast.error('Invalid drop target');
+      return;
     }
 
     // Don't update if status hasn't changed
@@ -286,10 +299,11 @@ const TaskKanbanBoard = () => {
     
     if (!over) return;
     
-    // Allow dropping over columns or other tasks
+    // Allow dropping over columns, tasks, or any valid drop target
     const isValidDropTarget = 
       VALID_TASK_STATUSES.includes(over.id as ValidTaskStatus) ||
-      tasks.some(t => t.id === over.id);
+      tasks.some(t => t.id === over.id) ||
+      columns.some(col => over.id.toString().includes(col.status));
       
     console.log('Drag over:', { active: active.id, over: over.id, isValid: isValidDropTarget });
   };
