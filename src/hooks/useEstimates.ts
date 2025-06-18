@@ -9,6 +9,16 @@ export type Estimate = Tables<'estimates'>;
 type EstimateInsert = Omit<TablesInsert<'estimates'>, 'user_id'>;
 type EstimateUpdate = TablesUpdate<'estimates'>;
 
+// Line item type for estimates
+export type LineItem = {
+  id?: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  total: number;
+  sort_order?: number;
+};
+
 // Extended Estimate type with customer data
 export type EstimateWithCustomer = Estimate & {
   customers?: {
@@ -18,6 +28,18 @@ export type EstimateWithCustomer = Estimate & {
     email?: string;
     phone?: string;
   };
+};
+
+// Extended Estimate type with line items
+export type EstimateWithLineItems = Estimate & {
+  estimate_line_items?: Array<{
+    id: string;
+    description: string;
+    quantity: number;
+    unit_price: number;
+    total: number;
+    sort_order: number;
+  }>;
 };
 
 export const useEstimates = () => {
@@ -246,6 +268,7 @@ export const useEstimates = () => {
     error,
     fetchEstimates,
     createEstimate,
+    addEstimate: createEstimate, // Alias for backward compatibility
     updateEstimate,
     deleteEstimate
   };

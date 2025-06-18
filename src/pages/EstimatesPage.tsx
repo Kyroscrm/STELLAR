@@ -1,10 +1,11 @@
+
 import React, { useState, useMemo } from 'react';
 import { useEstimates } from '@/hooks/useEstimates';
 import { useEstimateTemplates } from '@/hooks/useEstimateTemplates';
 import NewTemplateDialog from '@/components/NewTemplateDialog';
+import NewEstimateDialog from '@/components/NewEstimateDialog';
 import { useCustomers } from '@/hooks/useCustomers';
 import { usePDFGeneration } from '@/hooks/usePDFGeneration';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,7 +44,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -60,13 +60,12 @@ import EstimateLineItemsDisplay from '@/components/EstimateLineItemsDisplay';
 import { toast } from 'sonner';
 
 const EstimatesPage = () => {
-  const { estimates, loading, error, addEstimate, updateEstimate, deleteEstimate } = useEstimates();
+  const { estimates, loading, error, updateEstimate, deleteEstimate } = useEstimates();
   const { customers } = useCustomers();
   const { generateEstimatePDF, generating } = usePDFGeneration();
   const { templates } = useEstimateTemplates();
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedEstimate, setSelectedEstimate] = useState<any>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -98,72 +97,6 @@ const EstimatesPage = () => {
     draft: estimates.filter(e => e.status === 'draft').length,
     sent: estimates.filter(e => e.status === 'sent').length,
     approved: estimates.filter(e => e.status === 'approved').length,
-  };
-
-  const addLineItemsToEstimate = async (estimateId: string, lineItems: any[]) => {
-    try {
-      for (const item of lineItems) {
-        if (item.description.trim()) {
-          const total = Number(item.quantity) * Number(item.unit_price);
-          
-          const { error } = await supabase
-            .from('estimate_line_items')
-            .insert({
-              estimate_id: estimateId,
-              description: item.description,
-              quantity: item.quantity,
-              unit_price: item.unit_price,
-              total,
-              sort_order: 0
-            });
-
-          if (error) {
-            console.error('Error adding line item:', error);
-            throw error;
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error adding line items:', error);
-      toast.error('Failed to add some line items');
-    }
-  };
-
-  const handleCreateEstimate = async (data: any) => {
-    setIsSubmitting(true);
-    try {
-      const estimateData = {
-        title: data.title,
-        description: data.description || '',
-        estimate_number: data.estimate_number,
-        customer_id: data.customer_id || null,
-        job_id: data.job_id || null,
-        valid_until: data.valid_until || null,
-        tax_rate: data.tax_rate || 0,
-        status: data.status || 'draft',
-        notes: data.notes || '',
-        terms: data.terms || '',
-        subtotal: 0,
-        tax_amount: 0,
-        total_amount: 0
-      };
-
-      const result = await addEstimate(estimateData);
-      
-      if (result && data.lineItems && data.lineItems.length > 0) {
-        await addLineItemsToEstimate(result.id, data.lineItems);
-      }
-      
-      if (result) {
-        setIsCreateModalOpen(false);
-        toast.success('Estimate created successfully');
-      }
-    } catch (error) {
-      console.error('Error creating estimate:', error);
-      toast.error('Failed to create estimate');
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const handleUpdateEstimate = async (data: any) => {
@@ -238,10 +171,7 @@ const EstimatesPage = () => {
         </div>
         <div className="flex gap-2">
           <NewTemplateDialog />
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            New Estimate
-          </Button>
+          <NewEstimateDialog />
         </div>
       </div>
 
@@ -420,10 +350,12 @@ const EstimatesPage = () => {
               ) : (
                 <div>
                   <p className="text-gray-500">No estimates found.</p>
-                  <Button className="mt-4" onClick={() => setIsCreateModalOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Your First Estimate
-                  </Button>
+                  <NewEstimateDialog trigger={
+                    <Button className="mt-4">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Your First Estimate
+                    </Button>
+                  } />
                 </div>
               )}
             </div>
