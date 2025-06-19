@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { ChevronUp, ChevronDown, MoreHorizontal, Search } from 'lucide-react';
 import { Button } from './button';
@@ -8,7 +7,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './table';
 import EditTaskDialog from '@/components/EditTaskDialog';
 import { Task } from '@/hooks/useTasks';
-
 export interface Column<T> {
   key: keyof T | string;
   header: string;
@@ -17,7 +15,6 @@ export interface Column<T> {
   searchable?: boolean;
   width?: string;
 }
-
 export interface DataTableProps<T> {
   data: T[];
   columns: Column<T>[];
@@ -33,8 +30,9 @@ export interface DataTableProps<T> {
     variant?: 'default' | 'destructive';
   }>;
 }
-
-export function DataTable<T extends { id: string }>({
+export function DataTable<T extends {
+  id: string;
+}>({
   data,
   columns,
   onEdit,
@@ -55,12 +53,10 @@ export function DataTable<T extends { id: string }>({
   // Filter data based on search term with real-time search
   const filteredData = useMemo(() => {
     if (!searchTerm.trim()) return data;
-    
     const searchLower = searchTerm.toLowerCase();
     return data.filter(item => {
       return columns.some(column => {
         if (column.searchable === false) return false;
-        
         const value = column.key === 'id' ? item.id : (item as any)[column.key];
         return String(value || '').toLowerCase().includes(searchLower);
       });
@@ -70,11 +66,9 @@ export function DataTable<T extends { id: string }>({
   // Sort data
   const sortedData = useMemo(() => {
     if (!sortConfig) return filteredData;
-
     return [...filteredData].sort((a, b) => {
       const aValue = (a as any)[sortConfig.key];
       const bValue = (b as any)[sortConfig.key];
-
       if (aValue < bValue) {
         return sortConfig.direction === 'asc' ? -1 : 1;
       }
@@ -84,7 +78,6 @@ export function DataTable<T extends { id: string }>({
       return 0;
     });
   }, [filteredData, sortConfig]);
-
   const handleSort = (key: string) => {
     setSortConfig(current => {
       if (current?.key === key) {
@@ -93,10 +86,12 @@ export function DataTable<T extends { id: string }>({
           direction: current.direction === 'asc' ? 'desc' : 'asc'
         };
       }
-      return { key, direction: 'asc' };
+      return {
+        key,
+        direction: 'asc'
+      };
     });
   };
-
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       setSelectedItems(new Set(sortedData.map(item => item.id)));
@@ -104,7 +99,6 @@ export function DataTable<T extends { id: string }>({
       setSelectedItems(new Set());
     }
   };
-
   const handleSelectItem = (itemId: string, checked: boolean) => {
     const newSelected = new Set(selectedItems);
     if (checked) {
@@ -114,134 +108,70 @@ export function DataTable<T extends { id: string }>({
     }
     setSelectedItems(newSelected);
   };
-
   const renderCellValue = (item: T, column: Column<T>) => {
     if (column.render) {
       return column.render(item);
     }
-    
     const value = column.key === 'id' ? item.id : (item as any)[column.key];
     return String(value || '');
   };
-
   const isTask = (item: T): item is T & Task => {
     return 'title' in item && 'status' in item;
   };
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
+    return <div className="flex items-center justify-center py-8">
         <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="space-y-4">
+  return <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="relative max-w-sm">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder={searchPlaceholder}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+          <Input placeholder={searchPlaceholder} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
         </div>
         
-        {selectedItems.size > 0 && onBulkAction && (
-          <div className="flex items-center gap-2">
+        {selectedItems.size > 0 && onBulkAction && <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">
               {selectedItems.size} selected
             </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onBulkAction('delete', sortedData.filter(item => selectedItems.has(item.id)))}
-            >
+            <Button variant="outline" size="sm" onClick={() => onBulkAction('delete', sortedData.filter(item => selectedItems.has(item.id)))}>
               Delete Selected
             </Button>
-          </div>
-        )}
+          </div>}
       </div>
 
       <div className="border rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>
-              {(onBulkAction || selectedItems.size > 0) && (
-                <TableHead className="w-12">
-                  <Checkbox
-                    checked={selectedItems.size === sortedData.length && sortedData.length > 0}
-                    onCheckedChange={handleSelectAll}
-                  />
-                </TableHead>
-              )}
-              {columns.map((column) => (
-                <TableHead 
-                  key={String(column.key)} 
-                  className={column.width}
-                >
-                  {column.sortable !== false ? (
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort(String(column.key))}
-                      className="h-auto p-0 font-semibold"
-                    >
+              {(onBulkAction || selectedItems.size > 0) && <TableHead className="w-12">
+                  <Checkbox checked={selectedItems.size === sortedData.length && sortedData.length > 0} onCheckedChange={handleSelectAll} />
+                </TableHead>}
+              {columns.map(column => <TableHead key={String(column.key)} className={column.width}>
+                  {column.sortable !== false ? <Button variant="ghost" onClick={() => handleSort(String(column.key))} className="h-auto p-0 font-semibold">
                       {column.header}
-                      {sortConfig?.key === column.key && (
-                        sortConfig.direction === 'asc' ? (
-                          <ChevronUp className="ml-2 h-4 w-4" />
-                        ) : (
-                          <ChevronDown className="ml-2 h-4 w-4" />
-                        )
-                      )}
-                    </Button>
-                  ) : (
-                    column.header
-                  )}
-                </TableHead>
-              ))}
-              {(onEdit || onDelete || actions.length > 0) && (
-                <TableHead className="w-20">Actions</TableHead>
-              )}
+                      {sortConfig?.key === column.key && (sortConfig.direction === 'asc' ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />)}
+                    </Button> : column.header}
+                </TableHead>)}
+              {(onEdit || onDelete || actions.length > 0) && <TableHead className="w-20">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedData.length === 0 ? (
-              <TableRow>
-                <TableCell 
-                  colSpan={columns.length + (onEdit || onDelete || actions.length > 0 ? 1 : 0) + (onBulkAction ? 1 : 0)} 
-                  className="text-center py-8 text-muted-foreground"
-                >
-                  {searchTerm ? (
-                    <div>
+            {sortedData.length === 0 ? <TableRow>
+                <TableCell colSpan={columns.length + (onEdit || onDelete || actions.length > 0 ? 1 : 0) + (onBulkAction ? 1 : 0)} className="text-center py-8 text-muted-foreground">
+                  {searchTerm ? <div>
                       <p className="mb-1">No results found for "{searchTerm}"</p>
                       <p className="text-sm">Try adjusting your search terms</p>
-                    </div>
-                  ) : (
-                    emptyMessage
-                  )}
+                    </div> : emptyMessage}
                 </TableCell>
-              </TableRow>
-            ) : (
-              sortedData.map((item) => (
-                <TableRow key={item.id}>
-                  {(onBulkAction || selectedItems.size > 0) && (
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedItems.has(item.id)}
-                        onCheckedChange={(checked) => handleSelectItem(item.id, !!checked)}
-                      />
-                    </TableCell>
-                  )}
-                  {columns.map((column) => (
-                    <TableCell key={String(column.key)}>
+              </TableRow> : sortedData.map(item => <TableRow key={item.id}>
+                  {(onBulkAction || selectedItems.size > 0) && <TableCell>
+                      <Checkbox checked={selectedItems.has(item.id)} onCheckedChange={checked => handleSelectItem(item.id, !!checked)} />
+                    </TableCell>}
+                  {columns.map(column => <TableCell key={String(column.key)}>
                       {renderCellValue(item, column)}
-                    </TableCell>
-                  ))}
-                  {(onEdit || onDelete || actions.length > 0) && (
-                    <TableCell>
+                    </TableCell>)}
+                  {(onEdit || onDelete || actions.length > 0) && <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="h-8 w-8 p-0">
@@ -249,43 +179,19 @@ export function DataTable<T extends { id: string }>({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          {actions.map((action, index) => (
-                            <DropdownMenuItem 
-                              key={index}
-                              onClick={() => action.onClick(item)}
-                              className={action.variant === 'destructive' ? 'text-red-600' : ''}
-                            >
+                          {actions.map((action, index) => <DropdownMenuItem key={index} onClick={() => action.onClick(item)} className={action.variant === 'destructive' ? 'text-red-600' : ''}>
                               {action.label}
-                            </DropdownMenuItem>
-                          ))}
-                          {onEdit && isTask(item) && (
-                            <EditTaskDialog 
-                              task={item}
-                              trigger={
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                            </DropdownMenuItem>)}
+                          {onEdit && isTask(item) && <EditTaskDialog task={item} trigger={<DropdownMenuItem onSelect={e => e.preventDefault()}>
                                   Edit
-                                </DropdownMenuItem>
-                              }
-                            />
-                          )}
-                          {onDelete && (
-                            <DropdownMenuItem 
-                              onClick={() => onDelete(item)}
-                              className="text-red-600"
-                            >
-                              Delete
-                            </DropdownMenuItem>
-                          )}
+                                </DropdownMenuItem>} />}
+                          {onDelete}
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))
-            )}
+                    </TableCell>}
+                </TableRow>)}
           </TableBody>
         </Table>
       </div>
-    </div>
-  );
+    </div>;
 }
