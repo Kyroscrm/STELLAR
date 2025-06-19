@@ -1,9 +1,11 @@
+
 import React, { useState } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, MoreHorizontal, Calendar, Clock, User, Edit, Trash2, Eye } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Plus, MoreHorizontal, Calendar, Clock, User, Edit, Trash2, Eye, Search, Filter } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -207,9 +209,22 @@ const TaskKanbanBoard = () => {
   const [editingTask, setEditingTask] = useState<any>(null);
   const [viewingTask, setViewingTask] = useState<any>(null);
   const [activeTask, setActiveTask] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  // Filter tasks based on search and filters
+  const filteredTasks = tasks.filter(task => {
+    const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         task.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
+    const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
+    
+    return matchesSearch && matchesPriority && matchesStatus;
+  });
 
   const getTasksByStatus = (status: string) => {
-    return tasks.filter(task => task.status === status);
+    return filteredTasks.filter(task => task.status === status);
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -348,6 +363,82 @@ const TaskKanbanBoard = () => {
           <Plus className="h-4 w-4 mr-2" />
           New Task
         </Button>
+      </div>
+
+      {/* Search and Filter Controls */}
+      <div className="mb-6 space-y-4">
+        <div className="flex gap-4 items-center">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search tasks..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Filter className="h-4 w-4 mr-2" />
+                Priority: {priorityFilter === 'all' ? 'All' : priorityFilter}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => setPriorityFilter('all')}>
+                All Priorities
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setPriorityFilter('low')}>
+                Low Priority
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setPriorityFilter('medium')}>
+                Medium Priority
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setPriorityFilter('high')}>
+                High Priority
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setPriorityFilter('urgent')}>
+                Urgent Priority
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Filter className="h-4 w-4 mr-2" />
+                Status: {statusFilter === 'all' ? 'All' : statusFilter.replace('_', ' ')}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => setStatusFilter('all')}>
+                All Statuses
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatusFilter('pending')}>
+                Pending
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatusFilter('in_progress')}>
+                In Progress
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatusFilter('completed')}>
+                Completed
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatusFilter('cancelled')}>
+                Cancelled
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Summary Stats */}
+        <div className="flex gap-4 text-sm text-gray-600">
+          <span>Total: {filteredTasks.length}</span>
+          <span>Pending: {getTasksByStatus('pending').length}</span>
+          <span>In Progress: {getTasksByStatus('in_progress').length}</span>
+          <span>Completed: {getTasksByStatus('completed').length}</span>
+          <span>Cancelled: {getTasksByStatus('cancelled').length}</span>
+        </div>
       </div>
 
       <DndContext
