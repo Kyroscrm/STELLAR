@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Plus, MoreHorizontal, Calendar, Clock, User, Edit, Trash2, Eye, Search, Filter } from 'lucide-react';
+import { Plus, MoreHorizontal, Calendar, Clock, User, Edit, Trash2, Eye, Search, Filter, List as ListIcon, BarChart3, CheckCircle2, AlertCircle, PlayCircle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,10 +37,10 @@ type ValidTaskStatus = typeof VALID_TASK_STATUSES[number];
 
 // Define kanban columns with proper status mapping
 const columns = [
-  { status: 'pending', title: 'Pending', color: 'bg-gray-100' },
-  { status: 'in_progress', title: 'In Progress', color: 'bg-blue-100' },
-  { status: 'completed', title: 'Completed', color: 'bg-green-100' },
-  { status: 'cancelled', title: 'Cancelled', color: 'bg-red-100' },
+  { status: 'pending', title: 'Pending', color: 'bg-blue-50 border-blue-200', count: 0 },
+  { status: 'in_progress', title: 'In Progress', color: 'bg-orange-50 border-orange-200', count: 0 },
+  { status: 'completed', title: 'Completed', color: 'bg-green-50 border-green-200', count: 0 },
+  { status: 'cancelled', title: 'Cancelled', color: 'bg-red-50 border-red-200', count: 0 },
 ];
 
 // Droppable Column Component
@@ -61,8 +61,8 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({ column, children, tas
 
   return (
     <div ref={setNodeRef} className="space-y-4" id={column.status}>
-      <div className={`p-4 rounded-lg transition-colors ${column.color} ${isOver ? 'ring-2 ring-primary ring-opacity-50' : ''}`}>
-        <h3 className="font-semibold text-center">
+      <div className={`p-4 rounded-lg border-2 transition-colors ${column.color} ${isOver ? 'ring-2 ring-primary ring-opacity-50' : ''}`}>
+        <h3 className="font-semibold text-center text-gray-700">
           {column.title} ({taskCount})
         </h3>
       </div>
@@ -126,7 +126,7 @@ const SortableTaskCard: React.FC<SortableTaskCardProps> = ({ task, onEdit, onVie
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <Card className="mb-3 cursor-move hover:shadow-md transition-shadow">
+      <Card className="mb-3 cursor-move hover:shadow-md transition-shadow bg-white">
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between">
             <CardTitle className="text-sm font-medium line-clamp-2">
@@ -227,31 +227,29 @@ const TaskKanbanBoard = () => {
     return filteredTasks.filter(task => task.status === status);
   };
 
+  // Calculate metrics
+  const totalTasks = filteredTasks.length;
+  const pendingTasks = getTasksByStatus('pending').length;
+  const inProgressTasks = getTasksByStatus('in_progress').length;
+  const completedTasks = getTasksByStatus('completed').length;
+
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     const task = tasks.find(t => t.id === active.id);
-    console.log('Drag start:', { taskId: active.id, task });
     setActiveTask(task || null);
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-    console.log('Drag end:', { active: active.id, over: over?.id });
     
     setActiveTask(null);
 
-    if (!over) {
-      console.log('No drop target');
-      return;
-    }
+    if (!over) return;
 
     const taskId = active.id as string;
     const task = tasks.find(t => t.id === taskId);
     
-    if (!task) {
-      console.log('Task not found:', taskId);
-      return;
-    }
+    if (!task) return;
 
     // Determine the new status based on drop target
     let newStatus: ValidTaskStatus | null = null;
@@ -268,40 +266,16 @@ const TaskKanbanBoard = () => {
       }
     }
 
-    // If we still don't have a valid status, try to find it from the drop zone
-    if (!newStatus) {
-      // Check if the over.id corresponds to any column container
-      const column = columns.find(col => over.id.toString().includes(col.status));
-      if (column) {
-        newStatus = column.status as ValidTaskStatus;
-      }
-    }
-
-    if (!newStatus) {
-      console.log('Invalid drop target - no valid status found:', over.id);
-      toast.error('Invalid drop target');
-      return;
-    }
-
-    // Don't update if status hasn't changed
-    if (task.status === newStatus) {
-      console.log('Status unchanged:', task.status, '->', newStatus);
-      return;
-    }
-
-    console.log('Updating task status:', { taskId, oldStatus: task.status, newStatus });
+    if (!newStatus || task.status === newStatus) return;
 
     try {
-      // Update task status with optimistic UI
       const success = await updateTask(taskId, { status: newStatus });
       
       if (success) {
         const statusDisplay = newStatus.replace('_', ' ');
         toast.success(`Task moved to ${statusDisplay}`);
-        console.log('Task status updated successfully');
       } else {
         toast.error('Failed to update task status');
-        console.error('Task update failed');
       }
     } catch (error) {
       console.error('Error updating task status:', error);
@@ -310,17 +284,7 @@ const TaskKanbanBoard = () => {
   };
 
   const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event;
-    
-    if (!over) return;
-    
     // Allow dropping over columns, tasks, or any valid drop target
-    const isValidDropTarget = 
-      VALID_TASK_STATUSES.includes(over.id as ValidTaskStatus) ||
-      tasks.some(t => t.id === over.id) ||
-      columns.some(col => over.id.toString().includes(col.status));
-      
-    console.log('Drag over:', { active: active.id, over: over.id, isValid: isValidDropTarget });
   };
 
   const handleDeleteTask = async () => {
@@ -329,8 +293,10 @@ const TaskKanbanBoard = () => {
     try {
       await deleteTask(deleteTaskId);
       setDeleteTaskId(null);
+      toast.success('Task deleted successfully');
     } catch (error) {
       console.error('Error deleting task:', error);
+      toast.error('Failed to delete task');
     }
   };
 
@@ -353,150 +319,184 @@ const TaskKanbanBoard = () => {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold">Tasks</h2>
-          <p className="text-gray-600">Manage your project tasks</p>
-        </div>
-        <Button onClick={() => setShowNewTaskForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Task
-        </Button>
-      </div>
-
-      {/* Search and Filter Controls */}
-      <div className="mb-6 space-y-4">
-        <div className="flex gap-4 items-center">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search tasks..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+    <div className="min-h-screen bg-gray-50">
+      {/* Header Section - Blue Background */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+        <div className="container mx-auto px-6 py-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Task Management</h1>
+              <p className="text-blue-100">Organize, track, and complete your team's work efficiently</p>
+            </div>
+            <div className="hidden md:block">
+              <img 
+                src="/lovable-uploads/6ea379d2-8242-43c4-bf80-b1a2430facf0.png" 
+                alt="Task Management" 
+                className="w-32 h-20 object-cover rounded-lg"
+              />
+            </div>
           </div>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
-                Priority: {priorityFilter === 'all' ? 'All' : priorityFilter}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setPriorityFilter('all')}>
-                All Priorities
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setPriorityFilter('low')}>
-                Low Priority
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setPriorityFilter('medium')}>
-                Medium Priority
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setPriorityFilter('high')}>
-                High Priority
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setPriorityFilter('urgent')}>
-                Urgent Priority
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
-                Status: {statusFilter === 'all' ? 'All' : statusFilter.replace('_', ' ')}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setStatusFilter('all')}>
-                All Statuses
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter('pending')}>
-                Pending
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter('in_progress')}>
-                In Progress
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter('completed')}>
-                Completed
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter('cancelled')}>
-                Cancelled
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        {/* Summary Stats */}
-        <div className="flex gap-4 text-sm text-gray-600">
-          <span>Total: {filteredTasks.length}</span>
-          <span>Pending: {getTasksByStatus('pending').length}</span>
-          <span>In Progress: {getTasksByStatus('in_progress').length}</span>
-          <span>Completed: {getTasksByStatus('completed').length}</span>
-          <span>Cancelled: {getTasksByStatus('cancelled').length}</span>
         </div>
       </div>
 
-      <DndContext
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        onDragOver={handleDragOver}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 min-h-screen">
-          {columns.map((column) => (
-            <SortableContext 
-              key={column.status}
-              items={[
-                column.status, // Add column as droppable target
-                ...getTasksByStatus(column.status).map(task => task.id)
-              ]}
-              strategy={verticalListSortingStrategy}
-            >
-              <DroppableColumn 
-                column={column}
-                taskCount={getTasksByStatus(column.status).length}
-              >
-                {getTasksByStatus(column.status).map((task) => (
-                  <SortableTaskCard
-                    key={task.id}
-                    task={task}
-                    onEdit={() => setEditingTask(task)}
-                    onView={() => setViewingTask(task)}
-                    onDelete={() => setDeleteTaskId(task.id)}
-                  />
-                ))}
-              </DroppableColumn>
-            </SortableContext>
-          ))}
+      {/* Controls Section */}
+      <div className="container mx-auto px-6 py-6">
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
+          <Button onClick={() => setShowNewTaskForm(true)} className="bg-blue-600 hover:bg-blue-700">
+            <Plus className="h-4 w-4 mr-2" />
+            New Task
+          </Button>
+          
+          <div className="flex gap-4 items-center">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search tasks by title, description, status..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-80"
+              />
+            </div>
+            
+            <div className="flex gap-2">
+              <Button variant="default" size="sm" className="bg-blue-600 hover:bg-blue-700">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Kanban
+              </Button>
+              <Button variant="outline" size="sm">
+                <ListIcon className="h-4 w-4 mr-2" />
+                List
+              </Button>
+              <Button variant="outline" size="sm">
+                <Filter className="h-4 w-4 mr-2" />
+                Filters
+              </Button>
+            </div>
+          </div>
         </div>
 
-        <DragOverlay>
-          {activeTask ? (
-            <Card className="cursor-move shadow-lg rotate-3">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">
-                  {activeTask.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="space-y-2 text-xs">
-                  {activeTask.estimated_hours && (
-                    <div className="flex items-center text-gray-600">
-                      <Clock className="h-3 w-3 mr-1" />
-                      {activeTask.estimated_hours}h estimated
-                    </div>
-                  )}
+        {/* Metrics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <Card className="bg-blue-500 text-white border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-blue-100 text-sm font-medium">Total Tasks</p>
+                  <p className="text-3xl font-bold">{totalTasks}</p>
                 </div>
-              </CardContent>
-            </Card>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+                <BarChart3 className="h-8 w-8 text-blue-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-orange-500 text-white border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-orange-100 text-sm font-medium">Pending</p>
+                  <p className="text-3xl font-bold">{pendingTasks}</p>
+                </div>
+                <Clock className="h-8 w-8 text-orange-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-red-500 text-white border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-red-100 text-sm font-medium">In Progress</p>
+                  <p className="text-3xl font-bold">{inProgressTasks}</p>
+                </div>
+                <AlertCircle className="h-8 w-8 text-red-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-green-500 text-white border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-green-100 text-sm font-medium">Completed</p>
+                  <p className="text-3xl font-bold">{completedTasks}</p>
+                </div>
+                <CheckCircle2 className="h-8 w-8 text-green-200" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tasks Section */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800">Tasks</h2>
+              <p className="text-gray-600 text-sm">Manage your project tasks</p>
+            </div>
+            <Button onClick={() => setShowNewTaskForm(true)} className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="h-4 w-4 mr-2" />
+              New Task
+            </Button>
+          </div>
+
+          <DndContext
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragOver={handleDragOver}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {columns.map((column) => (
+                <SortableContext 
+                  key={column.status}
+                  items={[
+                    column.status,
+                    ...getTasksByStatus(column.status).map(task => task.id)
+                  ]}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <DroppableColumn 
+                    column={column}
+                    taskCount={getTasksByStatus(column.status).length}
+                  >
+                    {getTasksByStatus(column.status).map((task) => (
+                      <SortableTaskCard
+                        key={task.id}
+                        task={task}
+                        onEdit={() => setEditingTask(task)}
+                        onView={() => setViewingTask(task)}
+                        onDelete={() => setDeleteTaskId(task.id)}
+                      />
+                    ))}
+                  </DroppableColumn>
+                </SortableContext>
+              ))}
+            </div>
+
+            <DragOverlay>
+              {activeTask ? (
+                <Card className="cursor-move shadow-lg rotate-3 bg-white">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      {activeTask.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="space-y-2 text-xs">
+                      {activeTask.estimated_hours && (
+                        <div className="flex items-center text-gray-600">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {activeTask.estimated_hours}h estimated
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        </div>
+      </div>
 
       {/* New Task Dialog */}
       <TaskFormDialog
@@ -541,7 +541,7 @@ const TaskKanbanBoard = () => {
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
-        </AlertDialogContent>
+        </AlertDialogFooter>
       </AlertDialog>
     </div>
   );
