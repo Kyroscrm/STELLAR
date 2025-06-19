@@ -6,6 +6,8 @@ import { Input } from './input';
 import { Checkbox } from './checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './table';
+import EditTaskDialog from '@/components/EditTaskDialog';
+import { Task } from '@/hooks/useTasks';
 
 export interface Column<T> {
   key: keyof T | string;
@@ -24,6 +26,7 @@ export interface DataTableProps<T> {
   onBulkAction?: (action: string, items: T[]) => void;
   searchPlaceholder?: string;
   emptyMessage?: string;
+  loading?: boolean;
   actions?: Array<{
     label: string;
     onClick: (item: T) => void;
@@ -39,6 +42,7 @@ export function DataTable<T extends { id: string }>({
   onBulkAction,
   searchPlaceholder = "Search...",
   emptyMessage = "No data available",
+  loading = false,
   actions = []
 }: DataTableProps<T>) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -119,6 +123,18 @@ export function DataTable<T extends { id: string }>({
     const value = column.key === 'id' ? item.id : (item as any)[column.key];
     return String(value || '');
   };
+
+  const isTask = (item: T): item is T & Task => {
+    return 'title' in item && 'status' in item;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -233,11 +249,6 @@ export function DataTable<T extends { id: string }>({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          {onEdit && (
-                            <DropdownMenuItem onClick={() => onEdit(item)}>
-                              Edit
-                            </DropdownMenuItem>
-                          )}
                           {actions.map((action, index) => (
                             <DropdownMenuItem 
                               key={index}
@@ -247,6 +258,16 @@ export function DataTable<T extends { id: string }>({
                               {action.label}
                             </DropdownMenuItem>
                           ))}
+                          {onEdit && isTask(item) && (
+                            <EditTaskDialog 
+                              task={item}
+                              trigger={
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                  Edit
+                                </DropdownMenuItem>
+                              }
+                            />
+                          )}
                           {onDelete && (
                             <DropdownMenuItem 
                               onClick={() => onDelete(item)}

@@ -1,304 +1,159 @@
-
-import React, { useState, useMemo } from 'react';
-import { useTasks } from '@/hooks/useTasks';
-import TaskKanbanBoard from '@/components/TaskKanbanBoard';
-import TaskFormDialog from '@/components/TaskFormDialog';
-import ErrorDisplay from '@/components/ErrorDisplay';
-import LoadingDisplay from '@/components/LoadingDisplay';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { DataTable, Column } from '@/components/ui/data-table';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  MoreHorizontal,
-  ClipboardList,
-  Calendar,
-  Clock,
-  CheckCircle2,
-  Zap,
-  Kanban,
-  List as ListIcon
-} from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Plus, Calendar, Clock, User } from 'lucide-react';
+import { useTasks, Task } from '@/hooks/useTasks';
+import { useJobs } from '@/hooks/useJobs';
+import TaskFormDialog from '@/components/TaskFormDialog';
+import EditTaskDialog from '@/components/EditTaskDialog';
+import ViewTaskDialog from '@/components/ViewTaskDialog';
+import TaskKanbanBoard from '@/components/TaskKanbanBoard';
 import { TASK_STATUS_COLORS, TASK_PRIORITY_COLORS } from '@/types/supabase-enums';
 
-const TasksPage = () => {
-  const { tasks, loading, error, fetchTasks } = useTasks();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
+const TasksPage: React.FC = () => {
+  const { tasks, loading, deleteTask } = useTasks();
+  const { jobs } = useJobs();
+  const [viewTask, setViewTask] = useState<Task | null>(null);
 
-  const filteredTasks = useMemo(() => {
-    if (!searchTerm.trim()) return tasks;
-    
-    const searchLower = searchTerm.toLowerCase();
-    return tasks.filter(task => {
-      const title = task.title.toLowerCase();
-      const description = (task.description || '').toLowerCase();
-      const status = (task.status || '').toLowerCase();
-      const priority = (task.priority || '').toLowerCase();
-      
-      return title.includes(searchLower) ||
-             description.includes(searchLower) ||
-             status.includes(searchLower) ||
-             priority.includes(searchLower);
-    });
-  }, [tasks, searchTerm]);
-
-  const taskStats = {
-    total: tasks.length,
-    pending: tasks.filter(t => t.status === 'pending').length,
-    inProgress: tasks.filter(t => t.status === 'in_progress').length,
-    completed: tasks.filter(t => t.status === 'completed').length,
+  const getJobTitle = (jobId: string) => {
+    const job = jobs.find(j => j.id === jobId);
+    return job ? job.title : 'Unknown Job';
   };
 
-  if (loading) {
-    return <LoadingDisplay message="Loading your tasks..." size="lg" />;
-  }
+  const handleDelete = async (task: Task) => {
+    await deleteTask(task.id);
+  };
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center p-6">
-        <ErrorDisplay 
-          error={error}
-          onRetry={fetchTasks}
-          title="Failed to load tasks"
-          className="max-w-md"
-        />
-      </div>
-    );
-  }
+  const handleView = (task: Task) => {
+    setViewTask(task);
+  };
+
+  const columns: Column<Task>[] = [
+    {
+      key: 'title',
+      header: 'Title',
+      render: (task) => (
+        <div className="font-medium">{task.title}</div>
+      )
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (task) => (
+        <Badge className={TASK_STATUS_COLORS[task.status || 'pending']}>
+          {task.status}
+        </Badge>
+      )
+    },
+    {
+      key: 'priority',
+      header: 'Priority',
+      render: (task) => (
+        <Badge className={TASK_PRIORITY_COLORS[task.priority || 'medium']}>
+          {task.priority}
+        </Badge>
+      )
+    },
+    {
+      key: 'job_id',
+      header: 'Job',
+      render: (task) => task.job_id ? getJobTitle(task.job_id) : '-'
+    },
+    {
+      key: 'due_date',
+      header: 'Due Date',
+      render: (task) => task.due_date ? (
+        <div className="flex items-center gap-1">
+          <Calendar className="h-4 w-4" />
+          {new Date(task.due_date).toLocaleDateString()}
+        </div>
+      ) : '-'
+    },
+    {
+      key: 'estimated_hours',
+      header: 'Est. Hours',
+      render: (task) => task.estimated_hours ? (
+        <div className="flex items-center gap-1">
+          <Clock className="h-4 w-4" />
+          {task.estimated_hours}h
+        </div>
+      ) : '-'
+    }
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Hero Header */}
-      <div className="bg-gradient-to-r from-primary to-blue-600 text-white py-12">
-        <div className="container mx-auto px-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl font-bold mb-2">Task Management</h1>
-              <p className="text-blue-100 text-lg">Organize, track, and complete your team's work efficiently</p>
-            </div>
-            <div className="hidden md:block">
-              <img 
-                src="https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=300&h=200&fit=crop"
-                alt="Team collaboration"
-                className="rounded-lg shadow-lg w-64 h-32 object-cover"
-              />
-            </div>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Tasks</h1>
+        <TaskFormDialog 
+          trigger={
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              New Task
+            </Button>
+          }
+        />
       </div>
 
-      <div className="container mx-auto px-6 py-8">
-        {/* Action Bar */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <TaskFormDialog />
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input 
-                placeholder="Search tasks by title, description, status, or priority..." 
-                className="pl-10 w-80"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button 
-              variant={viewMode === 'kanban' ? 'default' : 'outline'}
-              onClick={() => setViewMode('kanban')}
-            >
-              <Kanban className="h-4 w-4 mr-2" />
-              Kanban
-            </Button>
-            <Button 
-              variant={viewMode === 'list' ? 'default' : 'outline'}
-              onClick={() => setViewMode('list')}
-            >
-              <ListIcon className="h-4 w-4 mr-2" />
-              List
-            </Button>
-            <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white">
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
-            </Button>
-          </div>
-        </div>
+      <Tabs defaultValue="kanban" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="kanban">Kanban View</TabsTrigger>
+          <TabsTrigger value="list">List View</TabsTrigger>
+        </TabsList>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-lg hover:shadow-xl transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-100 text-sm font-medium">Total Tasks</p>
-                  <p className="text-3xl font-bold">{taskStats.total}</p>
-                </div>
-                <ClipboardList className="h-12 w-12 text-blue-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-yellow-500 to-orange-500 text-white border-0 shadow-lg hover:shadow-xl transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-yellow-100 text-sm font-medium">Pending</p>
-                  <p className="text-3xl font-bold">{taskStats.pending}</p>
-                </div>
-                <Clock className="h-12 w-12 text-yellow-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-orange-500 to-red-500 text-white border-0 shadow-lg hover:shadow-xl transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-orange-100 text-sm font-medium">In Progress</p>
-                  <p className="text-3xl font-bold">{taskStats.inProgress}</p>
-                </div>
-                <Zap className="h-12 w-12 text-orange-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-green-500 to-emerald-600 text-white border-0 shadow-lg hover:shadow-xl transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-100 text-sm font-medium">Completed</p>
-                  <p className="text-3xl font-bold">{taskStats.completed}</p>
-                </div>
-                <CheckCircle2 className="h-12 w-12 text-green-200" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content */}
-        {viewMode === 'kanban' ? (
+        <TabsContent value="kanban">
           <TaskKanbanBoard />
-        ) : (
-          <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 border-b">
-              <CardTitle className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                <ClipboardList className="h-5 w-5" />
-                Task List
-              </CardTitle>
+        </TabsContent>
+
+        <TabsContent value="list">
+          <Card>
+            <CardHeader>
+              <CardTitle>All Tasks</CardTitle>
             </CardHeader>
-            <CardContent className="p-0">
-              {filteredTasks.length === 0 ? (
-                <div className="text-center py-16">
-                  <img 
-                    src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=200&fit=crop"
-                    alt="Empty state"
-                    className="mx-auto w-48 h-32 object-cover rounded-lg mb-6 opacity-60"
-                  />
-                  {searchTerm ? (
-                    <div>
-                      <p className="text-gray-500 text-lg mb-2">No tasks found matching "{searchTerm}"</p>
-                      <p className="text-sm text-gray-400">Try adjusting your search terms</p>
-                    </div>
-                  ) : (
-                    <div>
-                      <p className="text-gray-500 text-lg mb-4">No tasks found.</p>
-                      <TaskFormDialog trigger={
-                        <Button className="bg-gradient-to-r from-blue-500 to-indigo-600">
-                          <Plus className="h-4 w-4 mr-2" />
-                          Create Your First Task
-                        </Button>
-                      } />
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Priority</TableHead>
-                      <TableHead>Due Date</TableHead>
-                      <TableHead>Hours</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredTasks.map((task) => (
-                      <TableRow key={task.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{task.title}</p>
-                            {task.description && (
-                              <p className="text-sm text-gray-500 truncate max-w-xs">{task.description}</p>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={TASK_STATUS_COLORS[task.status || 'pending']}>
-                            {task.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={TASK_PRIORITY_COLORS[task.priority || 'medium']}>
-                            {task.priority}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-gray-600">
-                            {task.estimated_hours || 0}h est
-                            {task.actual_hours ? ` / ${task.actual_hours}h actual` : ''}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <TaskFormDialog 
-                                task={task}
-                                trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}>Edit Task</DropdownMenuItem>}
-                              />
-                              <DropdownMenuItem className="text-red-600">
-                                Delete Task
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
+            <CardContent>
+              <DataTable
+                data={tasks}
+                columns={columns}
+                loading={loading}
+                emptyMessage="No tasks found"
+                actions={[
+                  {
+                    label: 'View',
+                    onClick: handleView
+                  },
+                  {
+                    label: 'Edit',
+                    onClick: (task) => {
+                      // Edit functionality handled by EditTaskDialog
+                    }
+                  },
+                  {
+                    label: 'Delete',
+                    onClick: handleDelete,
+                    variant: 'destructive'
+                  }
+                ]}
+                onEdit={(task) => {
+                  // This will be handled by the DataTable's internal edit trigger
+                }}
+                onDelete={handleDelete}
+              />
             </CardContent>
           </Card>
-        )}
-      </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* View Task Dialog */}
+      {viewTask && (
+        <ViewTaskDialog
+          task={viewTask}
+          open={!!viewTask}
+          onOpenChange={(open) => !open && setViewTask(null)}
+        />
+      )}
     </div>
   );
 };
