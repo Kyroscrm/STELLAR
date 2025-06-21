@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import EstimateForm from '@/components/EstimateForm';
 import { useEstimates } from '@/hooks/useEstimates';
-import { supabase } from '@/integrations/supabase/client';
+import { useEstimateLineItems } from '@/hooks/useEstimateLineItems';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -21,36 +21,8 @@ const NewEstimateDialog: React.FC<NewEstimateDialogProps> = ({
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { createEstimate } = useEstimates();
+  const { addMultipleLineItems } = useEstimateLineItems();
   const { user } = useAuth();
-
-  const addLineItemsToEstimate = async (estimateId: string, lineItems: any[]) => {
-    try {
-      for (const item of lineItems) {
-        if (item.description.trim()) {
-          const total = Number(item.quantity) * Number(item.unit_price);
-          
-          const { error } = await supabase
-            .from('estimate_line_items')
-            .insert({
-              estimate_id: estimateId,
-              description: item.description,
-              quantity: item.quantity,
-              unit_price: item.unit_price,
-              total,
-              sort_order: 0
-            });
-
-          if (error) {
-            console.error('Error adding line item:', error);
-            throw error;
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error adding line items:', error);
-      toast.error('Failed to add some line items');
-    }
-  };
 
   const handleSuccess = async (data: any) => {
     setIsSubmitting(true);
@@ -73,11 +45,12 @@ const NewEstimateDialog: React.FC<NewEstimateDialogProps> = ({
 
       const result = await createEstimate(estimateData);
       
-      if (result && data.lineItems && data.lineItems.length > 0) {
-        await addLineItemsToEstimate(result.id, data.lineItems);
-      }
-      
       if (result) {
+        // Use the centralized line item logic from the hook
+        if (data.lineItems && data.lineItems.length > 0) {
+          await addMultipleLineItems(result.id, data.lineItems);
+        }
+        
         setOpen(false);
         onSuccess?.();
         toast.success('Estimate created successfully');

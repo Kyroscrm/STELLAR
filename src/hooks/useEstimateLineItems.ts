@@ -36,7 +36,7 @@ export const useEstimateLineItems = (estimateId?: string) => {
     }
   };
 
-  const addLineItem = async (itemData: Omit<EstimateLineItemInsert, 'estimate_id'>) => {
+  const addLineItem = async (itemData: Omit<EstimateLineItemInsert, 'estimate_id' | 'total'>) => {
     if (!estimateId) {
       toast.error('No estimate ID provided');
       return null;
@@ -81,6 +81,70 @@ export const useEstimateLineItems = (estimateId?: string) => {
       // Rollback optimistic update
       setLineItems(prev => prev.filter(item => item.id !== optimisticItem.id));
       toast.error('Failed to add line item');
+      return null;
+    }
+  };
+
+  const addMultipleLineItems = async (targetEstimateId: string, itemsData: Array<Omit<EstimateLineItemInsert, 'estimate_id' | 'total' | 'sort_order'>>) => {
+    if (!targetEstimateId) {
+      toast.error('Estimate ID is required to add line items');
+      return null;
+    }
+
+    if (!itemsData || itemsData.length === 0) {
+      return [];
+    }
+
+    // Filter out empty line items
+    const validItems = itemsData.filter(item => item.description && item.description.trim());
+    
+    if (validItems.length === 0) {
+      return [];
+    }
+
+    const itemsToInsert = validItems.map((item, index) => ({
+      estimate_id: targetEstimateId,
+      description: item.description,
+      quantity: item.quantity || 1,
+      unit_price: item.unit_price || 0,
+      sort_order: index
+    }));
+
+    // Optimistic updates
+    const optimisticItems: EstimateLineItem[] = itemsToInsert.map((item, index) => ({
+      id: `temp-${Date.now()}-${index}`,
+      estimate_id: targetEstimateId,
+      description: item.description,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      total: Number(item.quantity) * Number(item.unit_price),
+      sort_order: item.sort_order,
+      created_at: new Date().toISOString(),
+    }));
+
+    setLineItems(prev => [...prev, ...optimisticItems]);
+
+    try {
+      const { data, error } = await supabase
+        .from('estimate_line_items')
+        .insert(itemsToInsert)
+        .select();
+
+      if (error) throw error;
+
+      // Replace optimistic items with real data
+      setLineItems(prev => {
+        const newItems = prev.filter(item => !item.id.startsWith('temp-'));
+        return [...newItems, ...(data || [])].sort((a, b) => a.sort_order - b.sort_order);
+      });
+
+      toast.success(`${data?.length || 0} line items added successfully`);
+      return data;
+    } catch (error: any) {
+      console.error('Error adding multiple line items:', error);
+      // Rollback optimistic updates
+      setLineItems(prev => prev.filter(item => !optimisticItems.some(opt => opt.id === item.id)));
+      toast.error('Failed to add line items');
       return null;
     }
   };
@@ -181,6 +245,7 @@ export const useEstimateLineItems = (estimateId?: string) => {
     error,
     fetchLineItems,
     addLineItem,
+    addMultipleLineItems,
     updateLineItem,
     deleteLineItem,
     reorderLineItems
