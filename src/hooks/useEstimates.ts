@@ -4,49 +4,27 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useOptimisticUpdate } from './useOptimisticUpdate';
+import { useErrorHandler } from './useErrorHandler';
 
 export type Estimate = Tables<'estimates'>;
-type EstimateInsert = Omit<TablesInsert<'estimates'>, 'user_id'>;
-type EstimateUpdate = TablesUpdate<'estimates'>;
-
-// Line item type for estimates
-export type LineItem = {
-  id?: string;
-  description: string;
-  quantity: number;
-  unit_price: number;
-  total: number;
-  sort_order?: number;
-};
-
-// Extended Estimate type with customer data
-export type EstimateWithCustomer = Estimate & {
-  customers?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email?: string;
-    phone?: string;
-  };
-};
+export type EstimateLineItem = Tables<'estimate_line_items'>;
 
 // Extended Estimate type with line items
 export type EstimateWithLineItems = Estimate & {
-  estimate_line_items?: Array<{
-    id: string;
-    description: string;
-    quantity: number;
-    unit_price: number;
-    total: number;
-    sort_order: number;
-  }>;
+  estimate_line_items: EstimateLineItem[];
 };
 
+type EstimateInsert = Omit<TablesInsert<'estimates'>, 'user_id'>;
+type EstimateUpdate = TablesUpdate<'estimates'>;
+
 export const useEstimates = () => {
-  const [estimates, setEstimates] = useState<EstimateWithCustomer[]>([]);
+  const [estimates, setEstimates] = useState<EstimateWithLineItems[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const { user, session } = useAuth();
+  const { executeUpdate } = useOptimisticUpdate();
+  const { handleError } = useErrorHandler();
 
   const validateUserAndSession = () => {
     if (!user || !session) {
@@ -70,13 +48,7 @@ export const useEstimates = () => {
         .from('estimates')
         .select(`
           *,
-          customers (
-            id,
-            first_name,
-            last_name,
-            email,
-            phone
-          )
+          estimate_line_items(*)
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -88,67 +60,98 @@ export const useEstimates = () => {
     } catch (error: any) {
       console.error('Error fetching estimates:', error);
       setError(error);
-      toast.error('Failed to fetch estimates');
+      handleError(error, { title: 'Failed to fetch estimates' });
       setEstimates([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const createEstimate = async (estimateData: EstimateInsert) => {
+  const createEstimate = async (estimateData: EstimateInsert & { lineItems?: any[] }) => {
     if (!validateUserAndSession()) return null;
 
-    const optimisticEstimate: EstimateWithCustomer = {
+    const { lineItems, ...estimateFields } = estimateData;
+    const optimisticEstimate: EstimateWithLineItems = {
       id: `temp-${Date.now()}`,
-      ...estimateData,
+      ...estimateFields,
       user_id: user.id,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    } as EstimateWithCustomer;
-
-    // Optimistic update
-    setEstimates(prev => [optimisticEstimate, ...prev]);
+      updated_at: new Date().toISOString(),
+      estimate_line_items: []
+    } as EstimateWithLineItems;
 
     try {
-      console.log('Creating estimate:', estimateData);
-      
-      const { data, error } = await supabase
-        .from('estimates')
-        .insert({ ...estimateData, user_id: user.id })
-        .select(`
-          *,
-          customers (
-            id,
-            first_name,
-            last_name,
-            email,
-            phone
-          )
-        `)
-        .single();
+      return await executeUpdate(
+        // Optimistic update
+        () => setEstimates(prev => [optimisticEstimate, ...prev]),
+        // Actual update
+        async () => {
+          console.log('Creating estimate:', estimateFields);
+          
+          const { data: estimate, error } = await supabase
+            .from('estimates')
+            .insert({ ...estimateFields, user_id: user.id })
+            .select(`
+              *,
+              estimate_line_items(*)
+            `)
+            .single();
 
-      if (error) throw error;
-      
-      // Replace optimistic with real data
-      setEstimates(prev => prev.map(e => e.id === optimisticEstimate.id ? data : e));
-      
-      // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'estimate',
-        entity_id: data.id,
-        action: 'created',
-        description: `Estimate created: ${data.title}`
-      });
+          if (error) throw error;
 
-      toast.success('Estimate created successfully');
-      console.log('Estimate created successfully:', data);
-      return data;
+          // Add line items if provided
+          if (lineItems && lineItems.length > 0) {
+            const lineItemsToInsert = lineItems.map(item => ({
+              estimate_id: estimate.id,
+              description: item.description,
+              quantity: item.quantity,
+              unit_price: item.unit_price
+            }));
+
+            const { error: lineItemsError } = await supabase
+              .from('estimate_line_items')
+              .insert(lineItemsToInsert);
+
+            if (lineItemsError) throw lineItemsError;
+
+            // Fetch updated estimate with line items
+            const { data: updatedEstimate, error: fetchError } = await supabase
+              .from('estimates')
+              .select(`
+                *,
+                estimate_line_items(*)
+              `)
+              .eq('id', estimate.id)
+              .single();
+
+            if (fetchError) throw fetchError;
+            estimate.estimate_line_items = updatedEstimate.estimate_line_items;
+          }
+          
+          // Replace optimistic with real data
+          setEstimates(prev => prev.map(e => e.id === optimisticEstimate.id ? estimate : e));
+          
+          // Log activity
+          await supabase.from('activity_logs').insert({
+            user_id: user.id,
+            entity_type: 'estimate',
+            entity_id: estimate.id,
+            action: 'created',
+            description: `Estimate created: ${estimate.title}`
+          });
+
+          console.log('Estimate created successfully:', estimate);
+          return estimate;
+        },
+        // Rollback
+        () => setEstimates(prev => prev.filter(e => e.id !== optimisticEstimate.id)),
+        {
+          successMessage: 'Estimate created successfully',
+          errorMessage: 'Failed to create estimate'
+        }
+      );
     } catch (error: any) {
       console.error('Error creating estimate:', error);
-      // Rollback optimistic update
-      setEstimates(prev => prev.filter(e => e.id !== optimisticEstimate.id));
-      toast.error(error.message || 'Failed to create estimate');
       return null;
     }
   };
@@ -163,52 +166,53 @@ export const useEstimates = () => {
       return false;
     }
 
-    // Optimistic update
     const optimisticEstimate = { ...originalEstimate, ...updates, updated_at: new Date().toISOString() };
-    setEstimates(prev => prev.map(e => e.id === id ? optimisticEstimate : e));
 
     try {
-      console.log('Updating estimate:', id, updates);
-      
-      const { data, error } = await supabase
-        .from('estimates')
-        .update(updates)
-        .eq('id', id)
-        .eq('user_id', user.id)
-        .select(`
-          *,
-          customers (
-            id,
-            first_name,
-            last_name,
-            email,
-            phone
-          )
-        `)
-        .single();
+      return await executeUpdate(
+        // Optimistic update
+        () => setEstimates(prev => prev.map(e => e.id === id ? optimisticEstimate : e)),
+        // Actual update
+        async () => {
+          console.log('Updating estimate:', id, updates);
+          
+          const { data, error } = await supabase
+            .from('estimates')
+            .update(updates)
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .select(`
+              *,
+              estimate_line_items(*)
+            `)
+            .single();
 
-      if (error) throw error;
-      
-      // Update with real data
-      setEstimates(prev => prev.map(e => e.id === id ? data : e));
-      
-      // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'estimate',
-        entity_id: id,
-        action: 'updated',
-        description: `Estimate updated: ${data.title}`
-      });
+          if (error) throw error;
+          
+          // Update with real data
+          setEstimates(prev => prev.map(e => e.id === id ? data : e));
+          
+          // Log activity
+          await supabase.from('activity_logs').insert({
+            user_id: user.id,
+            entity_type: 'estimate',
+            entity_id: id,
+            action: 'updated',
+            description: `Estimate updated: ${data.title}`
+          });
 
-      toast.success('Estimate updated successfully');
-      console.log('Estimate updated successfully:', data);
-      return true;
+          console.log('Estimate updated successfully:', data);
+          return true;
+        },
+        // Rollback
+        () => setEstimates(prev => prev.map(e => e.id === id ? originalEstimate : e)),
+        {
+          successMessage: 'Estimate updated successfully',
+          errorMessage: 'Failed to update estimate'
+        }
+      );
     } catch (error: any) {
       console.error('Error updating estimate:', error);
-      // Rollback optimistic update
-      setEstimates(prev => prev.map(e => e.id === id ? originalEstimate : e));
-      toast.error(error.message || 'Failed to update estimate');
       return false;
     }
   };
@@ -223,38 +227,45 @@ export const useEstimates = () => {
       return;
     }
 
-    // Optimistic update
-    setEstimates(prev => prev.filter(e => e.id !== id));
-
     try {
-      console.log('Deleting estimate:', id);
-      
-      const { error } = await supabase
-        .from('estimates')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);
+      await executeUpdate(
+        // Optimistic update
+        () => setEstimates(prev => prev.filter(e => e.id !== id)),
+        // Actual update
+        async () => {
+          console.log('Deleting estimate:', id);
+          
+          const { error } = await supabase
+            .from('estimates')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id);
 
-      if (error) throw error;
-      
-      // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'estimate',
-        entity_id: id,
-        action: 'deleted',
-        description: `Estimate deleted: ${originalEstimate.title}`
-      });
+          if (error) throw error;
+          
+          // Log activity
+          await supabase.from('activity_logs').insert({
+            user_id: user.id,
+            entity_type: 'estimate',
+            entity_id: id,
+            action: 'deleted',
+            description: `Estimate deleted: ${originalEstimate.title}`
+          });
 
-      toast.success('Estimate deleted successfully');
-      console.log('Estimate deleted successfully');
+          console.log('Estimate deleted successfully');
+          return true;
+        },
+        // Rollback
+        () => setEstimates(prev => [...prev, originalEstimate].sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )),
+        {
+          successMessage: 'Estimate deleted successfully',
+          errorMessage: 'Failed to delete estimate'
+        }
+      );
     } catch (error: any) {
       console.error('Error deleting estimate:', error);
-      // Rollback optimistic update
-      setEstimates(prev => [...prev, originalEstimate].sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      ));
-      toast.error(error.message || 'Failed to delete estimate');
     }
   };
 
@@ -268,7 +279,6 @@ export const useEstimates = () => {
     error,
     fetchEstimates,
     createEstimate,
-    addEstimate: createEstimate, // Alias for backward compatibility
     updateEstimate,
     deleteEstimate
   };
