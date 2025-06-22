@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
@@ -8,6 +7,12 @@ import { useOptimisticUpdate } from './useOptimisticUpdate';
 import { useErrorHandler } from './useErrorHandler';
 
 export type Job = Tables<'jobs'>;
+export type JobWithCustomer = Job & {
+  customers?: {
+    first_name: string;
+    last_name: string;
+  };
+};
 type JobInsert = Omit<TablesInsert<'jobs'>, 'user_id'>;
 type JobUpdate = TablesUpdate<'jobs'>;
 

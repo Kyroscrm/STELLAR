@@ -8,11 +8,12 @@ import { useOptimisticUpdate } from './useOptimisticUpdate';
 import { useErrorHandler } from './useErrorHandler';
 
 export type Estimate = Tables<'estimates'>;
-export type EstimateLineItem = Tables<'estimate_line_items'>;
-
-// Extended Estimate type with line items
 export type EstimateWithLineItems = Estimate & {
-  estimate_line_items: EstimateLineItem[];
+  estimate_line_items: Tables<'estimate_line_items'>[];
+  customers?: {
+    first_name: string;
+    last_name: string;
+  };
 };
 
 type EstimateInsert = Omit<TablesInsert<'estimates'>, 'user_id'>;
@@ -48,7 +49,11 @@ export const useEstimates = () => {
         .from('estimates')
         .select(`
           *,
-          estimate_line_items(*)
+          estimate_line_items (*),
+          customers (
+            first_name,
+            last_name
+          )
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -77,7 +82,7 @@ export const useEstimates = () => {
       user_id: user.id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      estimate_line_items: []
+      estimate_line_items: lineItems || []
     } as EstimateWithLineItems;
 
     try {
@@ -88,60 +93,58 @@ export const useEstimates = () => {
         async () => {
           console.log('Creating estimate:', estimateFields);
           
-          const { data: estimate, error } = await supabase
+          const { data, error } = await supabase
             .from('estimates')
             .insert({ ...estimateFields, user_id: user.id })
-            .select(`
-              *,
-              estimate_line_items(*)
-            `)
+            .select()
             .single();
 
           if (error) throw error;
-
-          // Add line items if provided
+          
+          // Create line items if provided
           if (lineItems && lineItems.length > 0) {
             const lineItemsToInsert = lineItems.map(item => ({
-              estimate_id: estimate.id,
-              description: item.description,
-              quantity: item.quantity,
-              unit_price: item.unit_price
+              ...item,
+              estimate_id: data.id
             }));
-
+            
             const { error: lineItemsError } = await supabase
               .from('estimate_line_items')
               .insert(lineItemsToInsert);
-
+              
             if (lineItemsError) throw lineItemsError;
-
-            // Fetch updated estimate with line items
-            const { data: updatedEstimate, error: fetchError } = await supabase
-              .from('estimates')
-              .select(`
-                *,
-                estimate_line_items(*)
-              `)
-              .eq('id', estimate.id)
-              .single();
-
-            if (fetchError) throw fetchError;
-            estimate.estimate_line_items = updatedEstimate.estimate_line_items;
           }
           
+          // Fetch the complete estimate with line items
+          const { data: completeEstimate, error: fetchError } = await supabase
+            .from('estimates')
+            .select(`
+              *,
+              estimate_line_items (*),
+              customers (
+                first_name,
+                last_name
+              )
+            `)
+            .eq('id', data.id)
+            .single();
+            
+          if (fetchError) throw fetchError;
+          
           // Replace optimistic with real data
-          setEstimates(prev => prev.map(e => e.id === optimisticEstimate.id ? estimate : e));
+          setEstimates(prev => prev.map(e => e.id === optimisticEstimate.id ? completeEstimate : e));
           
           // Log activity
           await supabase.from('activity_logs').insert({
             user_id: user.id,
             entity_type: 'estimate',
-            entity_id: estimate.id,
+            entity_id: data.id,
             action: 'created',
-            description: `Estimate created: ${estimate.title}`
+            description: `Estimate created: ${data.title}`
           });
 
-          console.log('Estimate created successfully:', estimate);
-          return estimate;
+          console.log('Estimate created successfully:', completeEstimate);
+          return completeEstimate;
         },
         // Rollback
         () => setEstimates(prev => prev.filter(e => e.id !== optimisticEstimate.id)),
@@ -181,16 +184,29 @@ export const useEstimates = () => {
             .update(updates)
             .eq('id', id)
             .eq('user_id', user.id)
-            .select(`
-              *,
-              estimate_line_items(*)
-            `)
+            .select()
             .single();
 
           if (error) throw error;
           
+          // Fetch complete estimate with relations
+          const { data: completeEstimate, error: fetchError } = await supabase
+            .from('estimates')
+            .select(`
+              *,
+              estimate_line_items (*),
+              customers (
+                first_name,
+                last_name
+              )
+            `)
+            .eq('id', id)
+            .single();
+            
+          if (fetchError) throw fetchError;
+          
           // Update with real data
-          setEstimates(prev => prev.map(e => e.id === id ? data : e));
+          setEstimates(prev => prev.map(e => e.id === id ? completeEstimate : e));
           
           // Log activity
           await supabase.from('activity_logs').insert({
@@ -201,7 +217,7 @@ export const useEstimates = () => {
             description: `Estimate updated: ${data.title}`
           });
 
-          console.log('Estimate updated successfully:', data);
+          console.log('Estimate updated successfully:', completeEstimate);
           return true;
         },
         // Rollback

@@ -93,15 +93,29 @@ export const useDataValidation = () => {
     schema: z.ZodSchema<T>
   ): Promise<{ isValid: boolean; error?: string }> => {
     try {
-      // Create a temporary object with just this field
+      // Create a simple validation object for the field
       const tempData = { [fieldName]: value };
-      const fieldSchema = schema.pick({ [fieldName]: true } as any);
       
-      await fieldSchema.parseAsync(tempData);
+      // Try to parse just this field value directly
+      if (schema instanceof z.ZodObject) {
+        const shape = schema._def.schema || schema.shape;
+        if (shape && shape[fieldName]) {
+          await shape[fieldName].parseAsync(value);
+        } else {
+          // Fallback: validate the whole object
+          await schema.parseAsync(tempData);
+        }
+      } else {
+        // For non-object schemas, validate directly
+        await schema.parseAsync(value);
+      }
+      
       return { isValid: true };
     } catch (error: any) {
       if (error instanceof z.ZodError) {
-        const fieldError = error.errors.find(err => err.path.includes(fieldName));
+        const fieldError = error.errors.find(err => 
+          err.path.length === 0 || err.path.includes(fieldName)
+        );
         return { 
           isValid: false, 
           error: fieldError?.message || 'Invalid value' 
