@@ -26,6 +26,7 @@ export type InvoiceFormData = Omit<InvoiceInsert, 'user_id'> & {
   customer_id?: string;
   job_id?: string;
   estimate_id?: string;
+  payment_status?: 'completed' | 'failed' | 'pending' | 'refunded';
 };
 
 export const useInvoices = () => {
@@ -82,6 +83,8 @@ export const useInvoices = () => {
         customer_id: invoiceFields.customer_id && invoiceFields.customer_id.trim() !== '' ? invoiceFields.customer_id : undefined,
         job_id: invoiceFields.job_id && invoiceFields.job_id.trim() !== '' ? invoiceFields.job_id : undefined,
         estimate_id: invoiceFields.estimate_id && invoiceFields.estimate_id.trim() !== '' ? invoiceFields.estimate_id : undefined,
+        // Ensure payment_status uses proper enum values, default to 'pending'
+        payment_status: invoiceFields.payment_status || 'pending',
         user_id: user.id
       };
 
@@ -157,6 +160,11 @@ export const useInvoices = () => {
       if (cleanedUpdates.customer_id === '') cleanedUpdates.customer_id = undefined;
       if (cleanedUpdates.job_id === '') cleanedUpdates.job_id = undefined;
       if (cleanedUpdates.estimate_id === '') cleanedUpdates.estimate_id = undefined;
+
+      // Ensure payment_status uses valid enum values if being updated
+      if (cleanedUpdates.payment_status && !['completed', 'failed', 'pending', 'refunded'].includes(cleanedUpdates.payment_status as string)) {
+        delete cleanedUpdates.payment_status;
+      }
 
       // Remove undefined fields
       Object.keys(cleanedUpdates).forEach(key => {

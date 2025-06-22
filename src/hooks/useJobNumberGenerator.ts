@@ -12,19 +12,16 @@ export const useJobNumberGenerator = () => {
 
     setLoading(true);
     try {
-      // Get the count of existing estimates for this user
-      const { count, error } = await supabase
-        .from('estimates')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
+      const { data, error } = await supabase.rpc('generate_document_number', {
+        doc_type: 'estimate',
+        user_uuid: user.id
+      });
 
       if (error) throw error;
-
-      const nextNumber = (count || 0) + 1;
-      return `EST-${nextNumber.toString().padStart(3, '0')}`;
+      return data || 'EST-001';
     } catch (error) {
       console.error('Error generating estimate number:', error);
-      // Fallback to timestamp-based number
+      // Fallback to timestamp-based number only if RPC fails
       return `EST-${Date.now().toString().slice(-6)}`;
     } finally {
       setLoading(false);
@@ -36,19 +33,16 @@ export const useJobNumberGenerator = () => {
 
     setLoading(true);
     try {
-      // Get the count of existing invoices for this user
-      const { count, error } = await supabase
-        .from('invoices')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
+      const { data, error } = await supabase.rpc('generate_document_number', {
+        doc_type: 'invoice',
+        user_uuid: user.id
+      });
 
       if (error) throw error;
-
-      const nextNumber = (count || 0) + 1;
-      return `INV-${nextNumber.toString().padStart(3, '0')}`;
+      return data || 'INV-001';
     } catch (error) {
       console.error('Error generating invoice number:', error);
-      // Fallback to timestamp-based number
+      // Fallback to timestamp-based number only if RPC fails
       return `INV-${Date.now().toString().slice(-6)}`;
     } finally {
       setLoading(false);
@@ -60,19 +54,16 @@ export const useJobNumberGenerator = () => {
 
     setLoading(true);
     try {
-      // Get the count of existing jobs for this user
-      const { count, error } = await supabase
-        .from('jobs')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
+      const { data, error } = await supabase.rpc('generate_document_number', {
+        doc_type: 'job',
+        user_uuid: user.id
+      });
 
       if (error) throw error;
-
-      const nextNumber = (count || 0) + 1;
-      return `JOB-${nextNumber.toString().padStart(3, '0')}`;
+      return data || 'JOB-001';
     } catch (error) {
       console.error('Error generating job number:', error);
-      // Fallback to timestamp-based number
+      // Fallback to timestamp-based number only if RPC fails
       return `JOB-${Date.now().toString().slice(-6)}`;
     } finally {
       setLoading(false);

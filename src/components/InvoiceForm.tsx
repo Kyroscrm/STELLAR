@@ -52,6 +52,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
       due_date: initialData?.due_date || '',
       tax_rate: initialData?.tax_rate || 0,
       status: (initialData?.status as any) || 'draft',
+      payment_status: (initialData?.payment_status as any) || 'pending',
       notes: initialData?.notes || '',
       payment_terms: initialData?.payment_terms || '',
     },
@@ -306,7 +307,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <FormField
             control={form.control}
             name="due_date"
@@ -362,6 +363,30 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                     <SelectItem value="paid">Paid</SelectItem>
                     <SelectItem value="overdue">Overdue</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="payment_status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Payment Status</FormLabel>
+                <Select onValue={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                    <SelectItem value="refunded">Refunded</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

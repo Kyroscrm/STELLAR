@@ -65,7 +65,7 @@ export const jobSchema = z.object({
   notes: z.string().optional(),
 });
 
-// Invoice validation schema
+// Invoice validation schema - Updated payment_status to use proper enum
 export const invoiceSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
@@ -76,7 +76,7 @@ export const invoiceSchema = z.object({
   due_date: z.string().optional(),
   tax_rate: z.number().min(0).max(1).optional(),
   status: z.enum(['draft', 'sent', 'paid', 'overdue', 'cancelled']).optional(),
-  payment_status: z.string().optional(),
+  payment_status: z.enum(['completed', 'failed', 'pending', 'refunded']).optional(),
   payment_terms: z.string().optional(),
   notes: z.string().optional(),
 });
