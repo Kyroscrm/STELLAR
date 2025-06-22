@@ -12,13 +12,19 @@ export const useJobNumberGenerator = () => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('generate_document_number', {
+      // Try to use the RPC function, but fall back if it doesn't exist
+      const { data, error } = await supabase.rpc('generate_document_number' as any, {
         doc_type: 'estimate',
         user_uuid: user.id
       });
 
-      if (error) throw error;
-      return data || 'EST-001';
+      if (error) {
+        console.warn('RPC function not available, using fallback:', error);
+        // Fallback to timestamp-based number
+        return `EST-${Date.now().toString().slice(-6)}`;
+      }
+      
+      return (data as string) || 'EST-001';
     } catch (error) {
       console.error('Error generating estimate number:', error);
       // Fallback to timestamp-based number only if RPC fails
@@ -33,13 +39,19 @@ export const useJobNumberGenerator = () => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('generate_document_number', {
+      // Try to use the RPC function, but fall back if it doesn't exist
+      const { data, error } = await supabase.rpc('generate_document_number' as any, {
         doc_type: 'invoice',
         user_uuid: user.id
       });
 
-      if (error) throw error;
-      return data || 'INV-001';
+      if (error) {
+        console.warn('RPC function not available, using fallback:', error);
+        // Fallback to timestamp-based number
+        return `INV-${Date.now().toString().slice(-6)}`;
+      }
+      
+      return (data as string) || 'INV-001';
     } catch (error) {
       console.error('Error generating invoice number:', error);
       // Fallback to timestamp-based number only if RPC fails
@@ -54,13 +66,19 @@ export const useJobNumberGenerator = () => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('generate_document_number', {
+      // Try to use the RPC function, but fall back if it doesn't exist
+      const { data, error } = await supabase.rpc('generate_document_number' as any, {
         doc_type: 'job',
         user_uuid: user.id
       });
 
-      if (error) throw error;
-      return data || 'JOB-001';
+      if (error) {
+        console.warn('RPC function not available, using fallback:', error);
+        // Fallback to timestamp-based number
+        return `JOB-${Date.now().toString().slice(-6)}`;
+      }
+      
+      return (data as string) || 'JOB-001';
     } catch (error) {
       console.error('Error generating job number:', error);
       // Fallback to timestamp-based number only if RPC fails

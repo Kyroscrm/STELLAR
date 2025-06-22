@@ -376,7 +376,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Payment Status</FormLabel>
-                <Select onValue={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue />
