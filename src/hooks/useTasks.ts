@@ -31,8 +31,6 @@ export const useTasks = () => {
     setLoading(true);
     setError(null);
     try {
-      console.log('Fetching tasks for user:', user.id);
-      
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
@@ -42,9 +40,7 @@ export const useTasks = () => {
       if (error) throw error;
       
       setTasks(data || []);
-      console.log(`Successfully fetched ${data?.length || 0} tasks`);
     } catch (error: any) {
-      console.error('Error fetching tasks:', error);
       setError(error);
       toast.error('Failed to fetch tasks');
       setTasks([]);
@@ -68,8 +64,6 @@ export const useTasks = () => {
     setTasks(prev => [optimisticTask, ...prev]);
 
     try {
-      console.log('Creating task:', taskData);
-      
       const { data, error } = await supabase
         .from('tasks')
         .insert({ ...taskData, user_id: user.id })
@@ -91,10 +85,8 @@ export const useTasks = () => {
       });
 
       toast.success('Task created successfully');
-      console.log('Task created successfully:', data);
       return data;
     } catch (error: any) {
-      console.error('Error creating task:', error);
       // Rollback optimistic update
       setTasks(prev => prev.filter(t => t.id !== optimisticTask.id));
       toast.error(error.message || 'Failed to create task');
@@ -117,8 +109,6 @@ export const useTasks = () => {
     setTasks(prev => prev.map(t => t.id === id ? optimisticTask : t));
 
     try {
-      console.log('Updating task:', id, updates);
-      
       const { data, error } = await supabase
         .from('tasks')
         .update(updates)
@@ -142,10 +132,8 @@ export const useTasks = () => {
       });
 
       toast.success('Task updated successfully');
-      console.log('Task updated successfully:', data);
       return true;
     } catch (error: any) {
-      console.error('Error updating task:', error);
       // Rollback optimistic update
       setTasks(prev => prev.map(t => t.id === id ? originalTask : t));
       toast.error(error.message || 'Failed to update task');
@@ -167,8 +155,6 @@ export const useTasks = () => {
     setTasks(prev => prev.filter(t => t.id !== id));
 
     try {
-      console.log('Deleting task:', id);
-      
       const { error } = await supabase
         .from('tasks')
         .delete()
@@ -187,9 +173,7 @@ export const useTasks = () => {
       });
 
       toast.success('Task deleted successfully');
-      console.log('Task deleted successfully');
     } catch (error: any) {
-      console.error('Error deleting task:', error);
       // Rollback optimistic update
       setTasks(prev => [...prev, originalTask].sort((a, b) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()

@@ -32,7 +32,6 @@ const Login = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      console.log('User already logged in, redirecting...');
       if (user.role === 'admin' || user.role === 'staff') {
         navigate('/admin', { replace: true });
       } else {
@@ -70,7 +69,6 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      console.log('Submitting login form...');
       const success = await login(formData.email, formData.password);
       if (success) {
         // Clear access permission on successful login
@@ -84,8 +82,7 @@ const Login = () => {
         // The redirect will happen automatically via the useEffect above
         // when the user state updates
       }
-    } catch (error) {
-      console.error('Login form error:', error);
+    } catch (error: any) {
       toast({
         title: "Login Error",
         description: "An error occurred during login. Please try again.",

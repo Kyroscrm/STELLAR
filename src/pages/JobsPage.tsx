@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useJobs } from '@/hooks/useJobs';
 import JobKanbanBoard from '@/components/JobKanbanBoard';
@@ -85,7 +84,7 @@ const JobsPage = () => {
   const handleStatusChange = async (jobId: string, newStatus: string) => {
     const success = await updateJob(jobId, { status: newStatus as any });
     if (success) {
-      console.log(`Job ${jobId} status updated to ${newStatus}`);
+      // Status updated successfully
     }
   };
 

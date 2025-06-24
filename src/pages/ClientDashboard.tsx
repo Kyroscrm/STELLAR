@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -112,22 +111,18 @@ const ClientDashboard = () => {
 
   const handleDownloadInvoice = (invoiceId: string) => {
     // Implement invoice download functionality
-    console.log('Downloading invoice:', invoiceId);
   };
 
   const handlePayInvoice = (invoiceId: string) => {
     // Implement payment functionality
-    console.log('Processing payment for invoice:', invoiceId);
   };
 
   const handleProjectDetails = (projectId: string) => {
     // Implement project details view
-    console.log('Viewing project details:', projectId);
   };
 
   const handleDownloadReports = (projectId: string) => {
     // Implement report download functionality
-    console.log('Downloading reports for project:', projectId);
   };
 
   return (
