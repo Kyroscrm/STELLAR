@@ -39,7 +39,10 @@
     "deserialization",
     "memoization",
     "hydration",
-    "rehydration"
+    "rehydration",
+    "fkey",
+    "automations",
+    "kpis"
   ],
   "cSpell.ignorePaths": [
     "node_modules/**",

@@ -178,7 +178,11 @@
     "serialization",
     "deserialization",
     "normalization",
-    "denormalization"
+    "denormalization",
+    "fkey",
+    "automations",
+    "kpis",
+    "XVCJ"
   ],
   "flagWords": [],
   "ignoreWords": []
