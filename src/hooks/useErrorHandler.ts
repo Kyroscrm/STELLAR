@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 
@@ -12,7 +11,7 @@ interface ErrorHandlerOptions {
 
 export const useErrorHandler = () => {
   const handleError = useCallback((
-    error: Error | unknown, 
+    error: Error | unknown,
     options: ErrorHandlerOptions = {}
   ) => {
     const {
@@ -28,20 +27,20 @@ export const useErrorHandler = () => {
       console.error('Error handled:', error);
     }
 
-    // Extract error message
+    // Extract error information for improved handling
     let errorMessage = fallbackMessage;
-    
+
     if (error instanceof Error) {
       errorMessage = error.message;
     } else if (typeof error === 'string') {
       errorMessage = error;
     } else if (error && typeof error === 'object' && 'message' in error) {
-      errorMessage = (error as any).message;
+      errorMessage = (error as { message: string }).message;
     }
 
     // Handle specific Supabase errors
     if (error && typeof error === 'object' && 'code' in error) {
-      const supabaseError = error as any;
+      const supabaseError = error as { code: string; message?: string };
       switch (supabaseError.code) {
         case 'PGRST116':
           errorMessage = 'No data found or access denied';
@@ -94,8 +93,8 @@ export const useErrorHandler = () => {
     }
   }, [handleError]);
 
-  return { 
-    handleError, 
-    handleAsyncError 
+  return {
+    handleError,
+    handleAsyncError
   };
 };

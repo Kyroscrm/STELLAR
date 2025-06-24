@@ -1,9 +1,8 @@
-
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 type SignedDocumentsRow = Database['public']['Tables']['signed_documents']['Row'];
 
@@ -30,7 +29,7 @@ export const useDocumentSignature = () => {
 
   const fetchDocuments = async () => {
     if (!user) return;
-    
+
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -40,17 +39,16 @@ export const useDocumentSignature = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       // Transform the data to match our interface
       const transformedData: SignedDocument[] = (data || []).map((item: SignedDocumentsRow) => ({
         ...item,
         status: item.status as 'pending' | 'signed' | 'expired' | 'cancelled',
         metadata: (item.metadata as Record<string, any>) || {}
       }));
-      
+
       setDocuments(transformedData);
-    } catch (error: any) {
-      console.error('Error fetching documents:', error);
+    } catch (error: unknown) {
       toast.error('Failed to fetch documents');
     } finally {
       setLoading(false);
@@ -68,18 +66,17 @@ export const useDocumentSignature = () => {
         .single();
 
       if (error) throw error;
-      
+
       const transformedData: SignedDocument = {
         ...data,
         status: data.status as 'pending' | 'signed' | 'expired' | 'cancelled',
         metadata: (data.metadata as Record<string, any>) || {}
       };
-      
+
       setDocuments(prev => [transformedData, ...prev]);
       toast.success('Document created successfully');
       return transformedData;
-    } catch (error: any) {
-      console.error('Error creating document:', error);
+    } catch (error: unknown) {
       toast.error('Failed to create document');
       return null;
     }
@@ -89,8 +86,8 @@ export const useDocumentSignature = () => {
     try {
       const { data, error } = await supabase
         .from('signed_documents')
-        .update({ 
-          signature_data: signatureData, 
+        .update({
+          signature_data: signatureData,
           signed_at: new Date().toISOString(),
           status: 'signed'
         })
@@ -99,18 +96,17 @@ export const useDocumentSignature = () => {
         .single();
 
       if (error) throw error;
-      
+
       const transformedData: SignedDocument = {
         ...data,
         status: data.status as 'pending' | 'signed' | 'expired' | 'cancelled',
         metadata: (data.metadata as Record<string, any>) || {}
       };
-      
+
       setDocuments(prev => prev.map(doc => doc.id === id ? transformedData : doc));
       toast.success('Document signed successfully');
       return transformedData;
-    } catch (error: any) {
-      console.error('Error signing document:', error);
+    } catch (error: unknown) {
       toast.error('Failed to sign document');
       return null;
     }
@@ -126,18 +122,17 @@ export const useDocumentSignature = () => {
         .single();
 
       if (error) throw error;
-      
+
       const transformedData: SignedDocument = {
         ...data,
         status: data.status as 'pending' | 'signed' | 'expired' | 'cancelled',
         metadata: (data.metadata as Record<string, any>) || {}
       };
-      
+
       setDocuments(prev => prev.map(doc => doc.id === id ? transformedData : doc));
       toast.success('Document status updated');
       return transformedData;
-    } catch (error: any) {
-      console.error('Error updating document status:', error);
+    } catch (error: unknown) {
       toast.error('Failed to update document status');
       return null;
     }

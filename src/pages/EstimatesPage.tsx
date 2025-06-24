@@ -1,4 +1,3 @@
-
 import EstimateForm from '@/components/EstimateForm';
 import EstimateLineItemsDisplay from '@/components/EstimateLineItemsDisplay';
 import NewEstimateDialog from '@/components/NewEstimateDialog';
@@ -108,8 +107,7 @@ const EstimatesPage = () => {
       setIsEditModalOpen(false);
       setSelectedEstimate(null);
       toast.success('Estimate updated successfully');
-    } catch (error) {
-      console.error('Error updating estimate:', error);
+    } catch (error: unknown) {
       toast.error('Failed to update estimate');
     } finally {
       setIsSubmitting(false);

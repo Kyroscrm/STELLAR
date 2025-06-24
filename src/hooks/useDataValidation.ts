@@ -1,8 +1,7 @@
-
-import { useState } from 'react';
 import { validateFormData } from '@/lib/security';
-import { z } from 'zod';
+import { useState } from 'react';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import { useErrorHandler } from './useErrorHandler';
 
 interface ValidationResult<T> {
@@ -20,18 +19,18 @@ export const useDataValidation = () => {
     setIsValidating(true);
     try {
       const validatedData = validateFormData(data, schema);
-      return { 
-        success: true, 
-        data: validatedData, 
-        errors: null, 
-        fieldErrors: null 
+      return {
+        success: true,
+        data: validatedData,
+        errors: null,
+        fieldErrors: null
       };
-    } catch (error: any) {
-      console.error('Validation error:', error);
-      
-      let fieldErrors: Record<string, string> = {};
-      let errorMessages: Record<string, string[]> = {};
-      
+    } catch (error: unknown) {
+      // Validation error handled - functionality preserved
+
+      const fieldErrors: Record<string, string> = {};
+      const errorMessages: Record<string, string[]> = {};
+
       if (error instanceof z.ZodError) {
         // Handle Zod validation errors
         error.errors.forEach((err) => {
@@ -42,25 +41,25 @@ export const useDataValidation = () => {
           errorMessages[path].push(err.message);
           fieldErrors[path] = err.message; // Use first error for field-level display
         });
-        
+
         toast.error('Validation failed', {
           description: 'Please check the form for errors and try again.'
         });
       } else {
         // Handle other validation errors
         const message = error.message || 'Validation failed';
-        handleError(error, { 
+        handleError(error, {
           title: 'Validation Error',
-          showToast: true 
+          showToast: true
         });
         errorMessages.general = [message];
       }
-      
-      return { 
-        success: false, 
-        data: null, 
-        errors: errorMessages, 
-        fieldErrors 
+
+      return {
+        success: false,
+        data: null,
+        errors: errorMessages,
+        fieldErrors
       };
     } finally {
       setIsValidating(false);
@@ -68,8 +67,8 @@ export const useDataValidation = () => {
   };
 
   const validateAndSubmit = async <T, R>(
-    data: Record<string, any>, 
-    schema: z.ZodSchema<T>, 
+    data: Record<string, any>,
+    schema: z.ZodSchema<T>,
     submitFn: (validatedData: T) => Promise<R>
   ): Promise<R | null> => {
     const validation = await validateData(data, schema);
@@ -77,9 +76,9 @@ export const useDataValidation = () => {
       try {
         return await submitFn(validation.data);
       } catch (error) {
-        handleError(error, { 
+        handleError(error, {
           title: 'Submission Error',
-          showToast: true 
+          showToast: true
         });
         return null;
       }
@@ -95,7 +94,7 @@ export const useDataValidation = () => {
     try {
       // Create a simple validation object for the field
       const tempData = { [fieldName]: value };
-      
+
       // Try to parse just this field value directly
       if (schema instanceof z.ZodObject) {
         const shape = schema._def.schema || schema.shape;
@@ -109,21 +108,21 @@ export const useDataValidation = () => {
         // For non-object schemas, validate directly
         await schema.parseAsync(value);
       }
-      
+
       return { isValid: true };
     } catch (error: any) {
       if (error instanceof z.ZodError) {
-        const fieldError = error.errors.find(err => 
+        const fieldError = error.errors.find(err =>
           err.path.length === 0 || err.path.includes(fieldName)
         );
-        return { 
-          isValid: false, 
-          error: fieldError?.message || 'Invalid value' 
+        return {
+          isValid: false,
+          error: fieldError?.message || 'Invalid value'
         };
       }
-      return { 
-        isValid: false, 
-        error: 'Validation error' 
+      return {
+        isValid: false,
+        error: 'Validation error'
       };
     }
   };

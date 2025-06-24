@@ -1,7 +1,6 @@
-
-import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface AutomationRule {
@@ -40,8 +39,7 @@ export const useEstimateAutomations = (estimateId?: string) => {
       if (error) throw error;
 
       setAutomations(data || []);
-    } catch (error: any) {
-      console.error('Error fetching automations:', error);
+    } catch (error: unknown) {
       toast.error('Failed to fetch automations');
     } finally {
       setLoading(false);
@@ -67,8 +65,7 @@ export const useEstimateAutomations = (estimateId?: string) => {
       setAutomations(prev => [data, ...prev]);
       toast.success('Automation created successfully');
       return data;
-    } catch (error: any) {
-      console.error('Error creating automation:', error);
+    } catch (error: unknown) {
       toast.error('Failed to create automation');
       return null;
     }
@@ -88,13 +85,12 @@ export const useEstimateAutomations = (estimateId?: string) => {
 
       if (error) throw error;
 
-      setAutomations(prev => prev.map(automation => 
+      setAutomations(prev => prev.map(automation =>
         automation.id === id ? data : automation
       ));
       toast.success('Automation updated successfully');
       return true;
-    } catch (error: any) {
-      console.error('Error updating automation:', error);
+    } catch (error: unknown) {
       toast.error('Failed to update automation');
       return false;
     }
@@ -114,8 +110,7 @@ export const useEstimateAutomations = (estimateId?: string) => {
 
       setAutomations(prev => prev.filter(automation => automation.id !== id));
       toast.success('Automation deleted successfully');
-    } catch (error: any) {
-      console.error('Error deleting automation:', error);
+    } catch (error: unknown) {
       toast.error('Failed to delete automation');
     }
   };

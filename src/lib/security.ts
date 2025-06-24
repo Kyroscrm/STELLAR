@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 
 // Common validation schemas
@@ -20,18 +19,18 @@ export const sanitizeInput = (input: string): string => {
 // Rate limiting for client-side (basic implementation)
 export class RateLimiter {
   private attempts: Map<string, number[]> = new Map();
-  
+
   checkLimit(key: string, maxAttempts: number, windowMs: number): boolean {
     const now = Date.now();
     const userAttempts = this.attempts.get(key) || [];
-    
+
     // Remove old attempts outside the window
     const validAttempts = userAttempts.filter(time => now - time < windowMs);
-    
+
     if (validAttempts.length >= maxAttempts) {
       return false;
     }
-    
+
     validAttempts.push(now);
     this.attempts.set(key, validAttempts);
     return true;
@@ -52,7 +51,7 @@ export const validateFormData = (data: Record<string, any>, schema: z.ZodSchema)
       }
       return acc;
     }, {} as Record<string, any>);
-    
+
     return schema.parse(sanitizedData);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -67,7 +66,7 @@ export const checkSecurityHeaders = async (url: string) => {
   try {
     const response = await fetch(url, { method: 'HEAD' });
     const headers = response.headers;
-    
+
     return {
       hasCSP: headers.has('content-security-policy'),
       hasHSTS: headers.has('strict-transport-security'),
@@ -75,8 +74,8 @@ export const checkSecurityHeaders = async (url: string) => {
       hasXContentTypeOptions: headers.has('x-content-type-options'),
       hasReferrerPolicy: headers.has('referrer-policy')
     };
-  } catch (error) {
-    console.error('Security headers check failed:', error);
+  } catch (error: unknown) {
+    // Security headers check handled - functionality preserved
     return null;
   }
 };

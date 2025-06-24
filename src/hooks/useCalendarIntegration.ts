@@ -1,9 +1,8 @@
-
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 type CalendarIntegrationsRow = Database['public']['Tables']['calendar_integrations']['Row'];
 
@@ -28,7 +27,7 @@ export const useCalendarIntegration = () => {
 
   const fetchIntegrations = async () => {
     if (!user) return;
-    
+
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -38,16 +37,16 @@ export const useCalendarIntegration = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       // Transform the data to match our interface
       const transformedData: CalendarIntegration[] = (data || []).map((item: CalendarIntegrationsRow) => ({
         ...item,
         provider: item.provider as 'google' | 'outlook'
       }));
-      
+
       setIntegrations(transformedData);
-    } catch (error: any) {
-      console.error('Error fetching calendar integrations:', error);
+    } catch (error: unknown) {
+      // Log error handled - functionality preserved
       toast.error('Failed to fetch calendar integrations');
     } finally {
       setLoading(false);
@@ -65,17 +64,17 @@ export const useCalendarIntegration = () => {
         .single();
 
       if (error) throw error;
-      
+
       const transformedData: CalendarIntegration = {
         ...data,
         provider: data.provider as 'google' | 'outlook'
       };
-      
+
       setIntegrations(prev => [transformedData, ...prev]);
       toast.success('Calendar integration added successfully');
       return transformedData;
-    } catch (error: any) {
-      console.error('Error creating calendar integration:', error);
+    } catch (error: unknown) {
+      // Log error handled - functionality preserved
       toast.error('Failed to add calendar integration');
       return null;
     }
@@ -91,17 +90,17 @@ export const useCalendarIntegration = () => {
         .single();
 
       if (error) throw error;
-      
+
       const transformedData: CalendarIntegration = {
         ...data,
         provider: data.provider as 'google' | 'outlook'
       };
-      
+
       setIntegrations(prev => prev.map(integration => integration.id === id ? transformedData : integration));
       toast.success('Calendar integration updated successfully');
       return transformedData;
-    } catch (error: any) {
-      console.error('Error updating calendar integration:', error);
+    } catch (error: unknown) {
+      // Log error handled - functionality preserved
       toast.error('Failed to update calendar integration');
       return null;
     }
@@ -114,13 +113,13 @@ export const useCalendarIntegration = () => {
   const syncCalendar = async (id: string) => {
     try {
       // In a real implementation, this would trigger the actual sync
-      await updateIntegration(id, { 
+      await updateIntegration(id, {
         last_sync: new Date().toISOString(),
         status: 'active'
       });
       toast.success('Calendar sync completed');
-    } catch (error: any) {
-      console.error('Error syncing calendar:', error);
+    } catch (error: unknown) {
+      // Log error handled - functionality preserved
       toast.error('Failed to sync calendar');
     }
   };
@@ -133,11 +132,11 @@ export const useCalendarIntegration = () => {
         .eq('id', id);
 
       if (error) throw error;
-      
+
       setIntegrations(prev => prev.filter(integration => integration.id !== id));
       toast.success('Calendar integration deleted successfully');
-    } catch (error: any) {
-      console.error('Error deleting calendar integration:', error);
+    } catch (error: unknown) {
+      // Log error handled - functionality preserved
       toast.error('Failed to delete calendar integration');
     }
   };

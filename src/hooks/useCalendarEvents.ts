@@ -1,7 +1,6 @@
-
-import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface CalendarEvent {
@@ -37,7 +36,7 @@ export const useCalendarEvents = () => {
       if (startDate) {
         query = query.gte('start_time', startDate.toISOString());
       }
-      
+
       if (endDate) {
         query = query.lte('end_time', endDate.toISOString());
       }
@@ -46,8 +45,7 @@ export const useCalendarEvents = () => {
 
       if (error) throw error;
       setEvents(data || []);
-    } catch (error: any) {
-      console.error('Error fetching calendar events:', error);
+    } catch (error: unknown) {
       toast.error('Failed to fetch calendar events');
     } finally {
       setLoading(false);
@@ -69,13 +67,12 @@ export const useCalendarEvents = () => {
 
       if (error) throw error;
 
-      setEvents(prev => [...prev, data].sort((a, b) => 
+      setEvents(prev => [...prev, data].sort((a, b) =>
         new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
       ));
       toast.success('Event created successfully');
       return data;
-    } catch (error: any) {
-      console.error('Error creating calendar event:', error);
+    } catch (error: unknown) {
       toast.error('Failed to create event');
       return null;
     }
@@ -95,15 +92,14 @@ export const useCalendarEvents = () => {
 
       if (error) throw error;
 
-      setEvents(prev => prev.map(event => 
+      setEvents(prev => prev.map(event =>
         event.id === id ? data : event
-      ).sort((a, b) => 
+      ).sort((a, b) =>
         new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
       ));
       toast.success('Event updated successfully');
       return true;
-    } catch (error: any) {
-      console.error('Error updating calendar event:', error);
+    } catch (error: unknown) {
       toast.error('Failed to update event');
       return false;
     }
@@ -123,8 +119,7 @@ export const useCalendarEvents = () => {
 
       setEvents(prev => prev.filter(event => event.id !== id));
       toast.success('Event deleted successfully');
-    } catch (error: any) {
-      console.error('Error deleting calendar event:', error);
+    } catch (error: unknown) {
       toast.error('Failed to delete event');
     }
   };

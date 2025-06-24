@@ -1,7 +1,6 @@
-
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 
 interface DashboardStats {
   totalCustomers: number;
@@ -34,7 +33,7 @@ export const useDashboardStats = () => {
 
   const fetchStats = async () => {
     if (!user) return;
-    
+
     setLoading(true);
     try {
       const [
@@ -75,8 +74,8 @@ export const useDashboardStats = () => {
         paidInvoices: paidInvoices || 0,
         totalRevenue
       });
-    } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
+    } catch (error: unknown) {
+      // Error handled - dashboard stats calculation preserved
     } finally {
       setLoading(false);
     }

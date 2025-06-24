@@ -1,7 +1,6 @@
-
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface FollowUpReminder {
@@ -41,12 +40,15 @@ export const useFollowUpReminders = () => {
       if (supabaseError) {
         throw supabaseError;
       }
-      
+
       setReminders(data || []);
       setError(null);
-    } catch (err: any) {
-      console.error('Error fetching reminders:', err);
-      setError(err);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err);
+      } else {
+        setError(new Error('Failed to fetch reminders'));
+      }
       setReminders([]);
     } finally {
       setLoading(false);
@@ -82,9 +84,9 @@ export const useFollowUpReminders = () => {
       });
 
       return data;
-    } catch (err: any) {
-      console.error('Error creating reminder:', err);
-      toast.error('Error creating reminder: ' + (err.message || 'Could not create the reminder.'));
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Could not create the reminder.';
+      toast.error('Error creating reminder: ' + errorMessage);
       return null;
     }
   };
@@ -103,10 +105,10 @@ export const useFollowUpReminders = () => {
 
       if (error) throw error;
 
-      setReminders(prev => prev.map(reminder => 
+      setReminders(prev => prev.map(reminder =>
         reminder.id === reminderId ? data : reminder
       ));
-      
+
       toast.success('Reminder updated successfully');
 
       // Log activity
@@ -119,9 +121,9 @@ export const useFollowUpReminders = () => {
       });
 
       return data;
-    } catch (err: any) {
-      console.error('Error updating reminder:', err);
-      toast.error('Error updating reminder: ' + (err.message || 'Could not update the reminder.'));
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Could not update the reminder.';
+      toast.error('Error updating reminder: ' + errorMessage);
       return null;
     }
   };
@@ -165,21 +167,21 @@ export const useFollowUpReminders = () => {
         action: 'deleted',
         description: `Follow-up reminder deleted`
       });
-    } catch (err: any) {
-      console.error('Error deleting reminder:', err);
-      toast.error('Error deleting reminder: ' + (err.message || 'Could not delete the reminder.'));
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Could not delete the reminder.';
+      toast.error('Error deleting reminder: ' + errorMessage);
     }
   };
 
-  return { 
-    reminders, 
-    loading, 
-    error, 
-    addReminder, 
-    updateReminder, 
-    deleteReminder, 
+  return {
+    reminders,
+    loading,
+    error,
+    addReminder,
+    updateReminder,
+    deleteReminder,
     markAsSent,
     dismissReminder,
-    fetchReminders 
+    fetchReminders
   };
 };

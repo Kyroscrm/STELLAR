@@ -1,7 +1,6 @@
-
-import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface LineItemTemplate {
@@ -33,8 +32,7 @@ export const useLineItemTemplates = () => {
       if (error) throw error;
 
       setTemplates(data || []);
-    } catch (error: any) {
-      console.error('Error fetching line item templates:', error);
+    } catch (error: unknown) {
       toast.error('Failed to fetch line item templates');
     } finally {
       setLoading(false);
@@ -59,8 +57,7 @@ export const useLineItemTemplates = () => {
       setTemplates(prev => [data, ...prev]);
       toast.success('Template created successfully');
       return data;
-    } catch (error: any) {
-      console.error('Error creating template:', error);
+    } catch (error: unknown) {
       toast.error('Failed to create template');
       return null;
     }
@@ -80,13 +77,12 @@ export const useLineItemTemplates = () => {
 
       if (error) throw error;
 
-      setTemplates(prev => prev.map(template => 
+      setTemplates(prev => prev.map(template =>
         template.id === id ? data : template
       ));
       toast.success('Template updated successfully');
       return true;
-    } catch (error: any) {
-      console.error('Error updating template:', error);
+    } catch (error: unknown) {
       toast.error('Failed to update template');
       return false;
     }
@@ -106,8 +102,7 @@ export const useLineItemTemplates = () => {
 
       setTemplates(prev => prev.filter(template => template.id !== id));
       toast.success('Template deleted successfully');
-    } catch (error: any) {
-      console.error('Error deleting template:', error);
+    } catch (error: unknown) {
       toast.error('Failed to delete template');
     }
   };

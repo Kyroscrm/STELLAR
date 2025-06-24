@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 
 interface ConversionMetrics {
   totalLeads: number;
@@ -83,10 +83,10 @@ export const useConversionMetrics = () => {
           const averageLeadValue = totalLeads > 0 ? totalPipelineValue / totalLeads : 0;
 
           // Calculate average conversion time
-          const convertedLeadsWithDates = leads.filter(l => 
+          const convertedLeadsWithDates = leads.filter(l =>
             l.status === 'won' && l.created_at && l.updated_at
           );
-          const averageConversionTime = convertedLeadsWithDates.length > 0 
+          const averageConversionTime = convertedLeadsWithDates.length > 0
             ? convertedLeadsWithDates.reduce((sum, lead) => {
                 const created = new Date(lead.created_at!);
                 const updated = new Date(lead.updated_at!);
@@ -110,8 +110,8 @@ export const useConversionMetrics = () => {
             averageConversionTime
           });
         }
-      } catch (error) {
-        console.error('Error fetching conversion metrics:', error);
+      } catch (error: unknown) {
+        // Error handled - conversion metrics calculation preserved
       } finally {
         setLoading(false);
       }

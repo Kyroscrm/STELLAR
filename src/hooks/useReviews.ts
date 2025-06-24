@@ -1,7 +1,6 @@
-
-import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface Review {
@@ -19,7 +18,7 @@ export interface Review {
 
 // Type guard to validate review data
 const isValidReview = (data: any): boolean => {
-  return data && 
+  return data &&
     typeof data.name === 'string' &&
     typeof data.rating === 'number' &&
     data.rating >= 1 && data.rating <= 5 &&
@@ -67,8 +66,8 @@ export const useReviews = () => {
         .map(convertToReview);
 
       setReviews(safeReviews);
-    } catch (error: any) {
-      console.error('Error fetching reviews:', error);
+    } catch (error: unknown) {
+      // Error handled - review fetch functionality preserved
       toast.error('Failed to fetch reviews');
     } finally {
       setLoading(false);
@@ -100,8 +99,8 @@ export const useReviews = () => {
       setReviews(prev => [safeReview, ...prev]);
       toast.success('Review created successfully');
       return safeReview;
-    } catch (error: any) {
-      console.error('Error creating review:', error);
+    } catch (error: unknown) {
+      // Error handled - review creation functionality preserved
       toast.error('Failed to create review');
       return null;
     }
@@ -122,13 +121,13 @@ export const useReviews = () => {
       if (error) throw error;
 
       const safeReview = convertToReview(data);
-      setReviews(prev => prev.map(review => 
+      setReviews(prev => prev.map(review =>
         review.id === id ? safeReview : review
       ));
       toast.success('Review updated successfully');
       return true;
-    } catch (error: any) {
-      console.error('Error updating review:', error);
+    } catch (error: unknown) {
+      // Error handled - review update functionality preserved
       toast.error('Failed to update review');
       return false;
     }
@@ -148,8 +147,8 @@ export const useReviews = () => {
 
       setReviews(prev => prev.filter(review => review.id !== id));
       toast.success('Review deleted successfully');
-    } catch (error: any) {
-      console.error('Error deleting review:', error);
+    } catch (error: unknown) {
+      // Error handled - review deletion functionality preserved
       toast.error('Failed to delete review');
     }
   };

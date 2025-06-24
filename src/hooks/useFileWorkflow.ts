@@ -1,7 +1,6 @@
-
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface FilePolicy {
@@ -45,7 +44,7 @@ export const useFileWorkflow = () => {
 
   const fetchPolicies = async () => {
     if (!user) return;
-    
+
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -56,8 +55,7 @@ export const useFileWorkflow = () => {
 
       if (error) throw error;
       setPolicies(data || []);
-    } catch (error: any) {
-      console.error('Error fetching file policies:', error);
+    } catch (error: unknown) {
       toast.error('Failed to fetch file policies');
     } finally {
       setLoading(false);
@@ -66,7 +64,7 @@ export const useFileWorkflow = () => {
 
   const fetchWorkflows = async () => {
     if (!user) return;
-    
+
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -79,15 +77,14 @@ export const useFileWorkflow = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
-      const workflowsWithSteps = data?.map((workflow: any) => ({
+
+      const workflowsWithSteps = data?.map((workflow: { workflow_steps?: any[] }) => ({
         ...workflow,
         steps: workflow.workflow_steps || []
       })) || [];
-      
+
       setWorkflows(workflowsWithSteps);
-    } catch (error: any) {
-      console.error('Error fetching workflows:', error);
+    } catch (error: unknown) {
       toast.error('Failed to fetch workflows');
     } finally {
       setLoading(false);
@@ -105,14 +102,13 @@ export const useFileWorkflow = () => {
         .single();
 
       if (error) throw error;
-      
+
       if (data) {
         setPolicies(prev => [data, ...prev]);
         toast.success('File policy created successfully');
         return data;
       }
-    } catch (error: any) {
-      console.error('Error creating file policy:', error);
+    } catch (error: unknown) {
       toast.error('Failed to create file policy');
       return null;
     }
@@ -149,8 +145,7 @@ export const useFileWorkflow = () => {
         toast.success('Workflow created successfully');
         return newWorkflow;
       }
-    } catch (error: any) {
-      console.error('Error creating workflow:', error);
+    } catch (error: unknown) {
       toast.error('Failed to create workflow');
       return null;
     }
@@ -167,14 +162,13 @@ export const useFileWorkflow = () => {
         .single();
 
       if (error) throw error;
-      
+
       if (data) {
         setPolicies(prev => prev.map(policy => policy.id === id ? data : policy));
         toast.success('Policy updated successfully');
         return data;
       }
-    } catch (error: any) {
-      console.error('Error updating policy:', error);
+    } catch (error: unknown) {
       toast.error('Failed to update policy');
       return null;
     }
@@ -189,18 +183,17 @@ export const useFileWorkflow = () => {
         .eq('user_id', user?.id);
 
       if (error) throw error;
-      
+
       setPolicies(prev => prev.filter(policy => policy.id !== id));
       toast.success('Policy deleted successfully');
-    } catch (error: any) {
-      console.error('Error deleting policy:', error);
+    } catch (error: unknown) {
       toast.error('Failed to delete policy');
     }
   };
 
   const validateFileUpload = (file: File, pageType: string, entityType: string): { valid: boolean; message?: string } => {
     const policy = policies.find(p => p.page_type === pageType && p.entity_type === entityType);
-    
+
     if (!policy) {
       return { valid: true }; // No policy means no restrictions
     }
@@ -209,18 +202,18 @@ export const useFileWorkflow = () => {
     if (policy.allowed_file_types.length > 0) {
       const fileExtension = file.name.split('.').pop()?.toLowerCase();
       if (!fileExtension || !policy.allowed_file_types.includes(fileExtension)) {
-        return { 
-          valid: false, 
-          message: `File type not allowed. Allowed types: ${policy.allowed_file_types.join(', ')}` 
+        return {
+          valid: false,
+          message: `File type not allowed. Allowed types: ${policy.allowed_file_types.join(', ')}`
         };
       }
     }
 
     // Check file size
     if (file.size > policy.max_file_size) {
-      return { 
-        valid: false, 
-        message: `File too large. Maximum size: ${(policy.max_file_size / 1024 / 1024).toFixed(1)}MB` 
+      return {
+        valid: false,
+        message: `File too large. Maximum size: ${(policy.max_file_size / 1024 / 1024).toFixed(1)}MB`
       };
     }
 

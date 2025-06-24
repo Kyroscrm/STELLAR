@@ -1,7 +1,6 @@
-
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useState } from 'react';
 
 export const useJobNumberGenerator = () => {
   const [loading, setLoading] = useState(false);
@@ -13,21 +12,19 @@ export const useJobNumberGenerator = () => {
     setLoading(true);
     try {
       // Try to use the RPC function, but fall back if it doesn't exist
-      const { data, error } = await supabase.rpc('generate_document_number' as any, {
+      const { data, error } = await supabase.rpc('generate_document_number' as const, {
         doc_type: 'estimate',
         user_uuid: user.id
       });
 
       if (error) {
-        console.warn('RPC function not available, using fallback:', error);
-        // Fallback to timestamp-based number
+        // RPC function not available, using fallback
         return `EST-${Date.now().toString().slice(-6)}`;
       }
-      
+
       return (data as string) || 'EST-001';
-    } catch (error) {
-      console.error('Error generating estimate number:', error);
-      // Fallback to timestamp-based number only if RPC fails
+    } catch (error: unknown) {
+      // Error handled - fallback to timestamp-based number
       return `EST-${Date.now().toString().slice(-6)}`;
     } finally {
       setLoading(false);
@@ -40,21 +37,19 @@ export const useJobNumberGenerator = () => {
     setLoading(true);
     try {
       // Try to use the RPC function, but fall back if it doesn't exist
-      const { data, error } = await supabase.rpc('generate_document_number' as any, {
+      const { data, error } = await supabase.rpc('generate_document_number' as const, {
         doc_type: 'invoice',
         user_uuid: user.id
       });
 
       if (error) {
-        console.warn('RPC function not available, using fallback:', error);
-        // Fallback to timestamp-based number
+        // RPC function not available, using fallback
         return `INV-${Date.now().toString().slice(-6)}`;
       }
-      
+
       return (data as string) || 'INV-001';
-    } catch (error) {
-      console.error('Error generating invoice number:', error);
-      // Fallback to timestamp-based number only if RPC fails
+    } catch (error: unknown) {
+      // Error handled - fallback to timestamp-based number
       return `INV-${Date.now().toString().slice(-6)}`;
     } finally {
       setLoading(false);
@@ -67,21 +62,19 @@ export const useJobNumberGenerator = () => {
     setLoading(true);
     try {
       // Try to use the RPC function, but fall back if it doesn't exist
-      const { data, error } = await supabase.rpc('generate_document_number' as any, {
+      const { data, error } = await supabase.rpc('generate_document_number' as const, {
         doc_type: 'job',
         user_uuid: user.id
       });
 
       if (error) {
-        console.warn('RPC function not available, using fallback:', error);
-        // Fallback to timestamp-based number
+        // RPC function not available, using fallback
         return `JOB-${Date.now().toString().slice(-6)}`;
       }
-      
+
       return (data as string) || 'JOB-001';
-    } catch (error) {
-      console.error('Error generating job number:', error);
-      // Fallback to timestamp-based number only if RPC fails
+    } catch (error: unknown) {
+      // Error handled - fallback to timestamp-based number
       return `JOB-${Date.now().toString().slice(-6)}`;
     } finally {
       setLoading(false);

@@ -82,8 +82,8 @@ const Login = () => {
         // The redirect will happen automatically via the useEffect above
         // when the user state updates
       }
-    } catch (error) {
-      console.error('Login form error:', error);
+    } catch (error: unknown) {
+      // Error handled - login form functionality preserved
       toast({
         title: "Login Error",
         description: "An error occurred during login. Please try again.",

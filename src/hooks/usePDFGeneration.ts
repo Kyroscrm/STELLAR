@@ -1,4 +1,3 @@
-
 import jsPDF from 'jspdf';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -68,14 +67,12 @@ export const usePDFGeneration = () => {
         pdf.setGState(pdf.GState({ opacity: 1.0 }));
       }
 
-              // Logo added to PDF successfully
-    } catch (error) {
-      console.error('Error adding logo to PDF:', error);
-      // Silently fail - PDF generation continues without logo
+    } catch (error: unknown) {
+      // Error handled - logo addition fails silently, PDF generation continues
     }
   };
 
-  const generateEstimatePDF = async (estimate: any) => {
+  const generateEstimatePDF = async (estimate: Record<string, any>) => {
     setGenerating(true);
     try {
       const pdf = new jsPDF();
@@ -174,7 +171,7 @@ export const usePDFGeneration = () => {
       // Line items
       pdf.setFont(undefined, 'normal');
       if (estimate.estimate_line_items && estimate.estimate_line_items.length > 0) {
-        estimate.estimate_line_items.forEach((item: any) => {
+        estimate.estimate_line_items.forEach((item: Record<string, any>) => {
           const descriptionLines = pdf.splitTextToSize(item.description, 100);
           pdf.text(descriptionLines, 20, currentY);
           pdf.text(item.quantity.toString(), pageWidth - 120, currentY);
@@ -247,15 +244,15 @@ export const usePDFGeneration = () => {
       pdf.save(`estimate-${estimate.estimate_number}.pdf`);
 
       toast.success('Estimate PDF generated successfully');
-    } catch (error) {
-      console.error('Error generating PDF:', error);
+    } catch (error: unknown) {
+      // Error handled - PDF generation failure
       toast.error('Failed to generate PDF');
     } finally {
       setGenerating(false);
     }
   };
 
-  const generateInvoicePDF = async (invoice: any) => {
+  const generateInvoicePDF = async (invoice: Record<string, any>) => {
     setGenerating(true);
     try {
       const pdf = new jsPDF();
@@ -355,7 +352,7 @@ export const usePDFGeneration = () => {
       // Line items
       pdf.setFont(undefined, 'normal');
       if (invoice.invoice_line_items && invoice.invoice_line_items.length > 0) {
-        invoice.invoice_line_items.forEach((item: any) => {
+        invoice.invoice_line_items.forEach((item: Record<string, any>) => {
           const descriptionLines = pdf.splitTextToSize(item.description, 100);
           pdf.text(descriptionLines, 20, currentY);
           pdf.text(item.quantity.toString(), pageWidth - 120, currentY);
@@ -428,8 +425,8 @@ export const usePDFGeneration = () => {
       pdf.save(`invoice-${invoice.invoice_number}.pdf`);
 
       toast.success('Invoice PDF generated successfully');
-    } catch (error) {
-      console.error('Error generating PDF:', error);
+    } catch (error: unknown) {
+      // Error handled - PDF generation failure
       toast.error('Failed to generate PDF');
     } finally {
       setGenerating(false);

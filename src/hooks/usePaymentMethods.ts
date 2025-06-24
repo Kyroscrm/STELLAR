@@ -1,9 +1,8 @@
-
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 type PaymentMethodsRow = Database['public']['Tables']['payment_methods']['Row'];
 
@@ -25,7 +24,7 @@ export const usePaymentMethods = () => {
 
   const fetchPaymentMethods = async () => {
     if (!user) return;
-    
+
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -35,17 +34,16 @@ export const usePaymentMethods = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       // Transform the data to match our interface
       const transformedData: PaymentMethod[] = (data || []).map((item: PaymentMethodsRow) => ({
         ...item,
         type: item.type as 'stripe' | 'paypal' | 'ach' | 'credit_card',
         metadata: (item.metadata as Record<string, any>) || {}
       }));
-      
+
       setPaymentMethods(transformedData);
-    } catch (error: any) {
-      console.error('Error fetching payment methods:', error);
+    } catch (error: unknown) {
       toast.error('Failed to fetch payment methods');
     } finally {
       setLoading(false);
@@ -63,18 +61,17 @@ export const usePaymentMethods = () => {
         .single();
 
       if (error) throw error;
-      
+
       const transformedData: PaymentMethod = {
         ...data,
         type: data.type as 'stripe' | 'paypal' | 'ach' | 'credit_card',
         metadata: (data.metadata as Record<string, any>) || {}
       };
-      
+
       setPaymentMethods(prev => [transformedData, ...prev]);
       toast.success('Payment method added successfully');
       return transformedData;
-    } catch (error: any) {
-      console.error('Error creating payment method:', error);
+    } catch (error: unknown) {
       toast.error('Failed to add payment method');
       return null;
     }
@@ -90,18 +87,17 @@ export const usePaymentMethods = () => {
         .single();
 
       if (error) throw error;
-      
+
       const transformedData: PaymentMethod = {
         ...data,
         type: data.type as 'stripe' | 'paypal' | 'ach' | 'credit_card',
         metadata: (data.metadata as Record<string, any>) || {}
       };
-      
+
       setPaymentMethods(prev => prev.map(method => method.id === id ? transformedData : method));
       toast.success('Payment method updated successfully');
       return transformedData;
-    } catch (error: any) {
-      console.error('Error updating payment method:', error);
+    } catch (error: unknown) {
       toast.error('Failed to update payment method');
       return null;
     }
@@ -115,11 +111,10 @@ export const usePaymentMethods = () => {
         .eq('id', id);
 
       if (error) throw error;
-      
+
       setPaymentMethods(prev => prev.filter(method => method.id !== id));
       toast.success('Payment method deleted successfully');
-    } catch (error: any) {
-      console.error('Error deleting payment method:', error);
+    } catch (error: unknown) {
       toast.error('Failed to delete payment method');
     }
   };
