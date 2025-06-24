@@ -1,0 +1,938 @@
+
+> vite_react_shadcn_ts@0.0.0 lint
+> eslint .
+
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\ActivityLogViewer.tsx
+  31:14  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  45:6   warning  React Hook useEffect has a missing dependency: 'loadActivityLogs'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  60:21  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  61:7   error    Unexpected console statement                                                                                         no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\AdvancedLineItemManager.tsx
+  100:50  error    Unexpected any. Specify a different type                                                                                 @typescript-eslint/no-explicit-any
+  140:51  error    Unexpected any. Specify a different type                                                                                 @typescript-eslint/no-explicit-any
+  149:6   warning  React Hook React.useEffect has a missing dependency: 'calculateTotal'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\BookingScheduler.tsx
+  75:5  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\CalendarScheduler.tsx
+   67:6   warning  React Hook useEffect has a missing dependency: 'fetchEvents'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   82:21  error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+   83:7   error    Unexpected console statement                                                                                    no-console
+  128:21  error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  129:7   error    Unexpected console statement                                                                                    no-console
+  146:21  error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  147:7   error    Unexpected console statement                                                                                    no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\CreateEstimateFromCustomerDialog.tsx
+  88:7  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\CreateEstimateFromLeadDialog.tsx
+  87:7  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\CriticalErrorBoundary.tsx
+  25:5  error  Unexpected console statement  no-console
+  30:7  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\CustomerForm.tsx
+  64:7  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\DashboardControls.tsx
+  19:5  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\DashboardStats.tsx
+  17:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  19:9   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  20:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  21:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  22:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\EditCustomerDialog.tsx
+  24:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\EditInvoiceDialog.tsx
+   54:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  105:7   error  Unexpected console statement              no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\EditJobDialog.tsx
+  92:7  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\EditLeadDialog.tsx
+  24:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\EditTaskDialog.tsx
+  66:7  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\EnhancedGlobalSearch.tsx
+   25:14  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  205:7   error    Unexpected console statement                                                                                     no-console
+  232:36  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  258:6   warning  React Hook useEffect has a missing dependency: 'handleSearch'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\ErrorBoundary.tsx
+  30:5  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\EstimateForm.tsx
+   56:39  error    Unexpected any. Specify a different type                                                                                                                              @typescript-eslint/no-explicit-any
+   90:43  error    Unexpected any. Specify a different type                                                                                                                              @typescript-eslint/no-explicit-any
+   98:62  error    Unexpected any. Specify a different type                                                                                                                              @typescript-eslint/no-explicit-any
+  114:6   warning  React Hook useEffect has missing dependencies: 'handleGenerateEstimateNumber' and 'initialData?.estimate_number'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  133:7   error    Unexpected console statement                                                                                                                                          no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\EstimateLineItemsDisplay.tsx
+  29:6  warning  React Hook useEffect has a missing dependency: 'loadLineItems'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  42:7  error    Unexpected console statement                                                                                      no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\EstimateLineItemsManager.tsx
+  41:69  error    Unexpected any. Specify a different type                                                                                 @typescript-eslint/no-explicit-any
+  47:6   warning  React Hook React.useEffect has a missing dependency: 'calculateTotal'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\EstimateTemplateSelector.tsx
+  37:5   error  Unexpected console statement              no-console
+  38:5   error  Unexpected console statement              no-console
+  80:59  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\EstimateTemplatesManager.tsx
+   53:58  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   75:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  102:70  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\FormErrorBoundary.tsx
+  29:5  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\GlobalErrorBoundary.tsx
+  36:5  error  Unexpected console statement  no-console
+  41:7  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\InvoiceForm.tsx
+   20:17  error    Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
+   54:39  error    Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
+   55:55  error    Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
+   94:6   warning  React Hook useEffect has missing dependencies: 'handleGenerateInvoiceNumber' and 'initialData?.invoice_number'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  109:7   error    Unexpected console statement                                                                                                                                        no-console
+  112:7   error    Unexpected console statement                                                                                                                                        no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\JobForm.tsx
+  111:7  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\JobKanbanBoard.tsx
+  207:5  error  Unexpected console statement  no-console
+  213:5  error  Unexpected console statement  no-console
+  218:7  error  Unexpected console statement  no-console
+  226:7  error  Unexpected console statement  no-console
+  255:7  error  Unexpected console statement  no-console
+  262:7  error  Unexpected console statement  no-console
+  266:5  error  Unexpected console statement  no-console
+  275:9  error  Unexpected console statement  no-console
+  278:9  error  Unexpected console statement  no-console
+  281:7  error  Unexpected console statement  no-console
+  297:5  error  Unexpected console statement  no-console
+  307:7  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\LeadForm.tsx
+  57:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  58:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  70:7   error  Unexpected console statement              no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\LoadingProvider.tsx
+  13:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\LogoUploadSettings.tsx
+  173:84  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\NewCustomerForm.tsx
+  11:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  23:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  56:7   error  Unexpected console statement              no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\NewEstimateDialog.tsx
+  27:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  59:7   error  Unexpected console statement              no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\NewJobDialog.tsx
+   96:21   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   97:7    error  Unexpected console statement              no-console
+  177:122  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\NewJobForm.tsx
+  93:7  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\NewLeadForm.tsx
+  11:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  23:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  58:7   error  Unexpected console statement              no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\NewTemplateDialog.tsx
+   96:7  error  Unexpected console statement  no-console
+  108:7  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\PasswordResetForm.tsx
+  61:7  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\SecurityDashboard.tsx
+  74:7  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\TaskForm.tsx
+  12:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  14:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  46:7   error  Unexpected console statement              no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\TaskFormDialog.tsx
+  82:7  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\TaskKanbanBoard.tsx
+   83:9   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  221:50  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  222:50  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  223:48  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  288:7   error  Unexpected console statement              no-console
+  302:7   error  Unexpected console statement              no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\UserProfile.tsx
+   37:6   warning  React Hook useEffect has a missing dependency: 'loadProfile'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   60:7   error    Unexpected console statement                                                                                    no-console
+   82:31  error    Unnecessary escape character: \+                                                                                no-useless-escape
+  116:7   error    Unexpected console statement                                                                                    no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\integrations\CalendarSyncSettings.tsx
+  130:130  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\integrations\PaymentSettings.tsx
+  67:122  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\ui\badge.tsx
+  36:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\ui\button.tsx
+  56:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\ui\command.tsx
+  24:11  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\ui\data-table.tsx
+   62:64  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   72:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   73:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  121:60  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\ui\error-boundary.tsx
+  28:5  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\ui\form.tsx
+  168:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\ui\global-search.tsx
+   20:9  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  150:5  error  Unexpected console statement              no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\ui\navigation-menu.tsx
+  119:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\ui\sidebar.tsx
+  760:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\ui\sonner.tsx
+  29:19  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\ui\textarea.tsx
+  5:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\components\ui\toggle.tsx
+  43:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\contexts\AuthContext.tsx
+  25:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useActivityLogs.ts
+  14:13   error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  36:7    error    Unexpected console statement                                                                                  no-console
+  48:7    error    Unexpected console statement                                                                                  no-console
+  49:21   error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  50:7    error    Unexpected console statement                                                                                  no-console
+  57:117  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  61:7    error    Unexpected console statement                                                                                  no-console
+  79:7    error    Unexpected console statement                                                                                  no-console
+  81:21   error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  82:7    error    Unexpected console statement                                                                                  no-console
+  89:6    warning  React Hook useEffect has a missing dependency: 'fetchLogs'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useAdvancedAnalytics.ts
+  209:9  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useAuditTrail.ts
+   13:15  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+   14:15  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+   55:7   error    Unexpected console statement                                                                                          no-console
+   73:31  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+   86:7   error    Unexpected console statement                                                                                          no-console
+   87:21  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+   88:7   error    Unexpected console statement                                                                                          no-console
+  102:16  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+  107:7   error    Unexpected console statement                                                                                          no-console
+  120:7   error    Unexpected console statement                                                                                          no-console
+  122:21  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+  123:7   error    Unexpected console statement                                                                                          no-console
+  170:21  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+  171:7   error    Unexpected console statement                                                                                          no-console
+  191:6   warning  React Hook useEffect has a missing dependency: 'fetchAuditRecords'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useCalculatorSubmissions.ts
+  41:21  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  42:7   error    Unexpected console statement                                                                                         no-console
+  67:21  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  68:7   error    Unexpected console statement                                                                                         no-console
+  88:21  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  89:7   error    Unexpected console statement                                                                                         no-console
+  96:6   warning  React Hook useEffect has a missing dependency: 'fetchSubmissions'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useCalendarEvents.ts
+   49:21  error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+   50:7   error    Unexpected console statement                                                                                    no-console
+   77:21  error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+   78:7   error    Unexpected console statement                                                                                    no-console
+  105:21  error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  106:7   error    Unexpected console statement                                                                                    no-console
+  126:21  error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  127:7   error    Unexpected console statement                                                                                    no-console
+  134:6   warning  React Hook useEffect has a missing dependency: 'fetchEvents'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useCalendarIntegration.ts
+   49:21  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+   50:7   error    Unexpected console statement                                                                                          no-console
+   77:21  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+   78:7   error    Unexpected console statement                                                                                          no-console
+  103:21  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+  104:7   error    Unexpected console statement                                                                                          no-console
+  122:21  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+  123:7   error    Unexpected console statement                                                                                          no-console
+  139:21  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+  140:7   error    Unexpected console statement                                                                                          no-console
+  147:6   warning  React Hook useEffect has a missing dependency: 'fetchIntegrations'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useComplianceReports.ts
+   12:12  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+   49:7   error    Unexpected console statement                                                                                     no-console
+   75:7   error    Unexpected console statement                                                                                     no-console
+   76:21  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+   77:7   error    Unexpected console statement                                                                                     no-console
+   90:7   error    Unexpected console statement                                                                                     no-console
+  125:21  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  126:7   error    Unexpected console statement                                                                                     no-console
+  132:68  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  170:7   error    Unexpected console statement                                                                                     no-console
+  174:21  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  175:7   error    Unexpected console statement                                                                                     no-console
+  184:6   warning  React Hook useEffect has a missing dependency: 'fetchReports'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useConversionMetrics.ts
+  114:9  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useCustomers.ts
+  191:6  warning  React Hook useEffect has a missing dependency: 'fetchCustomers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useCustomers.tsx
+   19:7   error    Unexpected console statement                                                                                       no-console
+   32:9   error    Unexpected console statement                                                                                       no-console
+   36:7   error    Unexpected console statement                                                                                       no-console
+   38:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   39:7   error    Unexpected console statement                                                                                       no-console
+   54:7   error    Unexpected console statement                                                                                       no-console
+   63:9   error    Unexpected console statement                                                                                       no-console
+   67:7   error    Unexpected console statement                                                                                       no-console
+   81:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   82:7   error    Unexpected console statement                                                                                       no-console
+   95:7   error    Unexpected console statement                                                                                       no-console
+  106:9   error    Unexpected console statement                                                                                       no-console
+  110:7   error    Unexpected console statement                                                                                       no-console
+  124:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  125:7   error    Unexpected console statement                                                                                       no-console
+  138:7   error    Unexpected console statement                                                                                       no-console
+  147:9   error    Unexpected console statement                                                                                       no-console
+  151:7   error    Unexpected console statement                                                                                       no-console
+  163:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  164:7   error    Unexpected console statement                                                                                       no-console
+  173:6   warning  React Hook useEffect has a missing dependency: 'fetchCustomers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useDashboardMetrics.ts
+   12:13  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+   24:43  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+   47:7   error    Unexpected console statement                                                                                     no-console
+   65:9   error    Unexpected console statement                                                                                     no-console
+   67:21  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+   68:7   error    Unexpected console statement                                                                                     no-console
+   79:7   error    Unexpected console statement                                                                                     no-console
+  195:11  error    Unexpected console statement                                                                                     no-console
+  201:7   error    Unexpected console statement                                                                                     no-console
+  202:21  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  203:7   error    Unexpected console statement                                                                                     no-console
+  219:6   warning  React Hook useEffect has a missing dependency: 'fetchMetrics'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useDashboardPreferences.ts
+   10:11  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   11:21  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   13:19  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   36:7   error    Unexpected console statement                                                                                         no-console
+   48:9   error    Unexpected console statement                                                                                         no-console
+   52:21  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   53:7   error    Unexpected console statement                                                                                         no-console
+   64:7   error    Unexpected console statement                                                                                         no-console
+   81:7   error    Unexpected console statement                                                                                         no-console
+   83:21  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   84:7   error    Unexpected console statement                                                                                         no-console
+   97:7   error    Unexpected console statement                                                                                         no-console
+  111:7   error    Unexpected console statement                                                                                         no-console
+  113:21  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  114:7   error    Unexpected console statement                                                                                         no-console
+  122:67  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  146:6   warning  React Hook useEffect has a missing dependency: 'fetchPreferences'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useDashboardStats.ts
+  79:7  error    Unexpected console statement                                                                                   no-console
+  87:6  warning  React Hook useEffect has a missing dependency: 'fetchStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useDataRetention.ts
+   43:7   error    Unexpected console statement                                                                                      no-console
+   83:7   error    Unexpected console statement                                                                                      no-console
+   84:21  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+   85:7   error    Unexpected console statement                                                                                      no-console
+   98:7   error    Unexpected console statement                                                                                      no-console
+  112:21  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  113:7   error    Unexpected console statement                                                                                      no-console
+  123:7   error    Unexpected console statement                                                                                      no-console
+  134:21  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  135:7   error    Unexpected console statement                                                                                      no-console
+  145:7   error    Unexpected console statement                                                                                      no-console
+  149:21  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  150:7   error    Unexpected console statement                                                                                      no-console
+  159:7   error    Unexpected console statement                                                                                      no-console
+  166:21  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  167:7   error    Unexpected console statement                                                                                      no-console
+  177:6   warning  React Hook useEffect has a missing dependency: 'fetchPolicies'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useDataValidation.ts
+   19:55  error  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+   29:21  error  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+   30:7   error  Unexpected console statement                              no-console
+   32:11  error  'fieldErrors' is never reassigned. Use 'const' instead    prefer-const
+   33:11  error  'errorMessages' is never reassigned. Use 'const' instead  prefer-const
+   71:26  error  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+   92:12  error  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+  114:21  error  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useDocumentSignature.ts
+   21:28  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   48:52  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   52:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   53:7   error    Unexpected console statement                                                                                       no-console
+   75:52  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   81:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   82:7   error    Unexpected console statement                                                                                       no-console
+  106:52  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  112:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  113:7   error    Unexpected console statement                                                                                       no-console
+  133:52  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  139:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  140:7   error    Unexpected console statement                                                                                       no-console
+  148:6   warning  React Hook useEffect has a missing dependency: 'fetchDocuments'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useEnhancedActivityLogs.ts
+   14:13  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+   45:7   error    Unexpected console statement                                                                                          no-console
+   64:7   error    Unexpected console statement                                                                                          no-console
+   65:21  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+   66:7   error    Unexpected console statement                                                                                          no-console
+   80:16  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+   86:7   error    Unexpected console statement                                                                                          no-console
+  120:9   error    Unexpected console statement                                                                                          no-console
+  125:21  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+  126:7   error    Unexpected console statement                                                                                          no-console
+  173:6   warning  React Hook useEffect has a missing dependency: 'fetchEnhancedLogs'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useErrorHandler.ts
+  28:7   error  Unexpected console statement              no-console
+  39:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  44:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  86:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useEstimateAutomations.ts
+   13:15  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   43:21  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   44:7   error    Unexpected console statement                                                                                         no-console
+   70:21  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   71:7   error    Unexpected console statement                                                                                         no-console
+   96:21  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   97:7   error    Unexpected console statement                                                                                         no-console
+  117:21  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  118:7   error    Unexpected console statement                                                                                         no-console
+  125:6   warning  React Hook useEffect has a missing dependency: 'fetchAutomations'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useEstimateLineItems.ts
+   30:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   31:7   error    Unexpected console statement                                                                                       no-console
+   79:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   80:7   error    Unexpected console statement                                                                                       no-console
+  143:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  144:7   error    Unexpected console statement                                                                                       no-console
+  180:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  181:7   error    Unexpected console statement                                                                                       no-console
+  204:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  205:7   error    Unexpected console statement                                                                                       no-console
+  230:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  231:7   error    Unexpected console statement                                                                                       no-console
+  240:6   warning  React Hook useEffect has a missing dependency: 'fetchLineItems'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useEstimateTemplates.ts
+   10:15  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   29:38  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   29:44  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   41:9   error    Unexpected console statement                                                                                       no-console
+   64:7   error    Unexpected console statement                                                                                       no-console
+   85:7   error    Unexpected console statement                                                                                       no-console
+   86:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   87:7   error    Unexpected console statement                                                                                       no-console
+  100:7   error    Unexpected console statement                                                                                       no-console
+  109:7   error    Unexpected console statement                                                                                       no-console
+  130:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  131:7   error    Unexpected console statement                                                                                       no-console
+  168:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  169:7   error    Unexpected console statement                                                                                       no-console
+  189:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  190:7   error    Unexpected console statement                                                                                       no-console
+  197:6   warning  React Hook useEffect has a missing dependency: 'fetchTemplates'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useEstimateTemplates.tsx
+  25:7   error    Unexpected console statement                                                                                       no-console
+  36:7   error    Unexpected console statement                                                                                       no-console
+  37:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  38:7   error    Unexpected console statement                                                                                       no-console
+  49:6   warning  React Hook useEffect has a missing dependency: 'fetchTemplates'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useEstimates.ts
+   46:7   error    Unexpected console statement                                                                                       no-console
+   64:7   error    Unexpected console statement                                                                                       no-console
+   65:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   66:7   error    Unexpected console statement                                                                                       no-console
+   75:78  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   94:11  error    Unexpected console statement                                                                                       no-console
+  146:11  error    Unexpected console statement                                                                                       no-console
+  156:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  157:7   error    Unexpected console statement                                                                                       no-console
+  180:11  error    Unexpected console statement                                                                                       no-console
+  220:11  error    Unexpected console statement                                                                                       no-console
+  230:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  231:7   error    Unexpected console statement                                                                                       no-console
+  252:11  error    Unexpected console statement                                                                                       no-console
+  271:11  error    Unexpected console statement                                                                                       no-console
+  283:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  284:7   error    Unexpected console statement                                                                                       no-console
+  290:6   warning  React Hook useEffect has a missing dependency: 'fetchEstimates'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useFileWorkflow.ts
+   25:16  error    Unexpected any. Specify a different type                                                                                                 @typescript-eslint/no-explicit-any
+   59:21  error    Unexpected any. Specify a different type                                                                                                 @typescript-eslint/no-explicit-any
+   60:7   error    Unexpected console statement                                                                                                             no-console
+   83:55  error    Unexpected any. Specify a different type                                                                                                 @typescript-eslint/no-explicit-any
+   89:21  error    Unexpected any. Specify a different type                                                                                                 @typescript-eslint/no-explicit-any
+   90:7   error    Unexpected console statement                                                                                                             no-console
+  114:21  error    Unexpected any. Specify a different type                                                                                                 @typescript-eslint/no-explicit-any
+  115:7   error    Unexpected console statement                                                                                                             no-console
+  152:21  error    Unexpected any. Specify a different type                                                                                                 @typescript-eslint/no-explicit-any
+  153:7   error    Unexpected console statement                                                                                                             no-console
+  176:21  error    Unexpected any. Specify a different type                                                                                                 @typescript-eslint/no-explicit-any
+  177:7   error    Unexpected console statement                                                                                                             no-console
+  195:21  error    Unexpected any. Specify a different type                                                                                                 @typescript-eslint/no-explicit-any
+  196:7   error    Unexpected console statement                                                                                                             no-console
+  235:6   warning  React Hook useEffect has missing dependencies: 'fetchPolicies' and 'fetchWorkflows'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useFollowUpReminders.ts
+   16:17  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   47:19  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   48:7   error    Unexpected console statement                                                                                       no-console
+   58:6   warning  React Hook useEffect has a missing dependency: 'fetchReminders'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   85:19  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   86:7   error    Unexpected console statement                                                                                       no-console
+  122:19  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  123:7   error    Unexpected console statement                                                                                       no-console
+  168:19  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  169:7   error    Unexpected console statement                                                                                       no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useInvoices.ts
+   59:7   error    Unexpected console statement                                                                                      no-console
+   60:21  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+   61:7   error    Unexpected console statement                                                                                      no-console
+   70:73  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+   98:7   error    Unexpected console statement                                                                                      no-console
+  121:9   error    Unexpected console statement                                                                                      no-console
+  142:21  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  143:7   error    Unexpected console statement                                                                                      no-console
+  202:21  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  203:7   error    Unexpected console statement                                                                                      no-console
+  236:21  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  237:7   error    Unexpected console statement                                                                                      no-console
+  245:6   warning  React Hook useEffect has a missing dependency: 'fetchInvoices'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useJobNumberGenerator.ts
+  16:80  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  22:9   error  Unexpected console statement              no-console
+  29:7   error  Unexpected console statement              no-console
+  43:80  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  49:9   error  Unexpected console statement              no-console
+  56:7   error  Unexpected console statement              no-console
+  70:80  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  76:9   error  Unexpected console statement              no-console
+  83:7   error  Unexpected console statement              no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useJobs.ts
+   43:7   error    Unexpected console statement                                                                                  no-console
+   54:7   error    Unexpected console statement                                                                                  no-console
+   55:21  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+   56:7   error    Unexpected console statement                                                                                  no-console
+   82:11  error    Unexpected console statement                                                                                  no-console
+  104:11  error    Unexpected console statement                                                                                  no-console
+  114:21  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  115:7   error    Unexpected console statement                                                                                  no-console
+  138:11  error    Unexpected console statement                                                                                  no-console
+  162:11  error    Unexpected console statement                                                                                  no-console
+  172:21  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  173:7   error    Unexpected console statement                                                                                  no-console
+  194:11  error    Unexpected console statement                                                                                  no-console
+  213:11  error    Unexpected console statement                                                                                  no-console
+  225:21  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  226:7   error    Unexpected console statement                                                                                  no-console
+  232:6   warning  React Hook useEffect has a missing dependency: 'fetchJobs'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useLeadConversion.ts
+  22:7   error  Unexpected console statement              no-console
+  33:9   error  Unexpected console statement              no-console
+  64:9   error  Unexpected console statement              no-console
+  76:9   error  Unexpected console statement              no-console
+  89:7   error  Unexpected console statement              no-console
+  93:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  94:7   error  Unexpected console statement              no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useLeads.ts
+   38:7   error    Unexpected console statement                                                                                   no-console
+   49:7   error    Unexpected console statement                                                                                   no-console
+   50:21  error    Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+   51:7   error    Unexpected console statement                                                                                   no-console
+   77:11  error    Unexpected console statement                                                                                   no-console
+   99:11  error    Unexpected console statement                                                                                   no-console
+  109:21  error    Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+  110:7   error    Unexpected console statement                                                                                   no-console
+  133:11  error    Unexpected console statement                                                                                   no-console
+  157:11  error    Unexpected console statement                                                                                   no-console
+  167:21  error    Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+  168:7   error    Unexpected console statement                                                                                   no-console
+  189:11  error    Unexpected console statement                                                                                   no-console
+  208:11  error    Unexpected console statement                                                                                   no-console
+  220:21  error    Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+  221:7   error    Unexpected console statement                                                                                   no-console
+  227:6   warning  React Hook useEffect has a missing dependency: 'fetchLeads'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useLineItemTemplates.ts
+   36:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   37:7   error    Unexpected console statement                                                                                       no-console
+   62:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   63:7   error    Unexpected console statement                                                                                       no-console
+   88:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   89:7   error    Unexpected console statement                                                                                       no-console
+  109:21  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  110:7   error    Unexpected console statement                                                                                       no-console
+  117:6   warning  React Hook useEffect has a missing dependency: 'fetchTemplates'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useLogoSettings.ts
+   44:7   error    Unexpected console statement                                                                                      no-console
+   59:9   error    Unexpected console statement                                                                                      no-console
+   63:21  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+   64:7   error    Unexpected console statement                                                                                      no-console
+   75:7   error    Unexpected console statement                                                                                      no-console
+   97:7   error    Unexpected console statement                                                                                      no-console
+   99:21  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  100:7   error    Unexpected console statement                                                                                      no-console
+  113:7   error    Unexpected console statement                                                                                      no-console
+  130:7   error    Unexpected console statement                                                                                      no-console
+  132:21  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  133:7   error    Unexpected console statement                                                                                      no-console
+  145:7   error    Unexpected console statement                                                                                      no-console
+  168:7   error    Unexpected console statement                                                                                      no-console
+  170:21  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  171:7   error    Unexpected console statement                                                                                      no-console
+  179:6   warning  React Hook useEffect has a missing dependency: 'fetchSettings'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useNotificationPreferences.ts
+   12:23  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   13:16  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   25:51  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   48:7   error    Unexpected console statement                                                                                         no-console
+   60:9   error    Unexpected console statement                                                                                         no-console
+   64:21  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   65:7   error    Unexpected console statement                                                                                         no-console
+   76:7   error    Unexpected console statement                                                                                         no-console
+  104:7   error    Unexpected console statement                                                                                         no-console
+  106:21  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  107:7   error    Unexpected console statement                                                                                         no-console
+  120:7   error    Unexpected console statement                                                                                         no-console
+  135:7   error    Unexpected console statement                                                                                         no-console
+  137:21  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  138:7   error    Unexpected console statement                                                                                         no-console
+  148:6   warning  React Hook useEffect has a missing dependency: 'fetchPreferences'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useNotifications.ts
+   19:13  error    Unexpected any. Specify a different type                                                                               @typescript-eslint/no-explicit-any
+   31:44  error    Unexpected any. Specify a different type                                                                               @typescript-eslint/no-explicit-any
+   36:54  error    Unexpected any. Specify a different type                                                                               @typescript-eslint/no-explicit-any
+   59:7   error    Unexpected console statement                                                                                           no-console
+   72:7   error    Unexpected console statement                                                                                           no-console
+   73:21  error    Unexpected any. Specify a different type                                                                               @typescript-eslint/no-explicit-any
+   74:7   error    Unexpected console statement                                                                                           no-console
+  100:7   error    Unexpected console statement                                                                                           no-console
+  118:7   error    Unexpected console statement                                                                                           no-console
+  120:21  error    Unexpected any. Specify a different type                                                                               @typescript-eslint/no-explicit-any
+  121:7   error    Unexpected console statement                                                                                           no-console
+  149:7   error    Unexpected console statement                                                                                           no-console
+  169:7   error    Unexpected console statement                                                                                           no-console
+  171:21  error    Unexpected any. Specify a different type                                                                               @typescript-eslint/no-explicit-any
+  172:7   error    Unexpected console statement                                                                                           no-console
+  194:7   error    Unexpected console statement                                                                                           no-console
+  208:7   error    Unexpected console statement                                                                                           no-console
+  210:21  error    Unexpected any. Specify a different type                                                                               @typescript-eslint/no-explicit-any
+  211:7   error    Unexpected console statement                                                                                           no-console
+  237:7   error    Unexpected console statement                                                                                           no-console
+  257:7   error    Unexpected console statement                                                                                           no-console
+  259:21  error    Unexpected any. Specify a different type                                                                               @typescript-eslint/no-explicit-any
+  260:7   error    Unexpected console statement                                                                                           no-console
+  284:7   error    Unexpected console statement                                                                                           no-console
+  294:7   error    Unexpected console statement                                                                                           no-console
+  295:21  error    Unexpected any. Specify a different type                                                                               @typescript-eslint/no-explicit-any
+  296:7   error    Unexpected console statement                                                                                           no-console
+  310:6   warning  React Hook useEffect has a missing dependency: 'fetchNotifications'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useOptimisticUpdate.ts
+  13:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useOptimizedActivityLogs.ts
+   13:13  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+   44:7   error    Unexpected console statement                                                                                  no-console
+   84:7   error    Unexpected console statement                                                                                  no-console
+   85:21  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+   86:7   error    Unexpected console statement                                                                                  no-console
+   99:16  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  125:7   error    Unexpected console statement                                                                                  no-console
+  149:7   error    Unexpected console statement                                                                                  no-console
+  151:21  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  152:7   error    Unexpected console statement                                                                                  no-console
+  180:6   warning  React Hook useEffect has a missing dependency: 'fetchLogs'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  197:11  error    Unexpected console statement                                                                                  no-console
+  249:11  error    Unexpected console statement                                                                                  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useOptimizedCustomers.ts
+   53:7   error  Unexpected console statement              no-console
+   93:7   error  Unexpected console statement              no-console
+   94:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   95:7   error  Unexpected console statement              no-console
+  123:7   error  Unexpected console statement              no-console
+  144:20  error  Unexpected console statement              no-console
+  148:7   error  Unexpected console statement              no-console
+  150:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  151:7   error  Unexpected console statement              no-console
+  179:7   error  Unexpected console statement              no-console
+  202:20  error  Unexpected console statement              no-console
+  206:7   error  Unexpected console statement              no-console
+  208:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  209:7   error  Unexpected console statement              no-console
+  232:7   error  Unexpected console statement              no-console
+  250:20  error  Unexpected console statement              no-console
+  254:7   error  Unexpected console statement              no-console
+  255:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  256:7   error  Unexpected console statement              no-console
+  294:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  295:7   error  Unexpected console statement              no-console
+  328:11  error  Unexpected console statement              no-console
+  352:11  error  Unexpected console statement              no-console
+  369:11  error  Unexpected console statement              no-console
+  378:11  error  Unexpected console statement              no-console
+  380:11  error  Unexpected console statement              no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useOptimizedDashboardStats.ts
+   76:7   error  Unexpected console statement              no-console
+   97:7   error  Unexpected console statement              no-console
+  120:68  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  139:7   error  Unexpected console statement              no-console
+  140:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  141:7   error  Unexpected console statement              no-console
+  186:13  error  Unexpected console statement              no-console
+  192:13  error  Unexpected console statement              no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\usePDFGeneration.ts
+   73:7   error  Unexpected console statement              no-console
+   78:48  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  177:53  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  251:7   error  Unexpected console statement              no-console
+  258:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  358:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  432:7   error  Unexpected console statement              no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\usePaymentMethods.ts
+   16:28  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+   43:52  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+   47:21  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+   48:7   error    Unexpected console statement                                                                                            no-console
+   70:52  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+   76:21  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+   77:7   error    Unexpected console statement                                                                                            no-console
+   97:52  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  103:21  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  104:7   error    Unexpected console statement                                                                                            no-console
+  121:21  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  122:7   error    Unexpected console statement                                                                                            no-console
+  129:6   warning  React Hook useEffect has a missing dependency: 'fetchPaymentMethods'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\usePerformanceMonitor.ts
+  20:9  error  Unexpected console statement  no-console
+  29:7  error  Unexpected console statement  no-console
+  36:5  error  Unexpected console statement  no-console
+  39:7  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useProfile.tsx
+   29:9   error    Unexpected console statement                                                                                     no-console
+   35:21  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+   36:7   error    Unexpected console statement                                                                                     no-console
+   65:21  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+   66:7   error    Unexpected console statement                                                                                     no-console
+   94:21  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+   95:7   error    Unexpected console statement                                                                                     no-console
+  103:6   warning  React Hook useEffect has a missing dependency: 'fetchProfile'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useRealTimeNotifications.ts
+   89:11  error  Unexpected console statement              no-console
+  108:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  125:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  144:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  163:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useRealTimePresence.ts
+  49:48  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  49:73  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  67:9   error  Unexpected console statement              no-console
+  70:9   error  Unexpected console statement              no-console
+  73:9   error  Unexpected console statement              no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useRealTimeSubscriptions.ts
+  11:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  16:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  37:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  38:11  error  Unexpected console statement              no-console
+  53:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  61:13  error  Unexpected console statement              no-console
+  67:13  error  Unexpected console statement              no-console
+  69:13  error  Unexpected console statement              no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useReviews.ts
+   21:30  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+   31:32  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+   70:21  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+   71:7   error    Unexpected console statement                                                                                     no-console
+  103:21  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  104:7   error    Unexpected console statement                                                                                     no-console
+  130:21  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  131:7   error    Unexpected console statement                                                                                     no-console
+  151:21  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  152:7   error    Unexpected console statement                                                                                     no-console
+  175:6   warning  React Hook useEffect has a missing dependency: 'fetchReviews'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useSavedSearches.ts
+   11:12  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  167:6   warning  React Hook useEffect has a missing dependency: 'fetchSearches'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useSecurityMonitoring.ts
+   11:13  error    Unexpected any. Specify a different type                                                                                                           @typescript-eslint/no-explicit-any
+  115:7   error    Unexpected console statement                                                                                                                       no-console
+  117:21  error    Unexpected any. Specify a different type                                                                                                           @typescript-eslint/no-explicit-any
+  118:7   error    Unexpected console statement                                                                                                                       no-console
+  139:6   warning  React Hook useEffect has missing dependencies: 'checkForAnomalies' and 'fetchSecurityMetrics'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useTasks.ts
+  194:6  warning  React Hook useEffect has a missing dependency: 'fetchTasks'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\hooks\useUserPreferences.ts
+   12:16  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   18:37  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   23:41  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   60:21  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   61:7   error    Unexpected console statement                                                                                         no-console
+   89:21  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   90:7   error    Unexpected console statement                                                                                         no-console
+  111:21  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  112:7   error    Unexpected console statement                                                                                         no-console
+  118:55  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  127:6   warning  React Hook useEffect has a missing dependency: 'fetchPreferences'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\lib\security.ts
+   6:57  error  Unnecessary escape character: \(          no-useless-escape
+   6:59  error  Unnecessary escape character: \)          no-useless-escape
+  44:55  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  54:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  79:5   error  Unexpected console statement              no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\lib\serverValidation.ts
+   12:11  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   13:9   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   14:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   21:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   23:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   43:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   78:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  111:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  150:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  193:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  239:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\lib\validation.ts
+   5:23  error  Unnecessary escape character: \+  no-useless-escape
+  15:64  error  Unnecessary escape character: \(  no-useless-escape
+  15:66  error  Unnecessary escape character: \)  no-useless-escape
+  31:64  error  Unnecessary escape character: \(  no-useless-escape
+  31:66  error  Unnecessary escape character: \)  no-useless-escape
+  43:64  error  Unnecessary escape character: \(  no-useless-escape
+  43:66  error  Unnecessary escape character: \)  no-useless-escape
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\pages\EstimatesPage.tsx
+   69:60  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  102:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  112:7   error  Unexpected console statement              no-console
+  125:61  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  128:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  136:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  141:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\pages\InvoicesPage.tsx
+   73:58  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   91:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  122:61  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  132:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  147:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  406:68  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\pages\JobsPage.tsx
+  85:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\pages\LeadsPage.tsx
+  38:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  79:53  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  92:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\pages\Login.tsx
+  86:7  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\src\pages\NotFound.tsx
+  8:5  error  Unexpected console statement  no-console
+
+C:\Users\NewDa\OneDrive\Desktop\CURSOR\STELLAR\tailwind.config.ts
+  122:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+✖ 696 problems (642 errors, 54 warnings)
+  2 errors and 0 warnings potentially fixable with the `--fix` option.
+
