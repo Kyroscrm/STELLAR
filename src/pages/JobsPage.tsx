@@ -1,40 +1,39 @@
 
-import React, { useState } from 'react';
-import { useJobs } from '@/hooks/useJobs';
-import JobKanbanBoard from '@/components/JobKanbanBoard';
-import FileWorkflowManager from '@/components/FileWorkflowManager';
 import EditJobDialog from '@/components/EditJobDialog';
-import ViewJobDialog from '@/components/ViewJobDialog';
+import FileWorkflowManager from '@/components/FileWorkflowManager';
+import JobKanbanBoard from '@/components/JobKanbanBoard';
 import NewJobDialog from '@/components/NewJobDialog';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  MoreHorizontal,
-  MapPin,
-  DollarSign,
-  Calendar,
-  Clock,
-  User,
-  Briefcase,
-  TrendingUp,
-  CheckCircle,
-  AlertCircle,
-  Kanban,
-  List,
-  Settings
-} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import ViewJobDialog from '@/components/ViewJobDialog';
+import { useJobs } from '@/hooks/useJobs';
+import {
+    AlertCircle,
+    Briefcase,
+    Calendar,
+    CheckCircle,
+    Clock,
+    DollarSign,
+    Filter,
+    Kanban,
+    List,
+    MapPin,
+    MoreHorizontal,
+    Plus,
+    Search,
+    Settings,
+    TrendingUp,
+    User
+} from 'lucide-react';
+import { useState } from 'react';
 
 const JobsPage = () => {
   const { jobs, loading, updateJob, deleteJob, fetchJobs } = useJobs();
@@ -64,13 +63,13 @@ const JobsPage = () => {
   };
 
   const filteredJobs = jobs.filter(job => {
-    const matchesSearch = !searchTerm || 
+    const matchesSearch = !searchTerm ||
       job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (job.description && job.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (job.customers && `${job.customers.first_name} ${job.customers.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()));
-    
+
     const matchesStatus = statusFilter === 'all' || job.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -83,10 +82,7 @@ const JobsPage = () => {
   };
 
   const handleStatusChange = async (jobId: string, newStatus: string) => {
-    const success = await updateJob(jobId, { status: newStatus as any });
-    if (success) {
-      console.log(`Job ${jobId} status updated to ${newStatus}`);
-    }
+    await updateJob(jobId, { status: newStatus as any });
   };
 
   const handleDeleteJob = async (jobId: string) => {
@@ -194,23 +190,23 @@ const JobsPage = () => {
 
       {/* View Content */}
       {viewMode === 'kanban' && <JobKanbanBoard />}
-      
+
       {viewMode === 'files' && <FileWorkflowManager />}
-      
+
       {viewMode === 'list' && (
         <>
           {/* Filters */}
           <div className="flex gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input 
-                placeholder="Search jobs..." 
+              <Input
+                placeholder="Search jobs..."
                 className="pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <select 
+            <select
               className="px-3 py-2 border border-gray-300 rounded-md"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -256,14 +252,14 @@ const JobsPage = () => {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <ViewJobDialog 
+                          <ViewJobDialog
                             job={job}
                             trigger={<span className="w-full cursor-pointer">View Details</span>}
                           />
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <EditJobDialog 
-                            job={job} 
+                          <EditJobDialog
+                            job={job}
                             onSuccess={handleEditSuccess}
                             trigger={<span className="w-full cursor-pointer">Edit Job</span>}
                           />
@@ -275,7 +271,7 @@ const JobsPage = () => {
                         <DropdownMenuItem onClick={() => handleStatusChange(job.id, 'completed')}>
                           Mark Complete
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           className="text-red-600"
                           onClick={() => handleDeleteJob(job.id)}
                         >
@@ -345,7 +341,7 @@ const JobsPage = () => {
           {filteredJobs.length === 0 && (
             <div className="text-center py-12">
               <p className="text-gray-500">No jobs found matching your criteria.</p>
-              <NewJobDialog 
+              <NewJobDialog
                 onSuccess={fetchJobs}
                 trigger={
                   <Button className="mt-4">

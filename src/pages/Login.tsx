@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import FormFieldError from '@/components/FormFieldError';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { User, Mail, Lock, ArrowLeft } from 'lucide-react';
-import FormFieldError from '@/components/FormFieldError';
+import { ArrowLeft, Lock, Mail, User } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -32,7 +32,6 @@ const Login = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      console.log('User already logged in, redirecting...');
       if (user.role === 'admin' || user.role === 'staff') {
         navigate('/admin', { replace: true });
       } else {
@@ -62,7 +61,7 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -70,17 +69,16 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      console.log('Submitting login form...');
       const success = await login(formData.email, formData.password);
       if (success) {
         // Clear access permission on successful login
         sessionStorage.removeItem('loginAccess');
-        
+
         toast({
           title: "Login Successful",
           description: "Welcome back! Redirecting to your dashboard..."
         });
-        
+
         // The redirect will happen automatically via the useEffect above
         // when the user state updates
       }
@@ -169,16 +167,16 @@ const Login = () => {
               </div>
 
               <div className="text-right">
-                <Link 
-                  to="/password-reset" 
+                <Link
+                  to="/password-reset"
                   className="text-sm text-primary hover:text-primary/80"
                 >
                   Forgot your password?
                 </Link>
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full bg-primary text-white hover:bg-primary/90"
                 disabled={isLoading}
               >
@@ -196,8 +194,8 @@ const Login = () => {
                 </div>
               </div>
 
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={fillAdminCredentials}
                 className="w-full"
                 type="button"
@@ -217,7 +215,7 @@ const Login = () => {
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
-                Need to create an account? 
+                Need to create an account?
                 <Link to="/register" className="text-primary hover:text-primary/80 font-medium ml-1">
                   Register here
                 </Link>

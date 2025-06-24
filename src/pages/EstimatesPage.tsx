@@ -1,62 +1,62 @@
 
-import React, { useState, useMemo } from 'react';
-import { useEstimates } from '@/hooks/useEstimates';
-import { useEstimateTemplates } from '@/hooks/useEstimateTemplates';
-import NewTemplateDialog from '@/components/NewTemplateDialog';
-import NewEstimateDialog from '@/components/NewEstimateDialog';
-import { useCustomers } from '@/hooks/useCustomers';
-import { usePDFGeneration } from '@/hooks/usePDFGeneration';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  MoreHorizontal,
-  FileText,
-  CheckCircle,
-  Eye,
-  AlertTriangle,
-  Download,
-  Send,
-  Check,
-  X,
-  Edit
-} from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import EstimateForm from '@/components/EstimateForm';
 import EstimateLineItemsDisplay from '@/components/EstimateLineItemsDisplay';
+import NewEstimateDialog from '@/components/NewEstimateDialog';
+import NewTemplateDialog from '@/components/NewTemplateDialog';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { useCustomers } from '@/hooks/useCustomers';
+import { useEstimates } from '@/hooks/useEstimates';
+import { useEstimateTemplates } from '@/hooks/useEstimateTemplates';
+import { usePDFGeneration } from '@/hooks/usePDFGeneration';
+import {
+    AlertTriangle,
+    Check,
+    CheckCircle,
+    Download,
+    Edit,
+    Eye,
+    FileText,
+    Filter,
+    MoreHorizontal,
+    Plus,
+    Search,
+    Send,
+    X
+} from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 const EstimatesPage = () => {
@@ -64,7 +64,7 @@ const EstimatesPage = () => {
   const { customers } = useCustomers();
   const { generateEstimatePDF, generating } = usePDFGeneration();
   const { templates } = useEstimateTemplates();
-  
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEstimate, setSelectedEstimate] = useState<any>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -74,16 +74,16 @@ const EstimatesPage = () => {
 
   const filteredEstimates = useMemo(() => {
     if (!searchTerm.trim()) return estimates;
-    
+
     const searchLower = searchTerm.toLowerCase();
     return estimates.filter(estimate => {
       const title = estimate.title.toLowerCase();
       const number = estimate.estimate_number.toLowerCase();
       const description = (estimate.description || '').toLowerCase();
-      const customerName = estimate.customers ? 
+      const customerName = estimate.customers ?
         `${estimate.customers.first_name} ${estimate.customers.last_name}`.toLowerCase() : '';
       const notes = (estimate.notes || '').toLowerCase();
-      
+
       return title.includes(searchLower) ||
              number.includes(searchLower) ||
              description.includes(searchLower) ||
@@ -91,7 +91,7 @@ const EstimatesPage = () => {
              notes.includes(searchLower);
     });
   }, [estimates, searchTerm]);
-  
+
   const estimateStats = {
     total: estimates.length,
     draft: estimates.filter(e => e.status === 'draft').length,
@@ -101,7 +101,7 @@ const EstimatesPage = () => {
 
   const handleUpdateEstimate = async (data: any) => {
     if (!selectedEstimate) return;
-    
+
     setIsSubmitting(true);
     try {
       await updateEstimate(selectedEstimate.id, data);
@@ -151,7 +151,7 @@ const EstimatesPage = () => {
       </div>
     );
   }
-  
+
   if (error) {
     return (
       <div className="p-6 text-center text-red-500">
@@ -227,8 +227,8 @@ const EstimatesPage = () => {
       <div className="flex gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input 
-            placeholder="Search estimates by title, number, customer, or description..." 
+          <Input
+            placeholder="Search estimates by title, number, customer, or description..."
             className="pl-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -271,8 +271,8 @@ const EstimatesPage = () => {
                     </button>
                   </TableCell>
                   <TableCell>
-                    {estimate.customers ? 
-                      `${estimate.customers.first_name} ${estimate.customers.last_name}` : 
+                    {estimate.customers ?
+                      `${estimate.customers.first_name} ${estimate.customers.last_name}` :
                       'N/A'
                     }
                   </TableCell>
@@ -326,7 +326,7 @@ const EstimatesPage = () => {
                             </DropdownMenuItem>
                           </>
                         )}
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           className="text-red-600"
                           onClick={() => setDeleteConfirmId(estimate.id)}
                         >
@@ -393,7 +393,7 @@ const EstimatesPage = () => {
                   )}
                 </div>
               </div>
-              
+
               {selectedEstimate.description && (
                 <div>
                   <h3 className="font-semibold mb-2">Description</h3>
@@ -414,7 +414,7 @@ const EstimatesPage = () => {
                     {generating ? 'Generating...' : 'Download PDF'}
                   </Button>
                   {selectedEstimate.status === 'draft' && (
-                    <Button 
+                    <Button
                       variant="outline"
                       onClick={() => handleStatusChange(selectedEstimate.id, 'sent')}
                     >
@@ -423,10 +423,10 @@ const EstimatesPage = () => {
                     </Button>
                   )}
                   {selectedEstimate.status === 'approved' && (
-                    <Button 
+                    <Button
                       variant="outline"
                       onClick={() => {
-                        console.log('Create invoice from estimate:', selectedEstimate.id);
+                        // Create invoice functionality would be implemented here
                       }}
                     >
                       <FileText className="h-4 w-4 mr-2" />
@@ -470,7 +470,7 @@ const EstimatesPage = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={() => deleteConfirmId && handleDeleteEstimate(deleteConfirmId)}
               className="bg-red-600 hover:bg-red-700"
             >

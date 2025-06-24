@@ -1,21 +1,21 @@
 
-import React, { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Home, 
-  FileText, 
-  Calendar, 
-  MessageSquare, 
-  Download, 
-  DollarSign,
-  Clock,
-  CheckCircle,
-  AlertCircle
+import { useAuth } from '@/contexts/AuthContext';
+import {
+    AlertCircle,
+    Calendar,
+    CheckCircle,
+    Clock,
+    DollarSign,
+    Download,
+    FileText,
+    Home,
+    MessageSquare
 } from 'lucide-react';
+import { useState } from 'react';
 
 const ClientDashboard = () => {
   const { user, logout } = useAuth();
@@ -112,22 +112,18 @@ const ClientDashboard = () => {
 
   const handleDownloadInvoice = (invoiceId: string) => {
     // Implement invoice download functionality
-    console.log('Downloading invoice:', invoiceId);
   };
 
   const handlePayInvoice = (invoiceId: string) => {
     // Implement payment functionality
-    console.log('Processing payment for invoice:', invoiceId);
   };
 
   const handleProjectDetails = (projectId: string) => {
     // Implement project details view
-    console.log('Viewing project details:', projectId);
   };
 
   const handleDownloadReports = (projectId: string) => {
     // Implement report download functionality
-    console.log('Downloading reports for project:', projectId);
   };
 
   return (
@@ -192,7 +188,7 @@ const ClientDashboard = () => {
             {activeTab === 'projects' && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-primary">My Projects</h2>
-                
+
                 {projects.map(project => (
                   <Card key={project.id} className="shadow-lg">
                     <CardHeader>
@@ -221,7 +217,7 @@ const ClientDashboard = () => {
                           </div>
                           <Progress value={project.progress} className="h-2" />
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-4">
                           <div className="bg-gray-50 p-3 rounded-lg">
                             <div className="text-sm text-gray-600">Budget</div>
@@ -258,7 +254,7 @@ const ClientDashboard = () => {
             {activeTab === 'invoices' && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-primary">Invoices & Payments</h2>
-                
+
                 <div className="space-y-4">
                   {invoices.map(invoice => (
                     <Card key={invoice.id}>
@@ -268,7 +264,7 @@ const ClientDashboard = () => {
                             <div className="font-semibold">{invoice.id}</div>
                             <div className="text-sm text-gray-600">{invoice.project}</div>
                             <div className="text-xs text-gray-500">
-                              Issued: {new Date(invoice.date).toLocaleDateString()} • 
+                              Issued: {new Date(invoice.date).toLocaleDateString()} •
                               Due: {new Date(invoice.dueDate).toLocaleDateString()}
                             </div>
                           </div>
@@ -304,7 +300,7 @@ const ClientDashboard = () => {
             {activeTab === 'messages' && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-primary">Messages</h2>
-                
+
                 <div className="space-y-4">
                   {messages.map(message => (
                     <Card key={message.id} className={message.unread ? 'ring-2 ring-secondary/20' : ''}>
@@ -335,7 +331,7 @@ const ClientDashboard = () => {
             {activeTab === 'schedule' && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-primary">Upcoming Schedule</h2>
-                
+
                 <Card>
                   <CardContent className="p-6">
                     <div className="text-center text-gray-500">

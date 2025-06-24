@@ -1,8 +1,8 @@
 
-import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export type Task = Tables<'tasks'>;
@@ -27,12 +27,10 @@ export const useTasks = () => {
 
   const fetchTasks = async () => {
     if (!validateUserAndSession()) return;
-    
+
     setLoading(true);
     setError(null);
     try {
-      console.log('Fetching tasks for user:', user.id);
-      
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
@@ -40,13 +38,12 @@ export const useTasks = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       setTasks(data || []);
-      console.log(`Successfully fetched ${data?.length || 0} tasks`);
-    } catch (error: any) {
-      console.error('Error fetching tasks:', error);
-      setError(error);
-      toast.error('Failed to fetch tasks');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch tasks';
+      setError(error instanceof Error ? error : new Error(errorMessage));
+      toast.error(errorMessage);
       setTasks([]);
     } finally {
       setLoading(false);
@@ -64,12 +61,10 @@ export const useTasks = () => {
       updated_at: new Date().toISOString()
     } as Task;
 
-    // Optimistic update
+        // Optimistic update
     setTasks(prev => [optimisticTask, ...prev]);
 
     try {
-      console.log('Creating task:', taskData);
-      
       const { data, error } = await supabase
         .from('tasks')
         .insert({ ...taskData, user_id: user.id })
@@ -77,10 +72,10 @@ export const useTasks = () => {
         .single();
 
       if (error) throw error;
-      
+
       // Replace optimistic with real data
       setTasks(prev => prev.map(t => t.id === optimisticTask.id ? data : t));
-      
+
       // Log activity
       await supabase.from('activity_logs').insert({
         user_id: user.id,
@@ -91,13 +86,12 @@ export const useTasks = () => {
       });
 
       toast.success('Task created successfully');
-      console.log('Task created successfully:', data);
       return data;
-    } catch (error: any) {
-      console.error('Error creating task:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create task';
       // Rollback optimistic update
       setTasks(prev => prev.filter(t => t.id !== optimisticTask.id));
-      toast.error(error.message || 'Failed to create task');
+      toast.error(errorMessage);
       return null;
     }
   };
@@ -112,13 +106,11 @@ export const useTasks = () => {
       return false;
     }
 
-    // Optimistic update
+        // Optimistic update
     const optimisticTask = { ...originalTask, ...updates, updated_at: new Date().toISOString() };
     setTasks(prev => prev.map(t => t.id === id ? optimisticTask : t));
 
     try {
-      console.log('Updating task:', id, updates);
-      
       const { data, error } = await supabase
         .from('tasks')
         .update(updates)
@@ -128,10 +120,10 @@ export const useTasks = () => {
         .single();
 
       if (error) throw error;
-      
+
       // Update with real data
       setTasks(prev => prev.map(t => t.id === id ? data : t));
-      
+
       // Log activity
       await supabase.from('activity_logs').insert({
         user_id: user.id,
@@ -142,13 +134,12 @@ export const useTasks = () => {
       });
 
       toast.success('Task updated successfully');
-      console.log('Task updated successfully:', data);
       return true;
-    } catch (error: any) {
-      console.error('Error updating task:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update task';
       // Rollback optimistic update
       setTasks(prev => prev.map(t => t.id === id ? originalTask : t));
-      toast.error(error.message || 'Failed to update task');
+      toast.error(errorMessage);
       return false;
     }
   };
@@ -163,12 +154,10 @@ export const useTasks = () => {
       return;
     }
 
-    // Optimistic update
+        // Optimistic update
     setTasks(prev => prev.filter(t => t.id !== id));
 
     try {
-      console.log('Deleting task:', id);
-      
       const { error } = await supabase
         .from('tasks')
         .delete()
@@ -176,7 +165,7 @@ export const useTasks = () => {
         .eq('user_id', user.id);
 
       if (error) throw error;
-      
+
       // Log activity
       await supabase.from('activity_logs').insert({
         user_id: user.id,
@@ -186,15 +175,14 @@ export const useTasks = () => {
         description: `Task deleted: ${originalTask.title}`
       });
 
-      toast.success('Task deleted successfully');
-      console.log('Task deleted successfully');
-    } catch (error: any) {
-      console.error('Error deleting task:', error);
+            toast.success('Task deleted successfully');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete task';
       // Rollback optimistic update
-      setTasks(prev => [...prev, originalTask].sort((a, b) => 
+      setTasks(prev => [...prev, originalTask].sort((a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       ));
-      toast.error(error.message || 'Failed to delete task');
+      toast.error(errorMessage);
     }
   };
 

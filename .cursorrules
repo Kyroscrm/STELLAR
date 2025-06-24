@@ -1,8 +1,15 @@
-USING THIS RULES:
+IMPORTANT USING THIS RULES LINE-BY-LINE:
+✅ Zero UI/UX changes - exact same layout and styling just enhancing functionality
+✅ All data persists across sessions and devices to enhance functionality
+✅ Proper database relationships with RLS policies to enhance functionality
+✅ Optimistic updates for seamless user experience to enhance functionality
+✅ Type-safe implementations with proper error handling to enhance functionality
+✅ Scalable architecture for future features to enhance functionality
+IMPORTANT USING THIS RULES LINE-BY-LINE:
 ⚙️ GLOBAL AI DEVELOPER RULES (FRONTEND + BACKEND)
-(DO NOT let it auto-clean the project):
-🔒 "Do not clean up or delete any files. I want to preserve all current components, styles, pages, and assets exactly as they are.
+
 🧠 GENERAL PRINCIPLES
+
 Never Guess. Always Derive From Schema or Codebase.
 Pull table names, fields, and types from Supabase schema or FastAPI models. Never assume structure.
 
@@ -146,7 +153,7 @@ Every screen/module must:
 
  Be accessible (keyboard nav, alt tags, ARIA)
 
-🔐 AI DEVELOPER FINAL RULE
+🔐 AI DEVELOPER RULE
 Do not deploy or submit any code unless every element has been verified against schema, tested for all edge cases, and validated for security, UX, and logic integrity.
 
  User Rules for the Structure & Backend (Global AI Agent Behaviors)
@@ -268,3 +275,16 @@ Reporting & Follow-Up
 Every time a new missing feature is diagnosed, log it under “Discovered During Work” in TASK.md.
 
 Before starting any new implementation, confirm that no related critical issues remain unresolved.
+
+Tech used:
+React (not Next.js)
+TypeScript
+Vite
+Tailwind CSS
+Supabase (Auth, DB, Storage)
+npm (package-lock.json present)
+npm (package-lock.json present)
+ESLint, PostCSS, Tailwind config
+
+Deployment:
+Not Next.js — Vite-style static/frontend

@@ -1,7 +1,6 @@
-
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface SecurityAlert {
@@ -45,43 +44,19 @@ export const useSecurityMonitoring = () => {
     setLoading(true);
     setError(null);
     try {
-      console.log('Fetching security metrics for user:', user.id);
 
-      // Get activity data for metrics
-      const { data: activityData, error } = await supabase
-        .from('activity_logs')
-        .select('action, entity_type, created_at')
+      const { data, error } = await supabase
+        .from('user_activity')
+        .select('*')
         .eq('user_id', user.id)
-        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+        .gte('timestamp', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+        .order('timestamp', { ascending: false });
 
       if (error) throw error;
 
-      // Calculate metrics from activity data
-      const totalRecords = activityData?.length || 0;
-      const criticalActions = activityData?.filter(r => 
-        ['invoices', 'payments', 'signed_documents'].includes(r.entity_type)
-      ).length || 0;
-      const highRiskActions = activityData?.filter(r => 
-        ['customers', 'jobs', 'estimates'].includes(r.entity_type) && r.action === 'DELETE'
-      ).length || 0;
-      
-      // Calculate compliance score
-      const complianceScore = Math.max(0, 100 - (criticalActions * 2) - (highRiskActions * 5));
-
-      const calculatedMetrics: SecurityMetrics = {
-        totalAuditRecords: totalRecords,
-        criticalActions,
-        highRiskActions,
-        recentLoginAttempts: 1, // Current session
-        suspiciousActivity: 0,
-        complianceScore
-      };
-
-      setMetrics(calculatedMetrics);
-      console.log('Security metrics calculated:', calculatedMetrics);
-    } catch (error: any) {
-      console.error('Error fetching security metrics:', error);
-      setError(error);
+      const metrics = calculateSecurityMetrics(data || []);
+      setMetrics(metrics);
+    } catch (error) {
       toast.error('Failed to fetch security metrics');
     } finally {
       setLoading(false);
@@ -92,9 +67,7 @@ export const useSecurityMonitoring = () => {
     if (!validateUserAndSession()) return;
 
     try {
-      console.log('Checking for security anomalies');
 
-      // Get recent activity data
       const { data: recentData, error } = await supabase
         .from('activity_logs')
         .select('*')
@@ -134,7 +107,7 @@ export const useSecurityMonitoring = () => {
       }
 
       setAlerts(prev => [...detectedAlerts, ...prev.slice(0, 47)]);
-      
+
       if (detectedAlerts.length > 0) {
         toast.warning(`${detectedAlerts.length} security alert(s) detected`);
       }
@@ -155,7 +128,7 @@ export const useSecurityMonitoring = () => {
     if (user && session) {
       fetchSecurityMetrics();
       checkForAnomalies();
-      
+
       // Set up periodic checks
       const interval = setInterval(() => {
         checkForAnomalies();

@@ -1,11 +1,11 @@
 
-import React, { useState } from 'react';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Phone, Mail, MapPin, Clock, MessageCircle } from 'lucide-react';
+import { Clock, Mail, MapPin, MessageCircle, Phone } from 'lucide-react';
+import React, { useState } from 'react';
 
 const ContactPage = () => {
   const [formData, setFormData] = useState({
@@ -19,7 +19,7 @@ const ContactPage = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Handle form submission here
-    console.log('Form submitted:', formData);
+    // Form submission functionality would be implemented here
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -32,7 +32,7 @@ const ContactPage = () => {
   return (
     <div className="min-h-screen bg-white">
       <Header />
-      
+
       {/* Hero Section */}
       <section className="pt-32 pb-16 bg-gradient-to-br from-primary/5 to-secondary/5">
         <div className="container mx-auto px-4 text-center">
@@ -85,7 +85,7 @@ const ContactPage = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
@@ -123,7 +123,7 @@ const ContactPage = () => {
                       </select>
                     </div>
                   </div>
-                  
+
                   <div>
                     <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
                       Project Details
@@ -137,7 +137,7 @@ const ContactPage = () => {
                       placeholder="Tell us about your project, timeline, and any specific requirements..."
                     />
                   </div>
-                  
+
                   <Button type="submit" size="lg" className="w-full bg-primary hover:bg-primary/90">
                     Send Message
                   </Button>
@@ -241,7 +241,7 @@ const ContactPage = () => {
             <h2 className="text-4xl font-heading font-bold text-primary mb-4">Service Areas</h2>
             <p className="text-xl text-gray-600">Proudly serving homeowners throughout the region</p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8 text-center">
             {[
               "Cityville & Surrounding Areas",
@@ -257,7 +257,7 @@ const ContactPage = () => {
               </Card>
             ))}
           </div>
-          
+
           <div className="text-center mt-12">
             <p className="text-gray-600 mb-4">Don't see your area listed?</p>
             <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white">

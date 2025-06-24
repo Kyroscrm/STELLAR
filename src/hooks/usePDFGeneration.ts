@@ -1,7 +1,7 @@
 
+import jsPDF from 'jspdf';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import jsPDF from 'jspdf';
 import { useLogoSettings } from './useLogoSettings';
 
 export const usePDFGeneration = () => {
@@ -37,11 +37,11 @@ export const usePDFGeneration = () => {
       if (logoSettings.logo_position === 'top-center' || logoSettings.logo_position === 'both') {
         const logoX = (pageWidth - logoSettings.logo_width) / 2;
         pdf.addImage(
-          logoImg, 
-          'PNG', 
-          logoX, 
-          10, 
-          logoSettings.logo_width, 
+          logoImg,
+          'PNG',
+          logoX,
+          10,
+          logoSettings.logo_width,
           logoSettings.logo_height
         );
       }
@@ -51,10 +51,10 @@ export const usePDFGeneration = () => {
         const watermarkSize = Math.min(pageWidth * 0.6, pageHeight * 0.6);
         const watermarkX = (pageWidth - watermarkSize) / 2;
         const watermarkY = (pageHeight - watermarkSize) / 2;
-        
+
         // Set transparency
         pdf.setGState(pdf.GState({ opacity: logoSettings.watermark_opacity }));
-        
+
         pdf.addImage(
           logoImg,
           'PNG',
@@ -63,12 +63,12 @@ export const usePDFGeneration = () => {
           watermarkSize,
           watermarkSize * (logoSettings.logo_height / logoSettings.logo_width)
         );
-        
+
         // Reset opacity for text
         pdf.setGState(pdf.GState({ opacity: 1.0 }));
       }
 
-      console.log('Logo added to PDF successfully');
+              // Logo added to PDF successfully
     } catch (error) {
       console.error('Error adding logo to PDF:', error);
       // Silently fail - PDF generation continues without logo
@@ -81,10 +81,10 @@ export const usePDFGeneration = () => {
       const pdf = new jsPDF();
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      
+
       // Add logo first (if available)
       await addLogoToPDF(pdf, estimate.status);
-      
+
       // Adjust starting Y position if top-centered logo is present
       let startY = 30;
       if (logoSettings?.logo_position === 'top-center' || logoSettings?.logo_position === 'both') {
@@ -98,7 +98,7 @@ export const usePDFGeneration = () => {
         pdf.text('FINAL ROOFING & RETRO-FIT', 20, startY);
         startY += 10;
       }
-      
+
       pdf.setFontSize(10);
       pdf.setFont(undefined, 'normal');
       pdf.text('123 Business Street', 20, startY + 10);
@@ -107,18 +107,18 @@ export const usePDFGeneration = () => {
       pdf.text('Email: info@finalroofing.com', 20, startY + 28);
 
       // Customer information (top-right)
-      const customerName = estimate.customers ? 
-        `${estimate.customers.first_name} ${estimate.customers.last_name}` : 
+      const customerName = estimate.customers ?
+        `${estimate.customers.first_name} ${estimate.customers.last_name}` :
         'No Customer Assigned';
-      
+
       pdf.setFontSize(12);
       pdf.setFont(undefined, 'bold');
       pdf.text('BILL TO:', pageWidth - 80, startY + 10);
-      
+
       pdf.setFontSize(10);
       pdf.setFont(undefined, 'normal');
       pdf.text(customerName, pageWidth - 80, startY + 20);
-      
+
       if (estimate.customers?.email) {
         pdf.text(estimate.customers.email, pageWidth - 80, startY + 26);
       }
@@ -132,7 +132,7 @@ export const usePDFGeneration = () => {
       pdf.setFont(undefined, 'bold');
       pdf.text('ESTIMATE', pageWidth / 2 - 15, currentY);
       currentY += 20;
-      
+
       pdf.setFontSize(10);
       pdf.setFont(undefined, 'normal');
       pdf.text(`Estimate #: ${estimate.estimate_number}`, 20, currentY);
@@ -146,7 +146,7 @@ export const usePDFGeneration = () => {
       pdf.setFontSize(12);
       pdf.setFont(undefined, 'bold');
       pdf.text(`Title: ${estimate.title}`, 20, currentY);
-      
+
       if (estimate.description) {
         currentY += 10;
         pdf.setFontSize(10);
@@ -158,7 +158,7 @@ export const usePDFGeneration = () => {
 
       // Line items table
       currentY += 20;
-      
+
       // Table header
       pdf.setFontSize(10);
       pdf.setFont(undefined, 'bold');
@@ -166,7 +166,7 @@ export const usePDFGeneration = () => {
       pdf.text('Qty', pageWidth - 120, currentY);
       pdf.text('Unit Price', pageWidth - 80, currentY);
       pdf.text('Total', pageWidth - 40, currentY);
-      
+
       // Header line
       pdf.line(20, currentY + 2, pageWidth - 20, currentY + 2);
       currentY += 10;
@@ -218,7 +218,7 @@ export const usePDFGeneration = () => {
         pdf.setFont(undefined, 'bold');
         pdf.text('Terms & Conditions:', 20, currentY);
         currentY += 8;
-        
+
         pdf.setFont(undefined, 'normal');
         const termsLines = pdf.splitTextToSize(estimate.terms, pageWidth - 40);
         pdf.text(termsLines, 20, currentY);
@@ -232,7 +232,7 @@ export const usePDFGeneration = () => {
         pdf.setFont(undefined, 'bold');
         pdf.text('Notes:', 20, currentY);
         currentY += 8;
-        
+
         pdf.setFont(undefined, 'normal');
         const notesLines = pdf.splitTextToSize(estimate.notes, pageWidth - 40);
         pdf.text(notesLines, 20, currentY);
@@ -245,7 +245,7 @@ export const usePDFGeneration = () => {
 
       // Save the PDF
       pdf.save(`estimate-${estimate.estimate_number}.pdf`);
-      
+
       toast.success('Estimate PDF generated successfully');
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -261,10 +261,10 @@ export const usePDFGeneration = () => {
       const pdf = new jsPDF();
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      
+
       // Add logo first (if available)
       await addLogoToPDF(pdf, invoice.status);
-      
+
       // Adjust starting Y position if top-centered logo is present
       let startY = 30;
       if (logoSettings?.logo_position === 'top-center' || logoSettings?.logo_position === 'both') {
@@ -278,7 +278,7 @@ export const usePDFGeneration = () => {
         pdf.text('FINAL ROOFING & RETRO-FIT', 20, startY);
         startY += 10;
       }
-      
+
       pdf.setFontSize(10);
       pdf.setFont(undefined, 'normal');
       pdf.text('123 Business Street', 20, startY + 10);
@@ -287,18 +287,18 @@ export const usePDFGeneration = () => {
       pdf.text('Email: info@finalroofing.com', 20, startY + 28);
 
       // Customer information (top-right)
-      const customerName = invoice.customers ? 
-        `${invoice.customers.first_name} ${invoice.customers.last_name}` : 
+      const customerName = invoice.customers ?
+        `${invoice.customers.first_name} ${invoice.customers.last_name}` :
         'No Customer Assigned';
-      
+
       pdf.setFontSize(12);
       pdf.setFont(undefined, 'bold');
       pdf.text('BILL TO:', pageWidth - 80, startY + 10);
-      
+
       pdf.setFontSize(10);
       pdf.setFont(undefined, 'normal');
       pdf.text(customerName, pageWidth - 80, startY + 20);
-      
+
       if (invoice.customers?.email) {
         pdf.text(invoice.customers.email, pageWidth - 80, startY + 26);
       }
@@ -312,7 +312,7 @@ export const usePDFGeneration = () => {
       pdf.setFont(undefined, 'bold');
       pdf.text('INVOICE', pageWidth / 2 - 12, currentY);
       currentY += 20;
-      
+
       pdf.setFontSize(10);
       pdf.setFont(undefined, 'normal');
       pdf.text(`Invoice #: ${invoice.invoice_number}`, 20, currentY);
@@ -327,7 +327,7 @@ export const usePDFGeneration = () => {
       pdf.setFontSize(12);
       pdf.setFont(undefined, 'bold');
       pdf.text(`Title: ${invoice.title}`, 20, currentY);
-      
+
       if (invoice.description) {
         currentY += 10;
         pdf.setFontSize(10);
@@ -339,7 +339,7 @@ export const usePDFGeneration = () => {
 
       // Line items table
       currentY += 20;
-      
+
       // Table header
       pdf.setFontSize(10);
       pdf.setFont(undefined, 'bold');
@@ -347,7 +347,7 @@ export const usePDFGeneration = () => {
       pdf.text('Qty', pageWidth - 120, currentY);
       pdf.text('Unit Price', pageWidth - 80, currentY);
       pdf.text('Total', pageWidth - 40, currentY);
-      
+
       // Header line
       pdf.line(20, currentY + 2, pageWidth - 20, currentY + 2);
       currentY += 10;
@@ -399,7 +399,7 @@ export const usePDFGeneration = () => {
         pdf.setFont(undefined, 'bold');
         pdf.text('Payment Terms:', 20, currentY);
         currentY += 8;
-        
+
         pdf.setFont(undefined, 'normal');
         const termsLines = pdf.splitTextToSize(invoice.payment_terms, pageWidth - 40);
         pdf.text(termsLines, 20, currentY);
@@ -413,7 +413,7 @@ export const usePDFGeneration = () => {
         pdf.setFont(undefined, 'bold');
         pdf.text('Notes:', 20, currentY);
         currentY += 8;
-        
+
         pdf.setFont(undefined, 'normal');
         const notesLines = pdf.splitTextToSize(invoice.notes, pageWidth - 40);
         pdf.text(notesLines, 20, currentY);
@@ -426,7 +426,7 @@ export const usePDFGeneration = () => {
 
       // Save the PDF
       pdf.save(`invoice-${invoice.invoice_number}.pdf`);
-      
+
       toast.success('Invoice PDF generated successfully');
     } catch (error) {
       console.error('Error generating PDF:', error);

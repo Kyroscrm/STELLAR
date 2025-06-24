@@ -1,7 +1,6 @@
-
-import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface SavedSearch {
@@ -19,6 +18,7 @@ export const useSavedSearches = () => {
   const { user, session } = useAuth();
   const [searches, setSearches] = useState<SavedSearch[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
   const validateUserAndSession = () => {
     if (!user || !session) {
@@ -32,9 +32,8 @@ export const useSavedSearches = () => {
     if (!validateUserAndSession()) return;
 
     setLoading(true);
+    setError(null);
     try {
-      console.log('Fetching saved searches for user:', user.id);
-      
       const { data, error } = await supabase
         .from('saved_searches')
         .select('*')
@@ -42,12 +41,13 @@ export const useSavedSearches = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       setSearches(data || []);
-      console.log(`Successfully fetched ${data?.length || 0} saved searches`);
-    } catch (error: any) {
-      console.error('Error fetching saved searches:', error);
-      toast.error('Failed to fetch saved searches');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch saved searches';
+      setError(error instanceof Error ? error : new Error(errorMessage));
+      toast.error(errorMessage);
+      setSearches([]);
     } finally {
       setLoading(false);
     }
@@ -68,14 +68,9 @@ export const useSavedSearches = () => {
     setSearches(prev => [optimisticSearch, ...prev]);
 
     try {
-      console.log('Creating saved search:', searchData);
-      
       const { data, error } = await supabase
         .from('saved_searches')
-        .insert({
-          ...searchData,
-          user_id: user.id
-        })
+        .insert({ ...searchData, user_id: user.id })
         .select()
         .single();
 
@@ -83,15 +78,14 @@ export const useSavedSearches = () => {
 
       // Replace optimistic with real data
       setSearches(prev => prev.map(s => s.id === optimisticSearch.id ? data : s));
-      
+
       toast.success('Search saved successfully');
-      console.log('Saved search created successfully:', data);
       return data;
-    } catch (error: any) {
-      console.error('Error creating saved search:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save search';
       // Rollback optimistic update
       setSearches(prev => prev.filter(s => s.id !== optimisticSearch.id));
-      toast.error('Failed to save search');
+      toast.error(errorMessage);
       return null;
     }
   };
@@ -102,7 +96,7 @@ export const useSavedSearches = () => {
     // Store original for rollback
     const originalSearch = searches.find(s => s.id === id);
     if (!originalSearch) {
-      toast.error('Search not found');
+      toast.error('Saved search not found');
       return false;
     }
 
@@ -111,8 +105,6 @@ export const useSavedSearches = () => {
     setSearches(prev => prev.map(s => s.id === id ? optimisticSearch : s));
 
     try {
-      console.log('Updating saved search:', id, updates);
-      
       const { data, error } = await supabase
         .from('saved_searches')
         .update(updates)
@@ -125,15 +117,14 @@ export const useSavedSearches = () => {
 
       // Update with real data
       setSearches(prev => prev.map(s => s.id === id ? data : s));
-      
+
       toast.success('Search updated successfully');
-      console.log('Saved search updated successfully:', data);
       return true;
-    } catch (error: any) {
-      console.error('Error updating saved search:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update search';
       // Rollback optimistic update
       setSearches(prev => prev.map(s => s.id === id ? originalSearch : s));
-      toast.error('Failed to update search');
+      toast.error(errorMessage);
       return false;
     }
   };
@@ -144,7 +135,7 @@ export const useSavedSearches = () => {
     // Store original for rollback
     const originalSearch = searches.find(s => s.id === id);
     if (!originalSearch) {
-      toast.error('Search not found');
+      toast.error('Saved search not found');
       return;
     }
 
@@ -152,8 +143,6 @@ export const useSavedSearches = () => {
     setSearches(prev => prev.filter(s => s.id !== id));
 
     try {
-      console.log('Deleting saved search:', id);
-      
       const { error } = await supabase
         .from('saved_searches')
         .delete()
@@ -163,14 +152,13 @@ export const useSavedSearches = () => {
       if (error) throw error;
 
       toast.success('Search deleted successfully');
-      console.log('Saved search deleted successfully');
-    } catch (error: any) {
-      console.error('Error deleting saved search:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete search';
       // Rollback optimistic update
-      setSearches(prev => [...prev, originalSearch].sort((a, b) => 
+      setSearches(prev => [...prev, originalSearch].sort((a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       ));
-      toast.error('Failed to delete search');
+      toast.error(errorMessage);
     }
   };
 
@@ -181,6 +169,7 @@ export const useSavedSearches = () => {
   return {
     searches,
     loading,
+    error,
     createSearch,
     updateSearch,
     deleteSearch,
