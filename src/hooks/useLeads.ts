@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useErrorHandler } from './useErrorHandler';
 import { useOptimisticUpdate } from './useOptimisticUpdate';
+import { enforcePolicy, SecurityError, handleSupabaseError } from '@/lib/security';
 
 export type Lead = Tables<'leads'>;
 type LeadInsert = Omit<TablesInsert<'leads'>, 'user_id'>;
@@ -34,23 +35,26 @@ export const useLeads = () => {
     setLoading(true);
     setError(null);
     try {
-      const { data, error } = await supabase
-        .from('leads')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+      const data = await enforcePolicy('leads:read', async () => {
+        const { data, error } = await supabase
+          .from('leads')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
 
-      if (error) throw error;
+        if (error) throw error;
+        return data || [];
+      });
 
-      setLeads(data || []);
+      setLeads(data);
     } catch (error: unknown) {
-      if (error instanceof Error) {
+      if (error instanceof SecurityError) {
         setError(error);
-        handleError(error, { title: 'Failed to fetch leads' });
+        handleError(error, { title: 'Access Denied: You do not have permission to view leads.' });
       } else {
-        const fallbackError = new Error('An unexpected error occurred while fetching leads');
-        setError(fallbackError);
-        handleError(fallbackError, { title: 'Failed to fetch leads' });
+        const processedError = handleSupabaseError(error);
+        setError(processedError);
+        handleError(processedError, { title: 'Failed to fetch leads' });
       }
       setLeads([]);
     } finally {
@@ -75,26 +79,29 @@ export const useLeads = () => {
         () => setLeads(prev => [optimisticLead, ...prev]),
         // Actual update
         async () => {
-          const { data, error } = await supabase
-            .from('leads')
-            .insert({ ...leadData, user_id: user.id })
-            .select()
-            .single();
+          const data = await enforcePolicy('leads:create', async () => {
+            const { data, error } = await supabase
+              .from('leads')
+              .insert({ ...leadData, user_id: user.id })
+              .select()
+              .single();
 
-          if (error) throw error;
+            if (error) throw error;
+
+            // Log activity
+            await supabase.from('activity_logs').insert({
+              user_id: user.id,
+              entity_type: 'lead',
+              entity_id: data.id,
+              action: 'created',
+              description: `Lead created: ${data.first_name} ${data.last_name}`
+            });
+
+            return data;
+          });
 
           // Replace optimistic with real data
           setLeads(prev => prev.map(l => l.id === optimisticLead.id ? data : l));
-
-          // Log activity
-          await supabase.from('activity_logs').insert({
-            user_id: user.id,
-            entity_type: 'lead',
-            entity_id: data.id,
-            action: 'created',
-            description: `Lead created: ${data.first_name} ${data.last_name}`
-          });
-
           return data;
         },
         // Rollback
@@ -105,6 +112,9 @@ export const useLeads = () => {
         }
       );
     } catch (error: unknown) {
+      if (error instanceof SecurityError) {
+        handleError(error, { title: 'Access Denied: You do not have permission to create leads.' });
+      }
       return null;
     }
   };
@@ -115,7 +125,7 @@ export const useLeads = () => {
     // Store original for rollback
     const originalLead = leads.find(l => l.id === id);
     if (!originalLead) {
-      toast.error('Lead not found');
+      handleError(new Error('Lead not found'), { title: 'Update Failed' });
       return false;
     }
 
@@ -127,28 +137,31 @@ export const useLeads = () => {
         () => setLeads(prev => prev.map(l => l.id === id ? optimisticLead : l)),
         // Actual update
         async () => {
-          const { data, error } = await supabase
-            .from('leads')
-            .update(updates)
-            .eq('id', id)
-            .eq('user_id', user.id)
-            .select()
-            .single();
+          const data = await enforcePolicy('leads:update', async () => {
+            const { data, error } = await supabase
+              .from('leads')
+              .update(updates)
+              .eq('id', id)
+              .eq('user_id', user.id)
+              .select()
+              .single();
 
-          if (error) throw error;
+            if (error) throw error;
+
+            // Log activity
+            await supabase.from('activity_logs').insert({
+              user_id: user.id,
+              entity_type: 'lead',
+              entity_id: id,
+              action: 'updated',
+              description: `Lead updated: ${data.first_name} ${data.last_name}`
+            });
+
+            return data;
+          });
 
           // Update with real data
           setLeads(prev => prev.map(l => l.id === id ? data : l));
-
-          // Log activity
-          await supabase.from('activity_logs').insert({
-            user_id: user.id,
-            entity_type: 'lead',
-            entity_id: id,
-            action: 'updated',
-            description: `Lead updated: ${data.first_name} ${data.last_name}`
-          });
-
           return true;
         },
         // Rollback
@@ -159,6 +172,9 @@ export const useLeads = () => {
         }
       );
     } catch (error: unknown) {
+      if (error instanceof SecurityError) {
+        handleError(error, { title: 'Access Denied: You do not have permission to update leads.' });
+      }
       return false;
     }
   };
@@ -169,7 +185,7 @@ export const useLeads = () => {
     // Store original for rollback
     const originalLead = leads.find(l => l.id === id);
     if (!originalLead) {
-      toast.error('Lead not found');
+      handleError(new Error('Lead not found'), { title: 'Delete Failed' });
       return;
     }
 
@@ -179,21 +195,25 @@ export const useLeads = () => {
         () => setLeads(prev => prev.filter(l => l.id !== id)),
         // Actual update
         async () => {
-          const { error } = await supabase
-            .from('leads')
-            .delete()
-            .eq('id', id)
-            .eq('user_id', user.id);
+          await enforcePolicy('leads:delete', async () => {
+            const { error } = await supabase
+              .from('leads')
+              .delete()
+              .eq('id', id)
+              .eq('user_id', user.id);
 
-          if (error) throw error;
+            if (error) throw error;
 
-          // Log activity
-          await supabase.from('activity_logs').insert({
-            user_id: user.id,
-            entity_type: 'lead',
-            entity_id: id,
-            action: 'deleted',
-            description: `Lead deleted: ${originalLead.first_name} ${originalLead.last_name}`
+            // Log activity
+            await supabase.from('activity_logs').insert({
+              user_id: user.id,
+              entity_type: 'lead',
+              entity_id: id,
+              action: 'deleted',
+              description: `Lead deleted: ${originalLead.first_name} ${originalLead.last_name}`
+            });
+
+            return true;
           });
 
           return true;
@@ -208,12 +228,17 @@ export const useLeads = () => {
         }
       );
     } catch (error: unknown) {
-      // Error handling is done within executeUpdate
+      if (error instanceof SecurityError) {
+        handleError(error, { title: 'Access Denied: You do not have permission to delete leads.' });
+      }
+      // Other error handling is done within executeUpdate
     }
   };
 
   useEffect(() => {
-    fetchLeads();
+    if (user && session) {
+      fetchLeads();
+    }
   }, [user, session]);
 
   return {

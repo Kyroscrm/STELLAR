@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { ApiError } from '@/types/app-types';
 import { useErrorHandler } from './useErrorHandler';
 import { useOptimisticUpdate } from './useOptimisticUpdate';
+import { enforcePolicy, SecurityError, handleSupabaseError } from '@/lib/security';
 
 export type Customer = Tables<'customers'>;
 type CustomerInsert = Omit<TablesInsert<'customers'>, 'user_id'>;
@@ -20,10 +21,6 @@ interface UseCustomersReturn {
   updateCustomer: (id: string, updates: CustomerUpdate) => Promise<boolean>;
   deleteCustomer: (id: string) => Promise<boolean>;
 }
-
-const isSupabaseError = (error: unknown): error is ApiError => {
-  return typeof error === 'object' && error !== null && 'error' in error && typeof (error as ApiError).error === 'object';
-};
 
 export const useCustomers = (): UseCustomersReturn => {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -49,27 +46,26 @@ export const useCustomers = (): UseCustomersReturn => {
     setLoading(true);
     setError(null);
     try {
-      const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+      const data = await enforcePolicy('customers:read', async () => {
+        const { data, error } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
 
-      if (error) throw error;
+        if (error) throw error;
+        return data || [];
+      });
 
-      setCustomers(data || []);
+      setCustomers(data);
     } catch (error: unknown) {
-      if (isSupabaseError(error)) {
-        const supabaseError = new Error(error.error.message);
-        setError(supabaseError);
-        handleError(supabaseError, { title: 'Failed to fetch customers' });
-      } else if (error instanceof Error) {
+      if (error instanceof SecurityError) {
         setError(error);
-        handleError(error, { title: 'Failed to fetch customers' });
+        handleError(error, { title: 'Access Denied: You do not have permission to view customers.' });
       } else {
-        const fallbackError = new Error('Failed to fetch customers');
-        setError(fallbackError);
-        handleError(fallbackError, { title: 'Failed to fetch customers' });
+        const processedError = handleSupabaseError(error);
+        setError(processedError);
+        handleError(processedError, { title: 'Failed to fetch customers' });
       }
       setCustomers([]);
     } finally {
@@ -94,26 +90,29 @@ export const useCustomers = (): UseCustomersReturn => {
         () => setCustomers(prev => [optimisticCustomer, ...prev]),
         // Actual update
         async () => {
-          const { data, error } = await supabase
-            .from('customers')
-            .insert({ ...customerData, user_id: user.id })
-            .select()
-            .single();
+          const data = await enforcePolicy('customers:create', async () => {
+            const { data, error } = await supabase
+              .from('customers')
+              .insert({ ...customerData, user_id: user.id })
+              .select()
+              .single();
 
-          if (error) throw error;
+            if (error) throw error;
+
+            // Log activity
+            await supabase.from('activity_logs').insert({
+              user_id: user.id,
+              entity_type: 'customer',
+              entity_id: data.id,
+              action: 'created',
+              description: `Customer created: ${data.first_name} ${data.last_name}`
+            });
+
+            return data;
+          });
 
           // Replace optimistic with real data
           setCustomers(prev => prev.map(c => c.id === optimisticCustomer.id ? data : c));
-
-          // Log activity
-          await supabase.from('activity_logs').insert({
-            user_id: user.id,
-            entity_type: 'customer',
-            entity_id: data.id,
-            action: 'created',
-            description: `Customer created: ${data.first_name} ${data.last_name}`
-          });
-
           return data;
         },
         // Rollback
@@ -124,6 +123,9 @@ export const useCustomers = (): UseCustomersReturn => {
         }
       );
     } catch (error: unknown) {
+      if (error instanceof SecurityError) {
+        handleError(error, { title: 'Access Denied: You do not have permission to create customers.' });
+      }
       return null;
     }
   };
@@ -147,28 +149,31 @@ export const useCustomers = (): UseCustomersReturn => {
         () => setCustomers(prev => prev.map(c => c.id === id ? optimisticCustomer : c)),
         // Actual update
         async () => {
-          const { data, error } = await supabase
-            .from('customers')
-            .update(updates)
-            .eq('id', id)
-            .eq('user_id', user.id)
-            .select()
-            .single();
+          const data = await enforcePolicy('customers:update', async () => {
+            const { data, error } = await supabase
+              .from('customers')
+              .update(updates)
+              .eq('id', id)
+              .eq('user_id', user.id)
+              .select()
+              .single();
 
-          if (error) throw error;
+            if (error) throw error;
+
+            // Log activity
+            await supabase.from('activity_logs').insert({
+              user_id: user.id,
+              entity_type: 'customer',
+              entity_id: id,
+              action: 'updated',
+              description: `Customer updated: ${data.first_name} ${data.last_name}`
+            });
+
+            return data;
+          });
 
           // Update with real data
           setCustomers(prev => prev.map(c => c.id === id ? data : c));
-
-          // Log activity
-          await supabase.from('activity_logs').insert({
-            user_id: user.id,
-            entity_type: 'customer',
-            entity_id: id,
-            action: 'updated',
-            description: `Customer updated: ${data.first_name} ${data.last_name}`
-          });
-
           return true;
         },
         // Rollback
@@ -179,6 +184,9 @@ export const useCustomers = (): UseCustomersReturn => {
         }
       );
     } catch (error: unknown) {
+      if (error instanceof SecurityError) {
+        handleError(error, { title: 'Access Denied: You do not have permission to update customers.' });
+      }
       return false;
     }
   };
@@ -199,21 +207,25 @@ export const useCustomers = (): UseCustomersReturn => {
         () => setCustomers(prev => prev.filter(c => c.id !== id)),
         // Actual update
         async () => {
-          const { error } = await supabase
-            .from('customers')
-            .delete()
-            .eq('id', id)
-            .eq('user_id', user.id);
+          await enforcePolicy('customers:delete', async () => {
+            const { error } = await supabase
+              .from('customers')
+              .delete()
+              .eq('id', id)
+              .eq('user_id', user.id);
 
-          if (error) throw error;
+            if (error) throw error;
 
-          // Log activity
-          await supabase.from('activity_logs').insert({
-            user_id: user.id,
-            entity_type: 'customer',
-            entity_id: id,
-            action: 'deleted',
-            description: `Customer deleted: ${originalCustomer.first_name} ${originalCustomer.last_name}`
+            // Log activity
+            await supabase.from('activity_logs').insert({
+              user_id: user.id,
+              entity_type: 'customer',
+              entity_id: id,
+              action: 'deleted',
+              description: `Customer deleted: ${originalCustomer.first_name} ${originalCustomer.last_name}`
+            });
+
+            return true;
           });
 
           return true;
@@ -228,6 +240,9 @@ export const useCustomers = (): UseCustomersReturn => {
         }
       );
     } catch (error: unknown) {
+      if (error instanceof SecurityError) {
+        handleError(error, { title: 'Access Denied: You do not have permission to delete customers.' });
+      }
       return false;
     }
   };

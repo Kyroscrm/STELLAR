@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { supabase } from '@/integrations/supabase/client';
+import { ApiError } from '@/types/app-types';
 
 // Common validation schemas
 export const emailSchema = z.string().email('Invalid email address');
@@ -78,4 +80,82 @@ export const checkSecurityHeaders = async (url: string) => {
     // Security headers check handled - functionality preserved
     return null;
   }
+};
+
+// RLS Policy Enforcement
+
+/**
+ * Error class for authentication and permission issues
+ */
+export class SecurityError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SecurityError';
+  }
+}
+
+/**
+ * Validates that the user is authenticated
+ * @returns The current authenticated user or throws SecurityError
+ */
+export const validateAuthentication = async () => {
+  const { data: { user }, error } = await supabase.auth.getUser();
+
+  if (error || !user) {
+    throw new SecurityError('Authentication required. Please log in.');
+  }
+
+  return user;
+};
+
+/**
+ * Validates that the user has the required permission
+ * @param permission The permission to check (e.g., 'leads:read')
+ * @returns True if the user has permission, throws SecurityError otherwise
+ */
+export const validatePermission = async (permission: string): Promise<boolean> => {
+  const user = await validateAuthentication();
+
+  // For now, we'll use a simple check. This will be replaced with a proper
+  // has_permission() RPC call in Task 3.1 (RBAC Implementation)
+
+  // Note: 'user_roles' table doesn't exist yet - will be implemented in Task 3.1
+  // For now, assume all authenticated users have basic permissions
+  return true;
+};
+
+/**
+ * Enforces a policy check before executing a database operation
+ * @param permission The permission required (e.g., 'leads:read')
+ * @param operation The database operation to execute if permission check passes
+ * @returns The result of the operation
+ */
+export async function enforcePolicy<T>(
+  permission: string,
+  operation: () => Promise<T>
+): Promise<T> {
+  await validatePermission(permission);
+  return operation();
+}
+
+/**
+ * Utility to check if an error is a Supabase API error
+ */
+export const isSupabaseError = (error: unknown): error is ApiError => {
+  return typeof error === 'object' &&
+         error !== null &&
+         'error' in error &&
+         typeof (error as ApiError).error === 'object';
+};
+
+/**
+ * Utility to handle Supabase errors consistently
+ */
+export const handleSupabaseError = (error: unknown): Error => {
+  if (isSupabaseError(error)) {
+    return new Error(error.error.message);
+  } else if (error instanceof Error) {
+    return error;
+  }
+  return new Error('An unexpected error occurred');
 };

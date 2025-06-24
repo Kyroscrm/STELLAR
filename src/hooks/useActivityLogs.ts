@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { ActivityLog, ApiError } from '@/types/app-types';
 import { useErrorHandler } from './useErrorHandler';
+import { enforcePolicy, SecurityError, handleSupabaseError } from '@/lib/security';
 
 export type ActivityLogInsert = Omit<TablesInsert<'activity_logs'>, 'user_id'>;
 
@@ -21,10 +22,6 @@ interface UseActivityLogsReturn {
     metadata?: Json
   ) => Promise<ActivityLog | null>;
 }
-
-const isSupabaseError = (error: unknown): error is ApiError => {
-  return typeof error === 'object' && error !== null && 'error' in error && typeof (error as ApiError).error === 'object';
-};
 
 export const useActivityLogs = (): UseActivityLogsReturn => {
   const { user, session } = useAuth();
@@ -49,28 +46,27 @@ export const useActivityLogs = (): UseActivityLogsReturn => {
     setLoading(true);
     setError(null);
     try {
-      const { data, error } = await supabase
-        .from('activity_logs')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(limit);
+      const data = await enforcePolicy('activity_logs:read', async () => {
+        const { data, error } = await supabase
+          .from('activity_logs')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(limit);
 
-      if (error) throw error;
+        if (error) throw error;
+        return data || [];
+      });
 
-      setLogs(data || []);
+      setLogs(data);
     } catch (error: unknown) {
-      if (error instanceof Error) {
+      if (error instanceof SecurityError) {
         setError(error);
-        handleError(error, { title: 'Failed to fetch activity logs' });
-      } else if (isSupabaseError(error)) {
-        const supabaseError = new Error(error.error.message);
-        setError(supabaseError);
-        handleError(supabaseError, { title: 'Failed to fetch activity logs' });
+        handleError(error, { title: 'Access Denied: You do not have permission to view activity logs.' });
       } else {
-        const fallbackError = new Error('An unexpected error occurred while fetching activity logs');
-        setError(fallbackError);
-        handleError(fallbackError, { title: 'Failed to fetch activity logs' });
+        const processedError = handleSupabaseError(error);
+        setError(processedError);
+        handleError(processedError, { title: 'Failed to fetch activity logs' });
       }
       setLogs([]);
     } finally {
@@ -88,40 +84,41 @@ export const useActivityLogs = (): UseActivityLogsReturn => {
     if (!validateUserAndSession()) return null;
 
     try {
-      const { data, error } = await supabase
-        .from('activity_logs')
-        .insert({
-          user_id: user.id,
-          action,
-          entity_type: entityType,
-          entity_id: entityId,
-          description: description || `${action} ${entityType}`,
-          metadata: metadata || {}
-        })
-        .select()
-        .single();
+      const data = await enforcePolicy('activity_logs:create', async () => {
+        const { data, error } = await supabase
+          .from('activity_logs')
+          .insert({
+            user_id: user.id,
+            action,
+            entity_type: entityType,
+            entity_id: entityId,
+            description: description || `${action} ${entityType}`,
+            metadata: metadata || {}
+          })
+          .select()
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
+        return data;
+      });
 
       // Update state with the new log entry
       setLogs(prev => [data, ...prev.slice(0, 49)]); // Keep only latest 50
       return data;
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        handleError(error, { title: 'Failed to log activity', showToast: false });
-      } else if (isSupabaseError(error)) {
-        const supabaseError = new Error(error.error.message);
-        handleError(supabaseError, { title: 'Failed to log activity', showToast: false });
+      if (error instanceof SecurityError) {
+        handleError(error, { title: 'Access Denied: You do not have permission to create activity logs.', showToast: false });
       } else {
-        const fallbackError = new Error('An unexpected error occurred while logging activity');
-        handleError(fallbackError, { title: 'Failed to log activity', showToast: false });
+        handleError(handleSupabaseError(error), { title: 'Failed to log activity', showToast: false });
       }
       return null;
     }
   };
 
   useEffect(() => {
-    fetchLogs();
+    if (user && session) {
+      fetchLogs();
+    }
   }, [user, session]);
 
   return {

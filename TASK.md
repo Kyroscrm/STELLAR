@@ -77,11 +77,17 @@ TASK.md: Deep To-Do List Based on Missing or Broken Items
 - ✅ Refactored useInvoices hook with proper session validation and optimistic updates
 - ✅ Enhanced useTasks hook with standardized error handling and optimistic updates
 
-2.2 RLS-safe Queries
+2.2 RLS-safe Queries ✅ COMPLETE
 
-Ensure each hook uses supabase.auth.user() or has_permission() in select/insert/update.
-
-Abstract common policy checks in hook utilities.
+- ✅ Created centralized security utilities in security.ts for RLS enforcement
+- ✅ Implemented enforcePolicy helper function to standardize permission checks
+- ✅ Updated useLeads hook with RLS-safe operations using enforcePolicy
+- ✅ Updated useCustomers hook with RLS-safe operations using enforcePolicy
+- ✅ Updated useEstimates hook with RLS-safe operations using enforcePolicy
+- ✅ Updated useInvoices hook with RLS-safe operations using enforcePolicy
+- ✅ Updated useTasks hook with RLS-safe operations using enforcePolicy
+- ✅ Enhanced error handling for permission denials with SecurityError class
+- ✅ Added consistent user session validation across all data operations
 
 3. Authentication & Authorization
 

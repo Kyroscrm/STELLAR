@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useErrorHandler } from './useErrorHandler';
 import { useOptimisticUpdate } from './useOptimisticUpdate';
+import { enforcePolicy, SecurityError, handleSupabaseError } from '@/lib/security';
 
 export type Task = Tables<'tasks'>;
 type TaskInsert = Omit<TablesInsert<'tasks'>, 'user_id'>;
@@ -45,19 +46,27 @@ export const useTasks = (): UseTasksReturn => {
     setLoading(true);
     setError(null);
     try {
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+      const data = await enforcePolicy('tasks:read', async () => {
+        const { data, error } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
 
-      if (error) throw error;
+        if (error) throw error;
+        return data || [];
+      });
 
-      setTasks(data || []);
+      setTasks(data);
     } catch (error: unknown) {
-      const taskError = error instanceof Error ? error : new Error('Failed to fetch tasks');
-      setError(taskError);
-      handleError(taskError, { title: 'Failed to fetch tasks' });
+      if (error instanceof SecurityError) {
+        setError(error);
+        handleError(error, { title: 'Access Denied: You do not have permission to view tasks.' });
+      } else {
+        const processedError = handleSupabaseError(error);
+        setError(processedError);
+        handleError(processedError, { title: 'Failed to fetch tasks' });
+      }
       setTasks([]);
     } finally {
       setLoading(false);
@@ -81,26 +90,29 @@ export const useTasks = (): UseTasksReturn => {
         () => setTasks(prev => [optimisticTask, ...prev]),
         // Actual update
         async () => {
-          const { data, error } = await supabase
-            .from('tasks')
-            .insert({ ...taskData, user_id: user.id })
-            .select()
-            .single();
+          const data = await enforcePolicy('tasks:create', async () => {
+            const { data, error } = await supabase
+              .from('tasks')
+              .insert({ ...taskData, user_id: user.id })
+              .select()
+              .single();
 
-          if (error) throw error;
+            if (error) throw error;
+
+            // Log activity
+            await supabase.from('activity_logs').insert({
+              user_id: user.id,
+              entity_type: 'task',
+              entity_id: data.id,
+              action: 'created',
+              description: `Task created: ${data.title}`
+            });
+
+            return data;
+          });
 
           // Replace optimistic with real data
           setTasks(prev => prev.map(t => t.id === optimisticTask.id ? data : t));
-
-          // Log activity
-          await supabase.from('activity_logs').insert({
-            user_id: user.id,
-            entity_type: 'task',
-            entity_id: data.id,
-            action: 'created',
-            description: `Task created: ${data.title}`
-          });
-
           return data;
         },
         // Rollback
@@ -111,6 +123,9 @@ export const useTasks = (): UseTasksReturn => {
         }
       );
     } catch (error: unknown) {
+      if (error instanceof SecurityError) {
+        handleError(error, { title: 'Access Denied: You do not have permission to create tasks.' });
+      }
       return null;
     }
   };
@@ -133,28 +148,31 @@ export const useTasks = (): UseTasksReturn => {
         () => setTasks(prev => prev.map(t => t.id === id ? optimisticTask : t)),
         // Actual update
         async () => {
-          const { data, error } = await supabase
-            .from('tasks')
-            .update(updates)
-            .eq('id', id)
-            .eq('user_id', user.id)
-            .select()
-            .single();
+          const data = await enforcePolicy('tasks:update', async () => {
+            const { data, error } = await supabase
+              .from('tasks')
+              .update(updates)
+              .eq('id', id)
+              .eq('user_id', user.id)
+              .select()
+              .single();
 
-          if (error) throw error;
+            if (error) throw error;
+
+            // Log activity
+            await supabase.from('activity_logs').insert({
+              user_id: user.id,
+              entity_type: 'task',
+              entity_id: id,
+              action: 'updated',
+              description: `Task updated: ${data.title}`
+            });
+
+            return data;
+          });
 
           // Update with real data
           setTasks(prev => prev.map(t => t.id === id ? data : t));
-
-          // Log activity
-          await supabase.from('activity_logs').insert({
-            user_id: user.id,
-            entity_type: 'task',
-            entity_id: id,
-            action: 'updated',
-            description: `Task updated: ${data.title}`
-          });
-
           return true;
         },
         // Rollback
@@ -165,6 +183,9 @@ export const useTasks = (): UseTasksReturn => {
         }
       );
     } catch (error: unknown) {
+      if (error instanceof SecurityError) {
+        handleError(error, { title: 'Access Denied: You do not have permission to update tasks.' });
+      }
       return false;
     }
   };
@@ -185,21 +206,25 @@ export const useTasks = (): UseTasksReturn => {
         () => setTasks(prev => prev.filter(t => t.id !== id)),
         // Actual update
         async () => {
-          const { error } = await supabase
-            .from('tasks')
-            .delete()
-            .eq('id', id)
-            .eq('user_id', user.id);
+          await enforcePolicy('tasks:delete', async () => {
+            const { error } = await supabase
+              .from('tasks')
+              .delete()
+              .eq('id', id)
+              .eq('user_id', user.id);
 
-          if (error) throw error;
+            if (error) throw error;
 
-          // Log activity
-          await supabase.from('activity_logs').insert({
-            user_id: user.id,
-            entity_type: 'task',
-            entity_id: id,
-            action: 'deleted',
-            description: `Task deleted: ${originalTask.title}`
+            // Log activity
+            await supabase.from('activity_logs').insert({
+              user_id: user.id,
+              entity_type: 'task',
+              entity_id: id,
+              action: 'deleted',
+              description: `Task deleted: ${originalTask.title}`
+            });
+
+            return true;
           });
 
           return true;
@@ -214,7 +239,10 @@ export const useTasks = (): UseTasksReturn => {
         }
       );
     } catch (error: unknown) {
-      // Error handling is managed by executeUpdate
+      if (error instanceof SecurityError) {
+        handleError(error, { title: 'Access Denied: You do not have permission to delete tasks.' });
+      }
+      // Other error handling is managed by executeUpdate
     }
   };
 

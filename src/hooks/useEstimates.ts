@@ -5,10 +5,14 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useErrorHandler } from './useErrorHandler';
 import { useOptimisticUpdate } from './useOptimisticUpdate';
+import { EstimateStatus, ApiError } from '@/types/app-types';
+import { enforcePolicy, SecurityError, handleSupabaseError } from '@/lib/security';
 
 export type Estimate = Tables<'estimates'>;
+export type EstimateLineItem = Tables<'estimate_line_items'>;
+
 export type EstimateWithLineItems = Estimate & {
-  estimate_line_items: Tables<'estimate_line_items'>[];
+  estimate_line_items: EstimateLineItem[];
   customers?: {
     first_name: string;
     last_name: string;
@@ -18,13 +22,25 @@ export type EstimateWithLineItems = Estimate & {
 type EstimateInsert = Omit<TablesInsert<'estimates'>, 'user_id'>;
 type EstimateUpdate = TablesUpdate<'estimates'>;
 
-interface EstimateLineItemData {
+export interface EstimateLineItemData {
   description: string;
   quantity: number;
   unit_price: number;
+  total?: number;
+  sort_order?: number;
 }
 
-export const useEstimates = () => {
+interface UseEstimatesReturn {
+  estimates: EstimateWithLineItems[];
+  loading: boolean;
+  error: Error | null;
+  fetchEstimates: () => Promise<void>;
+  createEstimate: (estimateData: EstimateInsert & { lineItems?: EstimateLineItemData[] }) => Promise<EstimateWithLineItems | null>;
+  updateEstimate: (id: string, updates: EstimateUpdate) => Promise<boolean>;
+  deleteEstimate: (id: string) => Promise<boolean>;
+}
+
+export const useEstimates = (): UseEstimatesReturn => {
   const [estimates, setEstimates] = useState<EstimateWithLineItems[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -32,7 +48,7 @@ export const useEstimates = () => {
   const { executeUpdate } = useOptimisticUpdate();
   const { handleError } = useErrorHandler();
 
-  const validateUserAndSession = () => {
+  const validateUserAndSession = (): boolean => {
     if (!user || !session) {
       const errorMsg = 'Authentication required. Please log in again.';
       setError(new Error(errorMsg));
@@ -42,36 +58,39 @@ export const useEstimates = () => {
     return true;
   };
 
-  const fetchEstimates = async () => {
+  const fetchEstimates = async (): Promise<void> => {
     if (!validateUserAndSession()) return;
 
     setLoading(true);
     setError(null);
     try {
-      const { data, error } = await supabase
-        .from('estimates')
-        .select(`
-          *,
-          estimate_line_items (*),
-          customers (
-            first_name,
-            last_name
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+      const data = await enforcePolicy('estimates:read', async () => {
+        const { data, error } = await supabase
+          .from('estimates')
+          .select(`
+            *,
+            estimate_line_items (*),
+            customers (
+              first_name,
+              last_name
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
 
-      if (error) throw error;
+        if (error) throw error;
+        return data || [];
+      });
 
-      setEstimates(data || []);
+      setEstimates(data);
     } catch (error: unknown) {
-      if (error instanceof Error) {
+      if (error instanceof SecurityError) {
         setError(error);
-        handleError(error, { title: 'Failed to fetch estimates' });
+        handleError(error, { title: 'Access Denied: You do not have permission to view estimates.' });
       } else {
-        const fallbackError = new Error('An unexpected error occurred while fetching estimates');
-        setError(fallbackError);
-        handleError(fallbackError, { title: 'Failed to fetch estimates' });
+        const processedError = handleSupabaseError(error);
+        setError(processedError);
+        handleError(processedError, { title: 'Failed to fetch estimates' });
       }
       setEstimates([]);
     } finally {
@@ -79,17 +98,30 @@ export const useEstimates = () => {
     }
   };
 
-  const createEstimate = async (estimateData: EstimateInsert & { lineItems?: EstimateLineItemData[] }) => {
+  const createEstimate = async (estimateData: EstimateInsert & { lineItems?: EstimateLineItemData[] }): Promise<EstimateWithLineItems | null> => {
     if (!validateUserAndSession()) return null;
 
     const { lineItems, ...estimateFields } = estimateData;
+
+    // Ensure status uses proper enum values, default to 'draft'
+    const cleanedEstimateFields = {
+      ...estimateFields,
+      status: (estimateFields.status as EstimateStatus) || 'draft'
+    };
+
     const optimisticEstimate: EstimateWithLineItems = {
       id: `temp-${Date.now()}`,
-      ...estimateFields,
+      ...cleanedEstimateFields,
       user_id: user.id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      estimate_line_items: lineItems || []
+      estimate_line_items: lineItems?.map(item => ({
+        ...item,
+        id: `temp-${Date.now()}-${Math.random()}`,
+        estimate_id: `temp-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })) || []
     } as EstimateWithLineItems;
 
     try {
@@ -98,56 +130,59 @@ export const useEstimates = () => {
         () => setEstimates(prev => [optimisticEstimate, ...prev]),
         // Actual update
         async () => {
-          const { data, error } = await supabase
-            .from('estimates')
-            .insert({ ...estimateFields, user_id: user.id })
-            .select()
-            .single();
+          const completeEstimate = await enforcePolicy('estimates:create', async () => {
+            const { data, error } = await supabase
+              .from('estimates')
+              .insert({ ...cleanedEstimateFields, user_id: user.id })
+              .select()
+              .single();
 
-          if (error) throw error;
+            if (error) throw error;
 
-          // Create line items if provided
-          if (lineItems && lineItems.length > 0) {
-            const lineItemsToInsert = lineItems.map(item => ({
-              ...item,
-              estimate_id: data.id
-            }));
+            // Create line items if provided
+            if (lineItems && lineItems.length > 0) {
+              const lineItemsToInsert = lineItems.map(item => ({
+                ...item,
+                estimate_id: data.id
+              }));
 
-            const { error: lineItemsError } = await supabase
-              .from('estimate_line_items')
-              .insert(lineItemsToInsert);
+              const { error: lineItemsError } = await supabase
+                .from('estimate_line_items')
+                .insert(lineItemsToInsert);
 
-            if (lineItemsError) throw lineItemsError;
-          }
+              if (lineItemsError) throw lineItemsError;
+            }
 
-          // Fetch the complete estimate with line items
-          const { data: completeEstimate, error: fetchError } = await supabase
-            .from('estimates')
-            .select(`
-              *,
-              estimate_line_items (*),
-              customers (
-                first_name,
-                last_name
-              )
-            `)
-            .eq('id', data.id)
-            .single();
+            // Fetch the complete estimate with line items
+            const { data: completeEstimate, error: fetchError } = await supabase
+              .from('estimates')
+              .select(`
+                *,
+                estimate_line_items (*),
+                customers (
+                  first_name,
+                  last_name
+                )
+              `)
+              .eq('id', data.id)
+              .single();
 
-          if (fetchError) throw fetchError;
+            if (fetchError) throw fetchError;
+
+            // Log activity
+            await supabase.from('activity_logs').insert({
+              user_id: user.id,
+              entity_type: 'estimate',
+              entity_id: data.id,
+              action: 'created',
+              description: `Estimate created: ${data.title}`
+            });
+
+            return completeEstimate;
+          });
 
           // Replace optimistic with real data
           setEstimates(prev => prev.map(e => e.id === optimisticEstimate.id ? completeEstimate : e));
-
-          // Log activity
-          await supabase.from('activity_logs').insert({
-            user_id: user.id,
-            entity_type: 'estimate',
-            entity_id: data.id,
-            action: 'created',
-            description: `Estimate created: ${data.title}`
-          });
-
           return completeEstimate;
         },
         // Rollback
@@ -158,21 +193,32 @@ export const useEstimates = () => {
         }
       );
     } catch (error: unknown) {
+      if (error instanceof SecurityError) {
+        handleError(error, { title: 'Access Denied: You do not have permission to create estimates.' });
+      } else {
+        handleError(handleSupabaseError(error), { title: 'Failed to create estimate' });
+      }
       return null;
     }
   };
 
-  const updateEstimate = async (id: string, updates: EstimateUpdate) => {
+  const updateEstimate = async (id: string, updates: EstimateUpdate): Promise<boolean> => {
     if (!validateUserAndSession()) return false;
 
     // Store original for rollback
     const originalEstimate = estimates.find(e => e.id === id);
     if (!originalEstimate) {
-      toast.error('Estimate not found');
+      handleError(new Error('Estimate not found'), { title: 'Update Failed' });
       return false;
     }
 
-    const optimisticEstimate = { ...originalEstimate, ...updates, updated_at: new Date().toISOString() };
+    // Ensure status uses valid enum values if being updated
+    const cleanedUpdates = { ...updates };
+    if (cleanedUpdates.status && !['draft', 'sent', 'accepted', 'rejected', 'expired'].includes(cleanedUpdates.status as EstimateStatus)) {
+      delete cleanedUpdates.status;
+    }
+
+    const optimisticEstimate = { ...originalEstimate, ...cleanedUpdates, updated_at: new Date().toISOString() };
 
     try {
       return await executeUpdate(
@@ -180,44 +226,47 @@ export const useEstimates = () => {
         () => setEstimates(prev => prev.map(e => e.id === id ? optimisticEstimate : e)),
         // Actual update
         async () => {
-          const { data, error } = await supabase
-            .from('estimates')
-            .update(updates)
-            .eq('id', id)
-            .eq('user_id', user.id)
-            .select()
-            .single();
+          const completeEstimate = await enforcePolicy('estimates:update', async () => {
+            const { data, error } = await supabase
+              .from('estimates')
+              .update(cleanedUpdates)
+              .eq('id', id)
+              .eq('user_id', user.id)
+              .select()
+              .single();
 
-          if (error) throw error;
+            if (error) throw error;
 
-          // Fetch complete estimate with relations
-          const { data: completeEstimate, error: fetchError } = await supabase
-            .from('estimates')
-            .select(`
-              *,
-              estimate_line_items (*),
-              customers (
-                first_name,
-                last_name
-              )
-            `)
-            .eq('id', id)
-            .single();
+            // Fetch complete estimate with relations
+            const { data: completeEstimate, error: fetchError } = await supabase
+              .from('estimates')
+              .select(`
+                *,
+                estimate_line_items (*),
+                customers (
+                  first_name,
+                  last_name
+                )
+              `)
+              .eq('id', id)
+              .single();
 
-          if (fetchError) throw fetchError;
+            if (fetchError) throw fetchError;
+
+            // Log activity
+            await supabase.from('activity_logs').insert({
+              user_id: user.id,
+              entity_type: 'estimate',
+              entity_id: id,
+              action: 'updated',
+              description: `Estimate updated: ${data.title}`
+            });
+
+            return completeEstimate;
+          });
 
           // Update with real data
           setEstimates(prev => prev.map(e => e.id === id ? completeEstimate : e));
-
-          // Log activity
-          await supabase.from('activity_logs').insert({
-            user_id: user.id,
-            entity_type: 'estimate',
-            entity_id: id,
-            action: 'updated',
-            description: `Estimate updated: ${data.title}`
-          });
-
           return true;
         },
         // Rollback
@@ -228,41 +277,59 @@ export const useEstimates = () => {
         }
       );
     } catch (error: unknown) {
+      if (error instanceof SecurityError) {
+        handleError(error, { title: 'Access Denied: You do not have permission to update estimates.' });
+      } else {
+        handleError(handleSupabaseError(error), { title: 'Failed to update estimate' });
+      }
       return false;
     }
   };
 
-  const deleteEstimate = async (id: string) => {
-    if (!validateUserAndSession()) return;
+  const deleteEstimate = async (id: string): Promise<boolean> => {
+    if (!validateUserAndSession()) return false;
 
     // Store original for rollback
     const originalEstimate = estimates.find(e => e.id === id);
     if (!originalEstimate) {
-      toast.error('Estimate not found');
-      return;
+      handleError(new Error('Estimate not found'), { title: 'Delete Failed' });
+      return false;
     }
 
     try {
-      await executeUpdate(
+      return await executeUpdate(
         // Optimistic update
         () => setEstimates(prev => prev.filter(e => e.id !== id)),
         // Actual update
         async () => {
-          const { error } = await supabase
-            .from('estimates')
-            .delete()
-            .eq('id', id)
-            .eq('user_id', user.id);
+          await enforcePolicy('estimates:delete', async () => {
+            // First delete line items to avoid foreign key constraint errors
+            const { error: lineItemsError } = await supabase
+              .from('estimate_line_items')
+              .delete()
+              .eq('estimate_id', id);
 
-          if (error) throw error;
+            if (lineItemsError) throw lineItemsError;
 
-          // Log activity
-          await supabase.from('activity_logs').insert({
-            user_id: user.id,
-            entity_type: 'estimate',
-            entity_id: id,
-            action: 'deleted',
-            description: `Estimate deleted: ${originalEstimate.title}`
+            // Then delete the estimate
+            const { error } = await supabase
+              .from('estimates')
+              .delete()
+              .eq('id', id)
+              .eq('user_id', user.id);
+
+            if (error) throw error;
+
+            // Log activity
+            await supabase.from('activity_logs').insert({
+              user_id: user.id,
+              entity_type: 'estimate',
+              entity_id: id,
+              action: 'deleted',
+              description: `Estimate deleted: ${originalEstimate.title}`
+            });
+
+            return true;
           });
 
           return true;
@@ -277,13 +344,20 @@ export const useEstimates = () => {
         }
       );
     } catch (error: unknown) {
-      // Error handling is done within executeUpdate
+      if (error instanceof SecurityError) {
+        handleError(error, { title: 'Access Denied: You do not have permission to delete estimates.' });
+      } else {
+        handleError(handleSupabaseError(error), { title: 'Failed to delete estimate' });
+      }
+      return false;
     }
   };
 
   useEffect(() => {
-    fetchEstimates();
-  }, [user, session]);
+    if (user && session) {
+      fetchEstimates();
+    }
+  }, [user?.id]);
 
   return {
     estimates,

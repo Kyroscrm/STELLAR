@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { InvoiceFormData, InvoiceStatus, ApiError } from '@/types/app-types';
 import { useErrorHandler } from './useErrorHandler';
 import { useOptimisticUpdate } from './useOptimisticUpdate';
+import { enforcePolicy, SecurityError, handleSupabaseError } from '@/lib/security';
 
 export type Invoice = Tables<'invoices'>;
 export type InvoiceLineItem = Tables<'invoice_line_items'>;
@@ -51,10 +52,6 @@ interface UseInvoicesReturn {
   deleteInvoice: (id: string) => Promise<boolean>;
 }
 
-const isSupabaseError = (error: unknown): error is ApiError => {
-  return typeof error === 'object' && error !== null && 'error' in error && typeof (error as ApiError).error === 'object';
-};
-
 export const useInvoices = (): UseInvoicesReturn => {
   const [invoices, setInvoices] = useState<InvoiceWithCustomer[]>([]);
   const [loading, setLoading] = useState(false);
@@ -79,30 +76,30 @@ export const useInvoices = (): UseInvoicesReturn => {
     setLoading(true);
     setError(null);
     try {
-      const { data, error } = await supabase
-        .from('invoices')
-        .select(`
-          *,
-          invoice_line_items(*),
-          customers(id, first_name, last_name, email, phone)
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+      const data = await enforcePolicy('invoices:read', async () => {
+        const { data, error } = await supabase
+          .from('invoices')
+          .select(`
+            *,
+            invoice_line_items(*),
+            customers(id, first_name, last_name, email, phone)
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setInvoices(data || []);
+        if (error) throw error;
+        return data || [];
+      });
+
+      setInvoices(data);
     } catch (error: unknown) {
-      if (isSupabaseError(error)) {
-        const supabaseError = new Error(error.error.message);
-        setError(supabaseError);
-        handleError(supabaseError, { title: 'Failed to fetch invoices' });
-      } else if (error instanceof Error) {
+      if (error instanceof SecurityError) {
         setError(error);
-        handleError(error, { title: 'Failed to fetch invoices' });
+        handleError(error, { title: 'Access Denied: You do not have permission to view invoices.' });
       } else {
-        const fallbackError = new Error('An unexpected error occurred while fetching invoices');
-        setError(fallbackError);
-        handleError(fallbackError, { title: 'Failed to fetch invoices' });
+        const processedError = handleSupabaseError(error);
+        setError(processedError);
+        handleError(processedError, { title: 'Failed to fetch invoices' });
       }
       setInvoices([]);
     } finally {
@@ -137,61 +134,59 @@ export const useInvoices = (): UseInvoicesReturn => {
         }
       });
 
-      const { data: invoice, error: invoiceError } = await supabase
-        .from('invoices')
-        .insert(cleanedInvoiceFields)
-        .select(`
-          *,
-          invoice_line_items(*),
-          customers(id, first_name, last_name, email, phone)
-        `)
-        .single();
+      const invoice = await enforcePolicy('invoices:create', async () => {
+        const { data: invoice, error: invoiceError } = await supabase
+          .from('invoices')
+          .insert(cleanedInvoiceFields)
+          .select(`
+            *,
+            invoice_line_items(*),
+            customers(id, first_name, last_name, email, phone)
+          `)
+          .single();
 
-      if (invoiceError) throw invoiceError;
+        if (invoiceError) throw invoiceError;
 
-      if (line_items && line_items.length > 0) {
-        const lineItemsToInsert = line_items.map(item => ({
-          invoice_id: invoice.id,
-          description: item.description,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          sort_order: item.sort_order
-          // Remove total - let the database trigger calculate it
-        }));
+        if (line_items && line_items.length > 0) {
+          const lineItemsToInsert = line_items.map(item => ({
+            invoice_id: invoice.id,
+            description: item.description,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            sort_order: item.sort_order
+            // Remove total - let the database trigger calculate it
+          }));
 
-        const { error: lineItemsError } = await supabase
-          .from('invoice_line_items')
-          .insert(lineItemsToInsert);
+          const { error: lineItemsError } = await supabase
+            .from('invoice_line_items')
+            .insert(lineItemsToInsert);
 
-        if (lineItemsError) throw lineItemsError;
-      }
+          if (lineItemsError) throw lineItemsError;
+        }
+
+        // Log activity
+        await supabase.from('activity_logs').insert({
+          user_id: user.id,
+          entity_type: 'invoice',
+          entity_id: invoice.id,
+          action: 'created',
+          description: `Invoice created: ${invoice.title}`
+        });
+
+        return invoice;
+      });
 
       // Optimistically update the local state
       setInvoices(prev => [invoice, ...prev]);
-
-      // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'invoice',
-        entity_id: invoice.id,
-        action: 'created',
-        description: `Invoice created: ${invoice.title}`
-      });
-
       toast.success('Invoice created successfully');
       return invoice;
     } catch (error: unknown) {
-      if (isSupabaseError(error)) {
-        const supabaseError = new Error(error.error.message);
-        setError(supabaseError);
-        handleError(supabaseError, { title: 'Failed to create invoice' });
-      } else if (error instanceof Error) {
-        setError(error);
-        handleError(error, { title: 'Failed to create invoice' });
+      if (error instanceof SecurityError) {
+        handleError(error, { title: 'Access Denied: You do not have permission to create invoices.' });
       } else {
-        const fallbackError = new Error('Failed to create invoice');
-        setError(fallbackError);
-        handleError(fallbackError, { title: 'Failed to create invoice' });
+        const processedError = handleSupabaseError(error);
+        setError(processedError);
+        handleError(processedError, { title: 'Failed to create invoice' });
       }
       return null;
     }
@@ -216,55 +211,58 @@ export const useInvoices = (): UseInvoicesReturn => {
         () => setInvoices(prev => prev.map(invoice => invoice.id === id ? optimisticInvoice : invoice)),
         // Actual update
         async () => {
-          // Clean up UUID fields in updates as well
-          const cleanedUpdates = { ...updates };
-          if (cleanedUpdates.customer_id === '') cleanedUpdates.customer_id = undefined;
-          if (cleanedUpdates.job_id === '') cleanedUpdates.job_id = undefined;
-          if (cleanedUpdates.estimate_id === '') cleanedUpdates.estimate_id = undefined;
+          const data = await enforcePolicy('invoices:update', async () => {
+            // Clean up UUID fields in updates as well
+            const cleanedUpdates = { ...updates };
+            if (cleanedUpdates.customer_id === '') cleanedUpdates.customer_id = undefined;
+            if (cleanedUpdates.job_id === '') cleanedUpdates.job_id = undefined;
+            if (cleanedUpdates.estimate_id === '') cleanedUpdates.estimate_id = undefined;
 
-          // Ensure payment_status uses valid enum values if being updated
-          if (cleanedUpdates.payment_status && !['completed', 'failed', 'pending', 'refunded'].includes(cleanedUpdates.payment_status as PaymentStatus)) {
-            delete cleanedUpdates.payment_status;
-          }
-
-          // Ensure status uses valid enum values if being updated
-          if (cleanedUpdates.status && !['draft', 'sent', 'paid', 'overdue', 'cancelled', 'viewed'].includes(cleanedUpdates.status as InvoiceStatus)) {
-            delete cleanedUpdates.status;
-          }
-
-          // Remove undefined fields
-          Object.keys(cleanedUpdates).forEach(key => {
-            if (cleanedUpdates[key as keyof typeof cleanedUpdates] === undefined) {
-              delete cleanedUpdates[key as keyof typeof cleanedUpdates];
+            // Ensure payment_status uses valid enum values if being updated
+            if (cleanedUpdates.payment_status && !['completed', 'failed', 'pending', 'refunded'].includes(cleanedUpdates.payment_status as PaymentStatus)) {
+              delete cleanedUpdates.payment_status;
             }
+
+            // Ensure status uses valid enum values if being updated
+            if (cleanedUpdates.status && !['draft', 'sent', 'paid', 'overdue', 'cancelled', 'viewed'].includes(cleanedUpdates.status as InvoiceStatus)) {
+              delete cleanedUpdates.status;
+            }
+
+            // Remove undefined fields
+            Object.keys(cleanedUpdates).forEach(key => {
+              if (cleanedUpdates[key as keyof typeof cleanedUpdates] === undefined) {
+                delete cleanedUpdates[key as keyof typeof cleanedUpdates];
+              }
+            });
+
+            const { data, error } = await supabase
+              .from('invoices')
+              .update(cleanedUpdates)
+              .eq('id', id)
+              .eq('user_id', user.id)
+              .select(`
+                *,
+                invoice_line_items(*),
+                customers(id, first_name, last_name, email, phone)
+              `)
+              .single();
+
+            if (error) throw error;
+
+            // Log activity
+            await supabase.from('activity_logs').insert({
+              user_id: user.id,
+              entity_type: 'invoice',
+              entity_id: id,
+              action: 'updated',
+              description: `Invoice updated: ${data.title}`
+            });
+
+            return data;
           });
-
-          const { data, error } = await supabase
-            .from('invoices')
-            .update(cleanedUpdates)
-            .eq('id', id)
-            .eq('user_id', user.id)
-            .select(`
-              *,
-              invoice_line_items(*),
-              customers(id, first_name, last_name, email, phone)
-            `)
-            .single();
-
-          if (error) throw error;
 
           // Update with real data
           setInvoices(prev => prev.map(invoice => invoice.id === id ? data : invoice));
-
-          // Log activity
-          await supabase.from('activity_logs').insert({
-            user_id: user.id,
-            entity_type: 'invoice',
-            entity_id: id,
-            action: 'updated',
-            description: `Invoice updated`
-          });
-
           return true;
         },
         // Rollback
@@ -275,6 +273,11 @@ export const useInvoices = (): UseInvoicesReturn => {
         }
       );
     } catch (error: unknown) {
+      if (error instanceof SecurityError) {
+        handleError(error, { title: 'Access Denied: You do not have permission to update invoices.' });
+      } else {
+        handleError(handleSupabaseError(error), { title: 'Failed to update invoice' });
+      }
       return false;
     }
   };
@@ -295,21 +298,34 @@ export const useInvoices = (): UseInvoicesReturn => {
         () => setInvoices(prev => prev.filter(invoice => invoice.id !== id)),
         // Actual update
         async () => {
-          const { error } = await supabase
-            .from('invoices')
-            .delete()
-            .eq('id', id)
-            .eq('user_id', user.id);
+          await enforcePolicy('invoices:delete', async () => {
+            // First delete line items to avoid foreign key constraint errors
+            const { error: lineItemsError } = await supabase
+              .from('invoice_line_items')
+              .delete()
+              .eq('invoice_id', id);
 
-          if (error) throw error;
+            if (lineItemsError) throw lineItemsError;
 
-          // Log activity
-          await supabase.from('activity_logs').insert({
-            user_id: user.id,
-            entity_type: 'invoice',
-            entity_id: id,
-            action: 'deleted',
-            description: `Invoice deleted`
+            // Then delete the invoice
+            const { error } = await supabase
+              .from('invoices')
+              .delete()
+              .eq('id', id)
+              .eq('user_id', user.id);
+
+            if (error) throw error;
+
+            // Log activity
+            await supabase.from('activity_logs').insert({
+              user_id: user.id,
+              entity_type: 'invoice',
+              entity_id: id,
+              action: 'deleted',
+              description: `Invoice deleted: ${originalInvoice.title}`
+            });
+
+            return true;
           });
 
           return true;
@@ -324,6 +340,11 @@ export const useInvoices = (): UseInvoicesReturn => {
         }
       );
     } catch (error: unknown) {
+      if (error instanceof SecurityError) {
+        handleError(error, { title: 'Access Denied: You do not have permission to delete invoices.' });
+      } else {
+        handleError(handleSupabaseError(error), { title: 'Failed to delete invoice' });
+      }
       return false;
     }
   };
