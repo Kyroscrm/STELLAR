@@ -1,7 +1,7 @@
 
-import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface CalculatorSubmission {
@@ -38,9 +38,12 @@ export const useCalculatorSubmissions = () => {
       if (error) throw error;
 
       setSubmissions(data || []);
-    } catch (error: any) {
-      console.error('Error fetching calculator submissions:', error);
-      toast.error('Failed to fetch calculator submissions');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(`Failed to fetch calculator submissions: ${error.message}`);
+      } else {
+        toast.error('Failed to fetch calculator submissions');
+      }
     } finally {
       setLoading(false);
     }
@@ -62,11 +65,14 @@ export const useCalculatorSubmissions = () => {
       if (user) {
         setSubmissions(prev => [data, ...prev]);
       }
-      
+
       return data;
-    } catch (error: any) {
-      console.error('Error creating calculator submission:', error);
-      toast.error('Failed to submit calculator form');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(`Failed to submit calculator form: ${error.message}`);
+      } else {
+        toast.error('Failed to submit calculator form');
+      }
       return null;
     }
   };
@@ -85,9 +91,12 @@ export const useCalculatorSubmissions = () => {
 
       setSubmissions(prev => prev.filter(submission => submission.id !== id));
       toast.success('Submission deleted successfully');
-    } catch (error: any) {
-      console.error('Error deleting submission:', error);
-      toast.error('Failed to delete submission');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(`Failed to delete submission: ${error.message}`);
+      } else {
+        toast.error('Failed to delete submission');
+      }
     }
   };
 

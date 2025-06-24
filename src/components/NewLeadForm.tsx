@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
 import LeadForm from '@/components/LeadForm';
 import { useLeads } from '@/hooks/useLeads';
+import React, { useState } from 'react';
 import { toast } from 'sonner';
 
 interface NewLeadFormProps {
@@ -54,9 +54,12 @@ const NewLeadForm: React.FC<NewLeadFormProps> = ({
         onSuccess();
         onClose?.();
       }
-    } catch (error) {
-      console.error('Error saving lead:', error);
-      toast.error('Failed to save lead');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(`Failed to save lead: ${error.message}`);
+      } else {
+        toast.error('Failed to save lead');
+      }
     } finally {
       setIsSubmitting(false);
     }

@@ -22,9 +22,9 @@ export const useErrorHandler = () => {
       fallbackMessage = 'An unexpected error occurred'
     } = options;
 
-    // Log error for debugging
+    // Log error for debugging (handled by error boundary)
     if (logError) {
-      console.error('Error handled:', error);
+      // Error logging is handled by error boundary or external service
     }
 
     // Extract error information for improved handling

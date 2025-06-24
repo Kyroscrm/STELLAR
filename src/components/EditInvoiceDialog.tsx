@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { invoiceSchema, InvoiceFormData } from '@/lib/validation';
-import { useInvoices, InvoiceWithCustomer } from '@/hooks/useInvoices';
-import { Plus, Trash2, Edit } from 'lucide-react';
-import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { FormErrorBoundary } from '@/components/ui/form-error-boundary';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { useErrorHandler, useOptimisticUpdate } from '@/hooks';
+import { InvoiceWithCustomer, useInvoices } from '@/hooks/useInvoices';
+import { InvoiceFormData, invoiceSchema } from '@/lib/validation';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Edit, Plus, Trash2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 interface EditInvoiceDialogProps {
   invoice: InvoiceWithCustomer;
@@ -28,8 +28,8 @@ interface LineItem {
   total: number;
 }
 
-const EditInvoiceDialog: React.FC<EditInvoiceDialogProps> = ({ 
-  invoice, 
+const EditInvoiceDialog: React.FC<EditInvoiceDialogProps> = ({
+  invoice,
   trigger,
   onSuccess
 }) => {
@@ -77,11 +77,11 @@ const EditInvoiceDialog: React.FC<EditInvoiceDialogProps> = ({
   const updateLineItem = (index: number, field: keyof LineItem, value: string | number) => {
     const updated = [...lineItems];
     updated[index] = { ...updated[index], [field]: value };
-    
+
     if (field === 'quantity' || field === 'unit_price') {
       updated[index].total = Number(updated[index].quantity) * Number(updated[index].unit_price);
     }
-    
+
     setLineItems(updated);
   };
 
@@ -102,8 +102,8 @@ const EditInvoiceDialog: React.FC<EditInvoiceDialogProps> = ({
         return;
       }
 
-      console.log('Updating invoice with data:', data);
-      
+      // Invoice update data is processed
+
       await executeUpdate(
         () => {
           // Optimistic update would go here if we had local state
@@ -145,7 +145,7 @@ const EditInvoiceDialog: React.FC<EditInvoiceDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Edit Invoice - {invoice.invoice_number}</DialogTitle>
         </DialogHeader>
-        
+
         <FormErrorBoundary onRetry={() => setOpen(false)}>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
@@ -212,8 +212,8 @@ const EditInvoiceDialog: React.FC<EditInvoiceDialogProps> = ({
                     <FormItem>
                       <FormLabel>Tax Rate (%)</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="number" 
+                        <Input
+                          type="number"
                           step="0.01"
                           min="0"
                           max="100"

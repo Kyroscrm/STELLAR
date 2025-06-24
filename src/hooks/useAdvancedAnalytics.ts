@@ -1,7 +1,8 @@
 
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface AdvancedAnalytics {
   // Revenue Metrics
@@ -9,22 +10,22 @@ interface AdvancedAnalytics {
   monthlyRevenue: number;
   quarterlyRevenue: number;
   revenueGrowthRate: number;
-  
+
   // Conversion Metrics
   leadToCustomerRate: number;
   estimateToInvoiceRate: number;
   invoiceToPaymentRate: number;
-  
+
   // Pipeline Metrics
   totalPipelineValue: number;
   wonPipelineValue: number;
   activePipelineValue: number;
   pipelineVelocity: number; // days to close
-  
+
   // Forecasting
   projectedMonthlyRevenue: number;
   projectedQuarterlyRevenue: number;
-  
+
   // Time-based data for charts
   monthlyRevenueData: Array<{ month: string; revenue: number; }>;
   quarterlyRevenueData: Array<{ quarter: string; revenue: number; }>;
@@ -80,7 +81,7 @@ export const useAdvancedAnalytics = () => {
           // Revenue calculations
           const paidInvoices = invoices.filter(i => i.status === 'paid');
           const totalRevenue = paidInvoices.reduce((sum, invoice) => sum + (invoice.total_amount || 0), 0);
-          
+
           const monthlyRevenue = paidInvoices
             .filter(i => {
               const invoiceDate = new Date(i.created_at || '');
@@ -107,22 +108,22 @@ export const useAdvancedAnalytics = () => {
             })
             .reduce((sum, invoice) => sum + (invoice.total_amount || 0), 0);
 
-          const revenueGrowthRate = previousMonthRevenue > 0 
-            ? ((monthlyRevenue - previousMonthRevenue) / previousMonthRevenue) * 100 
+          const revenueGrowthRate = previousMonthRevenue > 0
+            ? ((monthlyRevenue - previousMonthRevenue) / previousMonthRevenue) * 100
             : 0;
 
           // Conversion rates
-          const leadToCustomerRate = leads.length > 0 
-            ? (customers.length / leads.length) * 100 
+          const leadToCustomerRate = leads.length > 0
+            ? (customers.length / leads.length) * 100
             : 0;
 
           const approvedEstimates = estimates.filter(e => e.status === 'approved');
-          const estimateToInvoiceRate = estimates.length > 0 
-            ? (invoices.length / estimates.length) * 100 
+          const estimateToInvoiceRate = estimates.length > 0
+            ? (invoices.length / estimates.length) * 100
             : 0;
 
-          const invoiceToPaymentRate = invoices.length > 0 
-            ? (paidInvoices.length / invoices.length) * 100 
+          const invoiceToPaymentRate = invoices.length > 0
+            ? (paidInvoices.length / invoices.length) * 100
             : 0;
 
           // Pipeline metrics
@@ -151,11 +152,11 @@ export const useAdvancedAnalytics = () => {
             const monthRevenue = paidInvoices
               .filter(invoice => {
                 const invoiceDate = new Date(invoice.created_at || '');
-                return invoiceDate.getMonth() === targetDate.getMonth() && 
+                return invoiceDate.getMonth() === targetDate.getMonth() &&
                        invoiceDate.getFullYear() === targetDate.getFullYear();
               })
               .reduce((sum, invoice) => sum + (invoice.total_amount || 0), 0);
-            
+
             monthlyRevenueData.push({
               month: targetDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
               revenue: monthRevenue
@@ -168,7 +169,7 @@ export const useAdvancedAnalytics = () => {
             const targetQuarter = Math.floor(currentMonth / 3) - i;
             const targetYear = targetQuarter < 0 ? currentYear - 1 : currentYear;
             const adjustedQuarter = targetQuarter < 0 ? targetQuarter + 4 : targetQuarter;
-            
+
             const quarterRevenue = paidInvoices
               .filter(invoice => {
                 const invoiceDate = new Date(invoice.created_at || '');
@@ -176,7 +177,7 @@ export const useAdvancedAnalytics = () => {
                 return invoiceQuarter === adjustedQuarter && invoiceDate.getFullYear() === targetYear;
               })
               .reduce((sum, invoice) => sum + (invoice.total_amount || 0), 0);
-            
+
             quarterlyRevenueData.push({
               quarter: `Q${adjustedQuarter + 1} ${targetYear}`,
               revenue: quarterRevenue
@@ -205,8 +206,12 @@ export const useAdvancedAnalytics = () => {
             quarterlyRevenueData
           });
         }
-      } catch (error) {
-        console.error('Error fetching advanced analytics:', error);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          toast.error(`Failed to fetch analytics: ${error.message}`);
+        } else {
+          toast.error('Failed to fetch analytics');
+        }
       } finally {
         setLoading(false);
       }
