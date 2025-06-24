@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useCallback, useEffect, useState } from 'react';
 
 interface DashboardStats {
   totalCustomers: number;
@@ -43,17 +43,17 @@ export const useOptimizedDashboardStats = () => {
   // Check cache first
   const getCachedStats = useCallback((): CachedStats | null => {
     if (!user) return null;
-    
+
     try {
       const cached = localStorage.getItem(`${CACHE_KEY}_${user.id}`);
       if (!cached) return null;
-      
+
       const parsedCache: CachedStats = JSON.parse(cached);
       if (Date.now() > parsedCache.expiresAt) {
         localStorage.removeItem(`${CACHE_KEY}_${user.id}`);
         return null;
       }
-      
+
       return parsedCache;
     } catch {
       return null;
@@ -63,24 +63,24 @@ export const useOptimizedDashboardStats = () => {
   // Cache stats
   const setCachedStats = useCallback((newStats: DashboardStats) => {
     if (!user) return;
-    
+
     const cachedData: CachedStats = {
       ...newStats,
       cachedAt: Date.now(),
       expiresAt: Date.now() + CACHE_DURATION
     };
-    
+
     try {
       localStorage.setItem(`${CACHE_KEY}_${user.id}`, JSON.stringify(cachedData));
     } catch (error) {
-      console.warn('Failed to cache dashboard stats:', error);
+      // Cache failed but continue
     }
   }, [user]);
 
   // Optimized fetch with parallel queries
   const fetchStats = useCallback(async (useCache = true) => {
     if (!user) return;
-    
+
     // Check cache first
     if (useCache) {
       const cached = getCachedStats();
@@ -89,13 +89,11 @@ export const useOptimizedDashboardStats = () => {
         return;
       }
     }
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
-      console.log('Fetching optimized dashboard stats for user:', user.id);
-      
       // Use Promise.allSettled for better error handling
       const results = await Promise.allSettled([
         supabase.from('customers').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
@@ -111,14 +109,16 @@ export const useOptimizedDashboardStats = () => {
       ]);
 
       // Extract successful results
-      const counts = results.slice(0, 9).map(result => 
+      const counts = results.slice(0, 9).map(result =>
         result.status === 'fulfilled' ? (result.value.count || 0) : 0
       );
 
       const revenueResult = results[9];
-      const totalRevenue = revenueResult.status === 'fulfilled' 
-        ? (revenueResult.value.data?.reduce((sum: number, invoice: any) => 
-            sum + (Number(invoice.total_amount) || 0), 0) || 0)
+      const totalRevenue = revenueResult.status === 'fulfilled'
+        ? (revenueResult.value.data?.reduce((sum: number, invoice: unknown) => {
+            const invoiceData = invoice as any;
+            return sum + (Number(invoiceData.total_amount) || 0);
+          }, 0) || 0)
         : 0;
 
       const newStats: DashboardStats = {
@@ -136,10 +136,12 @@ export const useOptimizedDashboardStats = () => {
 
       setStats(newStats);
       setCachedStats(newStats);
-      console.log('Dashboard stats fetched successfully via optimized parallel queries');
-    } catch (error: any) {
-      console.error('Error fetching dashboard stats:', error);
-      setError(error);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error);
+      } else {
+        setError(new Error('An unexpected error occurred while fetching dashboard stats'));
+      }
     } finally {
       setLoading(false);
     }
@@ -169,7 +171,7 @@ export const useOptimizedDashboardStats = () => {
     };
 
     const channels = [
-      'customers', 'leads', 'jobs', 'estimates', 
+      'customers', 'leads', 'jobs', 'estimates',
       'invoices', 'tasks'
     ].map((table, index) => {
       const channel = supabase
@@ -183,15 +185,10 @@ export const useOptimizedDashboardStats = () => {
             filter: `user_id=eq.${user.id}`
           },
           (payload) => {
-            console.log(`Real-time stats update from ${table}:`, payload.eventType);
             debouncedRefresh();
           }
         )
-        .subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            console.log(`Stats subscription active for ${table}`);
-          }
-        });
+        .subscribe();
 
       return channel;
     });
@@ -202,11 +199,11 @@ export const useOptimizedDashboardStats = () => {
     };
   }, [user, refreshStats]);
 
-  return { 
-    stats, 
-    loading, 
+  return {
+    stats,
+    loading,
     error,
-    refetch: fetchStats, 
-    refreshStats 
+    refetch: fetchStats,
+    refreshStats
   };
 };

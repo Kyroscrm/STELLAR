@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface ActivityLog {
@@ -10,7 +10,7 @@ export interface ActivityLog {
   entity_type: string;
   entity_id: string;
   description: string;
-  metadata: any;
+  metadata: unknown;
   created_at: string;
 }
 
@@ -41,8 +41,6 @@ export const useOptimizedActivityLogs = (filters: ActivityLogFilters = {}) => {
 
     setLoading(true);
     try {
-      console.log('Fetching optimized activity logs for user:', user.id, 'with filters:', filterObj);
-      
       let query = supabase
         .from('activity_logs')
         .select('*', { count: 'exact' })
@@ -52,7 +50,7 @@ export const useOptimizedActivityLogs = (filters: ActivityLogFilters = {}) => {
       if (filterObj.entity_type) {
         query = query.eq('entity_type', filterObj.entity_type);
       }
-      
+
       if (filterObj.action) {
         query = query.eq('action', filterObj.action);
       }
@@ -71,7 +69,7 @@ export const useOptimizedActivityLogs = (filters: ActivityLogFilters = {}) => {
       const { data, error, count } = await query;
 
       if (error) throw error;
-      
+
       if (filterObj.offset && filterObj.offset > 0) {
         // Append for pagination
         setLogs(prev => [...prev, ...(data || [])]);
@@ -79,12 +77,14 @@ export const useOptimizedActivityLogs = (filters: ActivityLogFilters = {}) => {
         // Replace for initial load or filters
         setLogs(data || []);
       }
-      
+
       setTotalCount(count || 0);
-      console.log(`Successfully fetched ${data?.length || 0} activity logs out of ${count || 0} total`);
-    } catch (error: any) {
-      console.error('Error fetching activity logs:', error);
-      toast.error('Failed to fetch activity logs');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error('Failed to fetch activity logs');
+      } else {
+        toast.error('Failed to fetch activity logs');
+      }
     } finally {
       setLoading(false);
     }
@@ -92,11 +92,11 @@ export const useOptimizedActivityLogs = (filters: ActivityLogFilters = {}) => {
 
   // Optimized background logging
   const logActivity = useCallback(async (
-    action: string, 
-    entityType: string, 
-    entityId: string, 
-    description?: string, 
-    metadata?: any
+    action: string,
+    entityType: string,
+    entityId: string,
+    description?: string,
+    metadata?: unknown
   ) => {
     if (!validateUserAndSession()) return;
 
@@ -115,15 +115,13 @@ export const useOptimizedActivityLogs = (filters: ActivityLogFilters = {}) => {
     // Add to UI immediately if it matches current filters
     const matchesFilters = (!filters.entity_type || filters.entity_type === entityType) &&
                           (!filters.action || filters.action === action);
-    
+
     if (matchesFilters) {
       setLogs(prev => [optimisticLog, ...prev.slice(0, 49)]);
       setTotalCount(prev => prev + 1);
     }
 
     try {
-      console.log('Logging activity:', { action, entityType, entityId, description });
-      
       const { data, error } = await supabase
         .from('activity_logs')
         .insert({
@@ -141,22 +139,19 @@ export const useOptimizedActivityLogs = (filters: ActivityLogFilters = {}) => {
 
       // Replace optimistic with real data
       if (matchesFilters) {
-        setLogs(prev => prev.map(log => 
+        setLogs(prev => prev.map(log =>
           log.id === optimisticLog.id ? data : log
         ));
       }
 
-      console.log('Activity logged successfully:', data);
       return data;
-    } catch (error: any) {
-      console.error('Error logging activity:', error);
-      
+    } catch (error: unknown) {
       // Remove optimistic entry on error
       if (matchesFilters) {
         setLogs(prev => prev.filter(log => log.id !== optimisticLog.id));
         setTotalCount(prev => prev - 1);
       }
-      
+
       return null;
     }
   }, [user, validateUserAndSession, filters]);
@@ -164,13 +159,13 @@ export const useOptimizedActivityLogs = (filters: ActivityLogFilters = {}) => {
   // Load more for pagination
   const loadMore = useCallback(async () => {
     if (loading || logs.length >= totalCount) return;
-    
-    const newFilters = { 
-      ...filters, 
+
+    const newFilters = {
+      ...filters,
       offset: logs.length,
       limit: filters.limit || 50
     };
-    
+
     await fetchLogs(newFilters);
   }, [loading, logs.length, totalCount, filters, fetchLogs]);
 
@@ -194,24 +189,23 @@ export const useOptimizedActivityLogs = (filters: ActivityLogFilters = {}) => {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('Real-time activity log received:', payload);
           const newLog = payload.new as ActivityLog;
-          
+
           // Enhanced filter matching
           const matchesFilters = (!filters.entity_type || filters.entity_type === newLog.entity_type) &&
                                 (!filters.action || filters.action === newLog.action);
-          
+
           if (matchesFilters) {
             setLogs(prev => {
               // Prevent duplicates and maintain order
               const exists = prev.some(log => log.id === newLog.id);
               if (exists) return prev;
-              
+
               // Insert at beginning and maintain limit
               const updated = [newLog, ...prev];
               return updated.slice(0, filters.limit || 50);
             });
-            
+
             // Update total count
             setTotalCount(prev => prev + 1);
           }
@@ -244,11 +238,7 @@ export const useOptimizedActivityLogs = (filters: ActivityLogFilters = {}) => {
           setTotalCount(prev => Math.max(0, prev - 1));
         }
       )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('Real-time activity logs subscription active');
-        }
-      });
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);

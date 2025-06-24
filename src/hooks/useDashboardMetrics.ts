@@ -1,7 +1,6 @@
-
-import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface DashboardMetric {
@@ -9,7 +8,7 @@ export interface DashboardMetric {
   user_id: string;
   metric_type: string;
   value: number;
-  metadata: any;
+  metadata: unknown;
   period: 'today' | 'week' | 'month' | 'quarter' | 'year';
   calculated_at: string;
   expires_at: string;
@@ -21,10 +20,13 @@ const isValidPeriod = (period: string): period is 'today' | 'week' | 'month' | '
 };
 
 // Safe conversion function
-const convertToDashboardMetric = (dbData: any): DashboardMetric => ({
-  ...dbData,
-  period: isValidPeriod(dbData.period) ? dbData.period : 'month'
-});
+const convertToDashboardMetric = (dbData: unknown): DashboardMetric => {
+  const data = dbData as any;
+  return {
+    ...data,
+    period: isValidPeriod(data.period) ? data.period : 'month'
+  };
+};
 
 export const useDashboardMetrics = () => {
   const { user, session } = useAuth();
@@ -44,8 +46,6 @@ export const useDashboardMetrics = () => {
 
     setLoading(true);
     try {
-      console.log('Fetching dashboard metrics for user:', user.id, 'period:', period);
-      
       const { data, error } = await supabase
         .from('dashboard_metrics_cache')
         .select('*')
@@ -57,16 +57,17 @@ export const useDashboardMetrics = () => {
 
       const convertedMetrics = data ? data.map(convertToDashboardMetric) : [];
       setMetrics(convertedMetrics);
-      
+
       // If no cached metrics or they're expired, calculate fresh ones
       if (!data || data.length === 0) {
         await calculateMetrics(period);
-      } else {
-        console.log(`Successfully fetched ${convertedMetrics.length} cached metrics`);
       }
-    } catch (error: any) {
-      console.error('Error fetching dashboard metrics:', error);
-      toast.error('Failed to fetch dashboard metrics');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error('Failed to fetch dashboard metrics');
+      } else {
+        toast.error('Failed to fetch dashboard metrics');
+      }
     } finally {
       setLoading(false);
     }
@@ -76,12 +77,10 @@ export const useDashboardMetrics = () => {
     if (!validateUserAndSession()) return;
 
     try {
-      console.log('Calculating metrics for period:', period);
-      
       // Calculate various metrics based on period
       const endDate = new Date();
       const startDate = new Date();
-      
+
       switch (period) {
         case 'today':
           startDate.setHours(0, 0, 0, 0);
@@ -192,16 +191,18 @@ export const useDashboardMetrics = () => {
           });
 
         if (error) {
-          console.error('Error caching metric:', error);
+          // Metric caching failed - continue without throwing
         }
       }
 
       // Fetch the updated metrics
       await fetchMetrics(validPeriod);
-      console.log('Metrics calculated and cached successfully');
-    } catch (error: any) {
-      console.error('Error calculating metrics:', error);
-      toast.error('Failed to calculate metrics');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error('Failed to calculate metrics');
+      } else {
+        toast.error('Failed to calculate metrics');
+      }
     }
   };
 
