@@ -3,6 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { InvoiceFormData, InvoiceStatus, ApiError } from '@/types/app-types';
+import { useErrorHandler } from './useErrorHandler';
+import { useOptimisticUpdate } from './useOptimisticUpdate';
 
 export type Invoice = Tables<'invoices'>;
 export type InvoiceLineItem = Tables<'invoice_line_items'>;
@@ -22,30 +25,56 @@ export type InvoiceWithCustomer = Invoice & {
 type InvoiceInsert = Omit<TablesInsert<'invoices'>, 'user_id'>;
 type InvoiceUpdate = TablesUpdate<'invoices'>;
 
-export type InvoiceFormData = Omit<InvoiceInsert, 'user_id'> & {
-  customer_id?: string;
-  job_id?: string;
-  estimate_id?: string;
-  payment_status?: 'completed' | 'failed' | 'pending' | 'refunded';
-};
+export type PaymentStatus = 'completed' | 'failed' | 'pending' | 'refunded';
 
-interface InvoiceLineItemData {
+export interface InvoiceLineItemData {
   description: string;
   quantity: number;
   unit_price: number;
 }
 
-export const useInvoices = () => {
+export interface InvoiceLineItemFormData {
+  description: string;
+  quantity: number;
+  unit_price: number;
+  total?: number;
+  sort_order?: number;
+}
+
+interface UseInvoicesReturn {
+  invoices: InvoiceWithCustomer[];
+  loading: boolean;
+  error: Error | null;
+  fetchInvoices: () => Promise<void>;
+  addInvoice: (invoiceData: InvoiceFormData) => Promise<InvoiceWithCustomer | null>;
+  updateInvoice: (id: string, updates: InvoiceUpdate) => Promise<boolean>;
+  deleteInvoice: (id: string) => Promise<boolean>;
+}
+
+const isSupabaseError = (error: unknown): error is ApiError => {
+  return typeof error === 'object' && error !== null && 'error' in error && typeof (error as ApiError).error === 'object';
+};
+
+export const useInvoices = (): UseInvoicesReturn => {
   const [invoices, setInvoices] = useState<InvoiceWithCustomer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const { user } = useAuth();
+  const { user, session } = useAuth();
+  const { handleError } = useErrorHandler();
+  const { executeUpdate } = useOptimisticUpdate();
 
-  const fetchInvoices = async () => {
-    if (!user) {
-      setInvoices([]);
-      return;
+  const validateUserAndSession = () => {
+    if (!user || !session) {
+      const errorMsg = 'Authentication required. Please log in again.';
+      setError(new Error(errorMsg));
+      toast.error(errorMsg);
+      return false;
     }
+    return true;
+  };
+
+  const fetchInvoices = async (): Promise<void> => {
+    if (!validateUserAndSession()) return;
 
     setLoading(true);
     setError(null);
@@ -63,13 +92,17 @@ export const useInvoices = () => {
       if (error) throw error;
       setInvoices(data || []);
     } catch (error: unknown) {
-      if (error instanceof Error) {
+      if (isSupabaseError(error)) {
+        const supabaseError = new Error(error.error.message);
+        setError(supabaseError);
+        handleError(supabaseError, { title: 'Failed to fetch invoices' });
+      } else if (error instanceof Error) {
         setError(error);
-        toast.error('Failed to fetch invoices');
+        handleError(error, { title: 'Failed to fetch invoices' });
       } else {
         const fallbackError = new Error('An unexpected error occurred while fetching invoices');
         setError(fallbackError);
-        toast.error(fallbackError.message);
+        handleError(fallbackError, { title: 'Failed to fetch invoices' });
       }
       setInvoices([]);
     } finally {
@@ -77,15 +110,12 @@ export const useInvoices = () => {
     }
   };
 
-  const addInvoice = async (invoiceData: InvoiceFormData & { lineItems: InvoiceLineItemData[] }) => {
-    if (!user) {
-      toast.error('You must be logged in to create invoices');
-      return null;
-    }
+  const addInvoice = async (invoiceData: InvoiceFormData): Promise<InvoiceWithCustomer | null> => {
+    if (!validateUserAndSession()) return null;
 
     setError(null);
     try {
-      const { lineItems, ...invoiceFields } = invoiceData;
+      const { line_items, ...invoiceFields } = invoiceData;
 
       // Clean up UUID fields - convert empty strings to undefined
       const cleanedInvoiceFields = {
@@ -94,7 +124,9 @@ export const useInvoices = () => {
         job_id: invoiceFields.job_id && invoiceFields.job_id.trim() !== '' ? invoiceFields.job_id : undefined,
         estimate_id: invoiceFields.estimate_id && invoiceFields.estimate_id.trim() !== '' ? invoiceFields.estimate_id : undefined,
         // Ensure payment_status uses proper enum values, default to 'pending'
-        payment_status: invoiceFields.payment_status || 'pending',
+        payment_status: (invoiceFields.payment_status as PaymentStatus) || 'pending',
+        // Ensure status uses proper enum values, default to 'draft'
+        status: (invoiceFields.status as InvoiceStatus) || 'draft',
         user_id: user.id
       };
 
@@ -117,12 +149,13 @@ export const useInvoices = () => {
 
       if (invoiceError) throw invoiceError;
 
-      if (lineItems && lineItems.length > 0) {
-        const lineItemsToInsert = lineItems.map(item => ({
+      if (line_items && line_items.length > 0) {
+        const lineItemsToInsert = line_items.map(item => ({
           invoice_id: invoice.id,
           description: item.description,
           quantity: item.quantity,
-          unit_price: item.unit_price
+          unit_price: item.unit_price,
+          sort_order: item.sort_order
           // Remove total - let the database trigger calculate it
         }));
 
@@ -133,9 +166,10 @@ export const useInvoices = () => {
         if (lineItemsError) throw lineItemsError;
       }
 
-      await fetchInvoices();
-      toast.success('Invoice created successfully');
+      // Optimistically update the local state
+      setInvoices(prev => [invoice, ...prev]);
 
+      // Log activity
       await supabase.from('activity_logs').insert({
         user_id: user.id,
         entity_type: 'invoice',
@@ -144,126 +178,161 @@ export const useInvoices = () => {
         description: `Invoice created: ${invoice.title}`
       });
 
+      toast.success('Invoice created successfully');
       return invoice;
     } catch (error: unknown) {
-      if (error instanceof Error) {
+      if (isSupabaseError(error)) {
+        const supabaseError = new Error(error.error.message);
+        setError(supabaseError);
+        handleError(supabaseError, { title: 'Failed to create invoice' });
+      } else if (error instanceof Error) {
         setError(error);
-        toast.error(error.message);
+        handleError(error, { title: 'Failed to create invoice' });
       } else {
         const fallbackError = new Error('Failed to create invoice');
         setError(fallbackError);
-        toast.error(fallbackError.message);
+        handleError(fallbackError, { title: 'Failed to create invoice' });
       }
       return null;
     }
   };
 
-  const updateInvoice = async (id: string, updates: InvoiceUpdate) => {
-    if (!user) {
-      toast.error('You must be logged in to update invoices');
+  const updateInvoice = async (id: string, updates: InvoiceUpdate): Promise<boolean> => {
+    if (!validateUserAndSession()) return false;
+
+    // Find the original invoice for optimistic updates and rollback
+    const originalInvoice = invoices.find(invoice => invoice.id === id);
+    if (!originalInvoice) {
+      handleError(new Error('Invoice not found'), { title: 'Update Failed' });
       return false;
     }
 
-    setError(null);
+    // Create optimistic update
+    const optimisticInvoice = { ...originalInvoice, ...updates, updated_at: new Date().toISOString() };
+
     try {
-      // Clean up UUID fields in updates as well
-      const cleanedUpdates = { ...updates };
-      if (cleanedUpdates.customer_id === '') cleanedUpdates.customer_id = undefined;
-      if (cleanedUpdates.job_id === '') cleanedUpdates.job_id = undefined;
-      if (cleanedUpdates.estimate_id === '') cleanedUpdates.estimate_id = undefined;
+      return await executeUpdate(
+        // Optimistic update
+        () => setInvoices(prev => prev.map(invoice => invoice.id === id ? optimisticInvoice : invoice)),
+        // Actual update
+        async () => {
+          // Clean up UUID fields in updates as well
+          const cleanedUpdates = { ...updates };
+          if (cleanedUpdates.customer_id === '') cleanedUpdates.customer_id = undefined;
+          if (cleanedUpdates.job_id === '') cleanedUpdates.job_id = undefined;
+          if (cleanedUpdates.estimate_id === '') cleanedUpdates.estimate_id = undefined;
 
-      // Ensure payment_status uses valid enum values if being updated
-      if (cleanedUpdates.payment_status && !['completed', 'failed', 'pending', 'refunded'].includes(cleanedUpdates.payment_status as string)) {
-        delete cleanedUpdates.payment_status;
-      }
+          // Ensure payment_status uses valid enum values if being updated
+          if (cleanedUpdates.payment_status && !['completed', 'failed', 'pending', 'refunded'].includes(cleanedUpdates.payment_status as PaymentStatus)) {
+            delete cleanedUpdates.payment_status;
+          }
 
-      // Remove undefined fields
-      Object.keys(cleanedUpdates).forEach(key => {
-        if (cleanedUpdates[key as keyof typeof cleanedUpdates] === undefined) {
-          delete cleanedUpdates[key as keyof typeof cleanedUpdates];
+          // Ensure status uses valid enum values if being updated
+          if (cleanedUpdates.status && !['draft', 'sent', 'paid', 'overdue', 'cancelled', 'viewed'].includes(cleanedUpdates.status as InvoiceStatus)) {
+            delete cleanedUpdates.status;
+          }
+
+          // Remove undefined fields
+          Object.keys(cleanedUpdates).forEach(key => {
+            if (cleanedUpdates[key as keyof typeof cleanedUpdates] === undefined) {
+              delete cleanedUpdates[key as keyof typeof cleanedUpdates];
+            }
+          });
+
+          const { data, error } = await supabase
+            .from('invoices')
+            .update(cleanedUpdates)
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .select(`
+              *,
+              invoice_line_items(*),
+              customers(id, first_name, last_name, email, phone)
+            `)
+            .single();
+
+          if (error) throw error;
+
+          // Update with real data
+          setInvoices(prev => prev.map(invoice => invoice.id === id ? data : invoice));
+
+          // Log activity
+          await supabase.from('activity_logs').insert({
+            user_id: user.id,
+            entity_type: 'invoice',
+            entity_id: id,
+            action: 'updated',
+            description: `Invoice updated`
+          });
+
+          return true;
+        },
+        // Rollback
+        () => setInvoices(prev => prev.map(invoice => invoice.id === id ? originalInvoice : invoice)),
+        {
+          successMessage: 'Invoice updated successfully',
+          errorMessage: 'Failed to update invoice'
         }
-      });
-
-      const { data, error } = await supabase
-        .from('invoices')
-        .update(cleanedUpdates)
-        .eq('id', id)
-        .eq('user_id', user.id)
-        .select(`
-          *,
-          invoice_line_items(*),
-          customers(id, first_name, last_name, email, phone)
-        `)
-        .single();
-
-      if (error) throw error;
-
-      await fetchInvoices();
-      toast.success('Invoice updated successfully');
-
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'invoice',
-        entity_id: id,
-        action: 'updated',
-        description: `Invoice updated`
-      });
-
-      return true;
+      );
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        setError(error);
-        toast.error(error.message);
-      } else {
-        const fallbackError = new Error('Failed to update invoice');
-        setError(fallbackError);
-        toast.error(fallbackError.message);
-      }
       return false;
     }
   };
 
-  const deleteInvoice = async (id: string) => {
-    if (!user) {
-      toast.error('You must be logged in to delete invoices');
-      return;
+  const deleteInvoice = async (id: string): Promise<boolean> => {
+    if (!validateUserAndSession()) return false;
+
+    // Store original for rollback
+    const originalInvoice = invoices.find(invoice => invoice.id === id);
+    if (!originalInvoice) {
+      handleError(new Error('Invoice not found'), { title: 'Delete Failed' });
+      return false;
     }
 
-    setError(null);
     try {
-      const { error } = await supabase
-        .from('invoices')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);
+      return await executeUpdate(
+        // Optimistic update
+        () => setInvoices(prev => prev.filter(invoice => invoice.id !== id)),
+        // Actual update
+        async () => {
+          const { error } = await supabase
+            .from('invoices')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id);
 
-      if (error) throw error;
+          if (error) throw error;
 
-      setInvoices(prev => prev.filter(invoice => invoice.id !== id));
-      toast.success('Invoice deleted successfully');
+          // Log activity
+          await supabase.from('activity_logs').insert({
+            user_id: user.id,
+            entity_type: 'invoice',
+            entity_id: id,
+            action: 'deleted',
+            description: `Invoice deleted`
+          });
 
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'invoice',
-        entity_id: id,
-        action: 'deleted',
-        description: `Invoice deleted`
-      });
+          return true;
+        },
+        // Rollback
+        () => setInvoices(prev => [...prev, originalInvoice].sort((a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )),
+        {
+          successMessage: 'Invoice deleted successfully',
+          errorMessage: 'Failed to delete invoice'
+        }
+      );
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        setError(error);
-        toast.error(error.message);
-      } else {
-        const fallbackError = new Error('Failed to delete invoice');
-        setError(fallbackError);
-        toast.error(fallbackError.message);
-      }
+      return false;
     }
   };
 
   useEffect(() => {
-    fetchInvoices();
-  }, [user]);
+    if (user && session) {
+      fetchInvoices();
+    }
+  }, [user?.id]);
 
   return {
     invoices,

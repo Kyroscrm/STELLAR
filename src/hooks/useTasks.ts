@@ -1,19 +1,33 @@
-
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useErrorHandler } from './useErrorHandler';
+import { useOptimisticUpdate } from './useOptimisticUpdate';
 
 export type Task = Tables<'tasks'>;
 type TaskInsert = Omit<TablesInsert<'tasks'>, 'user_id'>;
 type TaskUpdate = TablesUpdate<'tasks'>;
 
-export const useTasks = () => {
+interface UseTasksReturn {
+  tasks: Task[];
+  loading: boolean;
+  error: Error | null;
+  fetchTasks: () => Promise<void>;
+  createTask: (taskData: TaskInsert) => Promise<Task | null>;
+  addTask: (taskData: TaskInsert) => Promise<Task | null>;
+  updateTask: (id: string, updates: TaskUpdate) => Promise<boolean>;
+  deleteTask: (id: string) => Promise<void>;
+}
+
+export const useTasks = (): UseTasksReturn => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const { user, session } = useAuth();
+  const { handleError } = useErrorHandler();
+  const { executeUpdate } = useOptimisticUpdate();
 
   const validateUserAndSession = () => {
     if (!user || !session) {
@@ -41,9 +55,9 @@ export const useTasks = () => {
 
       setTasks(data || []);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch tasks';
-      setError(error instanceof Error ? error : new Error(errorMessage));
-      toast.error(errorMessage);
+      const taskError = error instanceof Error ? error : new Error('Failed to fetch tasks');
+      setError(taskError);
+      handleError(taskError, { title: 'Failed to fetch tasks' });
       setTasks([]);
     } finally {
       setLoading(false);
@@ -61,37 +75,42 @@ export const useTasks = () => {
       updated_at: new Date().toISOString()
     } as Task;
 
-        // Optimistic update
-    setTasks(prev => [optimisticTask, ...prev]);
-
     try {
-      const { data, error } = await supabase
-        .from('tasks')
-        .insert({ ...taskData, user_id: user.id })
-        .select()
-        .single();
+      return await executeUpdate(
+        // Optimistic update
+        () => setTasks(prev => [optimisticTask, ...prev]),
+        // Actual update
+        async () => {
+          const { data, error } = await supabase
+            .from('tasks')
+            .insert({ ...taskData, user_id: user.id })
+            .select()
+            .single();
 
-      if (error) throw error;
+          if (error) throw error;
 
-      // Replace optimistic with real data
-      setTasks(prev => prev.map(t => t.id === optimisticTask.id ? data : t));
+          // Replace optimistic with real data
+          setTasks(prev => prev.map(t => t.id === optimisticTask.id ? data : t));
 
-      // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'task',
-        entity_id: data.id,
-        action: 'created',
-        description: `Task created: ${data.title}`
-      });
+          // Log activity
+          await supabase.from('activity_logs').insert({
+            user_id: user.id,
+            entity_type: 'task',
+            entity_id: data.id,
+            action: 'created',
+            description: `Task created: ${data.title}`
+          });
 
-      toast.success('Task created successfully');
-      return data;
+          return data;
+        },
+        // Rollback
+        () => setTasks(prev => prev.filter(t => t.id !== optimisticTask.id)),
+        {
+          successMessage: 'Task created successfully',
+          errorMessage: 'Failed to create task'
+        }
+      );
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create task';
-      // Rollback optimistic update
-      setTasks(prev => prev.filter(t => t.id !== optimisticTask.id));
-      toast.error(errorMessage);
       return null;
     }
   };
@@ -102,44 +121,50 @@ export const useTasks = () => {
     // Store original for rollback
     const originalTask = tasks.find(t => t.id === id);
     if (!originalTask) {
-      toast.error('Task not found');
+      handleError(new Error('Task not found'), { title: 'Update Failed' });
       return false;
     }
 
-        // Optimistic update
     const optimisticTask = { ...originalTask, ...updates, updated_at: new Date().toISOString() };
-    setTasks(prev => prev.map(t => t.id === id ? optimisticTask : t));
 
     try {
-      const { data, error } = await supabase
-        .from('tasks')
-        .update(updates)
-        .eq('id', id)
-        .eq('user_id', user.id)
-        .select()
-        .single();
+      return await executeUpdate(
+        // Optimistic update
+        () => setTasks(prev => prev.map(t => t.id === id ? optimisticTask : t)),
+        // Actual update
+        async () => {
+          const { data, error } = await supabase
+            .from('tasks')
+            .update(updates)
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .select()
+            .single();
 
-      if (error) throw error;
+          if (error) throw error;
 
-      // Update with real data
-      setTasks(prev => prev.map(t => t.id === id ? data : t));
+          // Update with real data
+          setTasks(prev => prev.map(t => t.id === id ? data : t));
 
-      // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'task',
-        entity_id: id,
-        action: 'updated',
-        description: `Task updated: ${data.title}`
-      });
+          // Log activity
+          await supabase.from('activity_logs').insert({
+            user_id: user.id,
+            entity_type: 'task',
+            entity_id: id,
+            action: 'updated',
+            description: `Task updated: ${data.title}`
+          });
 
-      toast.success('Task updated successfully');
-      return true;
+          return true;
+        },
+        // Rollback
+        () => setTasks(prev => prev.map(t => t.id === id ? originalTask : t)),
+        {
+          successMessage: 'Task updated successfully',
+          errorMessage: 'Failed to update task'
+        }
+      );
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to update task';
-      // Rollback optimistic update
-      setTasks(prev => prev.map(t => t.id === id ? originalTask : t));
-      toast.error(errorMessage);
       return false;
     }
   };
@@ -150,39 +175,46 @@ export const useTasks = () => {
     // Store original for rollback
     const originalTask = tasks.find(t => t.id === id);
     if (!originalTask) {
-      toast.error('Task not found');
+      handleError(new Error('Task not found'), { title: 'Delete Failed' });
       return;
     }
 
-        // Optimistic update
-    setTasks(prev => prev.filter(t => t.id !== id));
-
     try {
-      const { error } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);
+      await executeUpdate(
+        // Optimistic update
+        () => setTasks(prev => prev.filter(t => t.id !== id)),
+        // Actual update
+        async () => {
+          const { error } = await supabase
+            .from('tasks')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id);
 
-      if (error) throw error;
+          if (error) throw error;
 
-      // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        entity_type: 'task',
-        entity_id: id,
-        action: 'deleted',
-        description: `Task deleted: ${originalTask.title}`
-      });
+          // Log activity
+          await supabase.from('activity_logs').insert({
+            user_id: user.id,
+            entity_type: 'task',
+            entity_id: id,
+            action: 'deleted',
+            description: `Task deleted: ${originalTask.title}`
+          });
 
-            toast.success('Task deleted successfully');
+          return true;
+        },
+        // Rollback
+        () => setTasks(prev => [...prev, originalTask].sort((a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )),
+        {
+          successMessage: 'Task deleted successfully',
+          errorMessage: 'Failed to delete task'
+        }
+      );
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete task';
-      // Rollback optimistic update
-      setTasks(prev => [...prev, originalTask].sort((a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      ));
-      toast.error(errorMessage);
+      // Error handling is managed by executeUpdate
     }
   };
 
@@ -190,7 +222,9 @@ export const useTasks = () => {
   const addTask = createTask;
 
   useEffect(() => {
-    fetchTasks();
+    if (user && session) {
+      fetchTasks();
+    }
   }, [user, session]);
 
   return {
