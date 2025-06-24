@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,6 +15,8 @@ import { RefreshCw, Plus, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import EstimateTemplateSelector from './EstimateTemplateSelector';
 import { EstimateTemplate, EstimateTemplateLineItem } from '@/types/app-types';
+import { HelpTooltip } from '@/components/ui/help-tooltip';
+import { toast } from '@/components/ui/use-toast';
 
 interface EstimateFormProps {
   onSubmit: (data: EstimateFormData & { lineItems: LineItem[] }) => Promise<void>;
@@ -96,14 +97,17 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
     form.setValue('notes', template.notes || '');
 
     // Apply template line items
-    const templateLineItems = template.line_items.map((item: EstimateTemplateLineItem) => ({
-      description: item.description,
-      quantity: item.quantity,
-      unit_price: item.unit_price,
-      total: item.quantity * item.unit_price
-    }));
+    if (template.line_items && Array.isArray(template.line_items)) {
+      const templateLineItems = template.line_items.map((item: EstimateTemplateLineItem) => ({
+        description: item.description,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        total: item.quantity * item.unit_price
+      }));
 
-    setLineItems(templateLineItems);
+      setLineItems(templateLineItems);
+    }
+
     setShowTemplateSelector(false);
   };
 
@@ -131,7 +135,12 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
     try {
       await onSubmit({ ...data, lineItems });
     } catch (error) {
-      toast.error('Failed to submit estimate: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast({
+        title: "Error",
+        description: `Failed to submit estimate: ${errorMessage}`,
+        variant: "destructive"
+      });
     }
   };
 
@@ -156,6 +165,7 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
             onClick={() => setShowTemplateSelector(true)}
           >
             Use Template
+            <HelpTooltip content="Load a pre-defined template to quickly create standardized estimates." />
           </Button>
         </div>
 
@@ -165,7 +175,10 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
             name="title"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Title *</FormLabel>
+                <FormLabel>
+                  Title *
+                  <HelpTooltip content="A descriptive name for this estimate that will be visible to customers." />
+                </FormLabel>
                 <FormControl>
                   <Input placeholder="Enter estimate title" {...field} />
                 </FormControl>
@@ -179,7 +192,10 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
             name="estimate_number"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Estimate Number *</FormLabel>
+                <FormLabel>
+                  Estimate Number *
+                  <HelpTooltip content="A unique identifier for this estimate. Click 'Generate' to create a sequential number automatically." />
+                </FormLabel>
                 <div className="flex gap-2">
                   <FormControl>
                     <Input placeholder="EST-001" {...field} />
@@ -210,7 +226,10 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
             name="customer_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Customer</FormLabel>
+                <FormLabel>
+                  Customer
+                  <HelpTooltip content="Select the customer this estimate is for. This will link the estimate to their account." />
+                </FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
@@ -235,7 +254,10 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
             name="job_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Job (Optional)</FormLabel>
+                <FormLabel>
+                  Job (Optional)
+                  <HelpTooltip content="Optionally link this estimate to a specific job. This helps with tracking project financials." />
+                </FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
@@ -256,98 +278,16 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
           />
         </div>
 
-        {/* Line Items Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              Line Items
-              <Button type="button" size="sm" onClick={addLineItem}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Item
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {lineItems.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <p>No line items yet. Click "Add Item" to get started.</p>
-              </div>
-            ) : (
-              <>
-                {/* Header Row */}
-                <div className="grid grid-cols-12 gap-2 text-sm font-medium text-gray-600 pb-2 border-b">
-                  <div className="col-span-6">Description</div>
-                  <div className="col-span-2">Quantity</div>
-                  <div className="col-span-2">Unit Price</div>
-                  <div className="col-span-1">Total</div>
-                  <div className="col-span-1"></div>
-                </div>
-
-                {/* Line Items */}
-                {lineItems.map((item, index) => (
-                  <div key={index} className="grid grid-cols-12 gap-2 items-center">
-                    <div className="col-span-6">
-                      <Textarea
-                        value={item.description}
-                        onChange={(e) => updateLineItem(index, 'description', e.target.value)}
-                        placeholder="Item description"
-                        className="min-h-[60px]"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <Input
-                        type="number"
-                        value={item.quantity}
-                        onChange={(e) => updateLineItem(index, 'quantity', Number(e.target.value))}
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <Input
-                        type="number"
-                        value={item.unit_price}
-                        onChange={(e) => updateLineItem(index, 'unit_price', Number(e.target.value))}
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
-                    <div className="col-span-1 text-right font-medium">
-                      ${item.total.toFixed(2)}
-                    </div>
-                    <div className="col-span-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeLineItem(index)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Totals */}
-                <div className="border-t pt-4">
-                  <div className="flex justify-between items-center text-lg font-semibold">
-                    <span>Subtotal:</span>
-                    <span>${calculateSubtotal().toFixed(2)}</span>
-                  </div>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="valid_until"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Valid Until</FormLabel>
+                <FormLabel>
+                  Valid Until
+                  <HelpTooltip content="The date until which this estimate is valid. After this date, prices may change." />
+                </FormLabel>
                 <FormControl>
                   <Input type="date" {...field} />
                 </FormControl>
@@ -361,44 +301,18 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
             name="tax_rate"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Tax Rate (%)</FormLabel>
+                <FormLabel>
+                  Tax Rate (%)
+                  <HelpTooltip content="The percentage tax rate to apply to this estimate. Enter as a number (e.g., 7.5 for 7.5%)." />
+                </FormLabel>
                 <FormControl>
                   <Input
                     type="number"
                     step="0.01"
-                    min="0"
-                    max="100"
-                    placeholder="0.00"
                     {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) / 100)}
-                    value={field.value ? (field.value * 100).toString() : ''}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
                   />
                 </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Status</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="sent">Sent</SelectItem>
-                    <SelectItem value="approved">Approved</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
-                    <SelectItem value="expired">Expired</SelectItem>
-                  </SelectContent>
-                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -407,12 +321,134 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
 
         <FormField
           control={form.control}
-          name="notes"
+          name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Notes</FormLabel>
+              <FormLabel>
+                Description
+                <HelpTooltip content="A brief overview of the work covered by this estimate." />
+              </FormLabel>
               <FormControl>
-                <Textarea placeholder="Enter any additional notes" {...field} />
+                <Textarea
+                  placeholder="Brief description of the estimate"
+                  className="min-h-[100px]"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Line Items */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-lg">
+                Line Items
+                <HelpTooltip content="Add individual products or services with their quantities and prices." />
+              </CardTitle>
+              <Button type="button" onClick={addLineItem} size="sm" variant="outline">
+                <Plus className="h-4 w-4 mr-1" />
+                Add Item
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {lineItems.length === 0 ? (
+              <div className="text-center py-4 text-gray-500">
+                No items added. Click "Add Item" to begin.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-12 gap-2 font-medium text-sm text-gray-600">
+                  <div className="col-span-6">Description</div>
+                  <div className="col-span-2">Quantity</div>
+                  <div className="col-span-2">Unit Price</div>
+                  <div className="col-span-1">Total</div>
+                  <div className="col-span-1"></div>
+                </div>
+                {lineItems.map((item, index) => (
+                  <div key={index} className="grid grid-cols-12 gap-2 items-center">
+                    <div className="col-span-6">
+                      <Input
+                        value={item.description}
+                        onChange={(e) => updateLineItem(index, 'description', e.target.value)}
+                        placeholder="Item description"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <Input
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) => updateLineItem(index, 'quantity', parseFloat(e.target.value))}
+                        min="0"
+                        step="1"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <Input
+                        type="number"
+                        value={item.unit_price}
+                        onChange={(e) => updateLineItem(index, 'unit_price', parseFloat(e.target.value))}
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+                    <div className="col-span-1 text-right font-medium">
+                      ${item.total.toFixed(2)}
+                    </div>
+                    <div className="col-span-1 text-right">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeLineItem(index)}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+
+                <div className="flex justify-end pt-4 border-t">
+                  <div className="w-1/3 space-y-2">
+                    <div className="flex justify-between">
+                      <span className="font-medium">Subtotal:</span>
+                      <span>${calculateSubtotal().toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Tax ({form.watch('tax_rate')}%):</span>
+                      <span>${(calculateSubtotal() * (form.watch('tax_rate') / 100)).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-lg font-bold">
+                      <span>Total:</span>
+                      <span>
+                        ${(calculateSubtotal() * (1 + form.watch('tax_rate') / 100)).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <FormField
+          control={form.control}
+          name="terms"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                Terms & Conditions
+                <HelpTooltip content="Legal terms and conditions that apply to this estimate. These protect both you and your customer." />
+              </FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Payment terms, cancellation policy, etc."
+                  className="min-h-[100px]"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -421,24 +457,59 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
 
         <FormField
           control={form.control}
-          name="terms"
+          name="notes"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Terms & Conditions</FormLabel>
+              <FormLabel>
+                Notes
+                <HelpTooltip content="Additional information or special instructions for this estimate." />
+              </FormLabel>
               <FormControl>
-                <Textarea placeholder="Enter terms and conditions" {...field} />
+                <Textarea
+                  placeholder="Any additional notes or comments"
+                  className="min-h-[100px]"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <div className="flex gap-2 pt-4">
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : 'Save Estimate'}
-          </Button>
+        <FormField
+          control={form.control}
+          name="status"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                Status
+                <HelpTooltip content="The current status of this estimate. Draft estimates are not visible to customers until sent." />
+              </FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="sent">Sent</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="expired">Expired</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="flex justify-end gap-4 pt-4">
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Saving...' : initialData ? 'Update Estimate' : 'Create Estimate'}
           </Button>
         </div>
       </form>

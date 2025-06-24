@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLeads, Lead } from '@/hooks/useLeads';
 import ViewLeadDialog from '@/components/ViewLeadDialog';
 import EditLeadDialog from '@/components/EditLeadDialog';
@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import SkeletonLoader from '@/components/ui/skeleton-loader';
 import ErrorMessage from '@/components/ui/error-message';
 import { LEAD_STATUS_COLORS } from '@/types/supabase-enums';
+import { useTour } from '@/contexts/TourContext';
+import { useLocation } from 'react-router-dom';
 import {
   Search,
   Filter,
@@ -20,7 +22,8 @@ import {
   Phone,
   MapPin,
   Calendar,
-  DollarSign
+  DollarSign,
+  Plus
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -36,6 +39,17 @@ const LeadsPage = () => {
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [convertLeadDialogOpen, setConvertLeadDialogOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const { startTour, isFirstVisit } = useTour();
+  const location = useLocation();
+
+  // Start tour when first visiting the leads page
+  useEffect(() => {
+    if (location.pathname === '/admin/leads' && isFirstVisit) {
+      setTimeout(() => {
+        startTour('leads');
+      }, 1000);
+    }
+  }, [location.pathname, isFirstVisit, startTour]);
 
   const getStatusColor = (status: string) => {
     return LEAD_STATUS_COLORS[status as keyof typeof LEAD_STATUS_COLORS] || 'bg-gray-100 text-gray-800';
@@ -114,13 +128,21 @@ const LeadsPage = () => {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between leads-management-header">
         <div>
           <h1 className="text-3xl font-bold">Leads Management</h1>
           <p className="text-gray-600">Track and manage potential customers</p>
         </div>
         <div className="flex gap-2">
-          <CreateLeadDialog onSuccess={fetchLeads} />
+          <CreateLeadDialog
+            onSuccess={fetchLeads}
+            trigger={
+              <Button className="create-lead-button">
+                <Plus className="h-4 w-4 mr-2" />
+                New Lead
+              </Button>
+            }
+          />
         </div>
       </div>
 
@@ -128,7 +150,7 @@ const LeadsPage = () => {
       {loading ? (
         <SkeletonLoader type="stats" count={5} />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 leads-stats-cards">
           <Card>
             <CardContent className="p-4">
               <p className="text-sm font-medium text-gray-600">Total Leads</p>
@@ -167,7 +189,7 @@ const LeadsPage = () => {
       )}
 
       {/* Filters */}
-      <div className="flex gap-4">
+      <div className="flex gap-4 leads-search-filter">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
@@ -219,7 +241,7 @@ const LeadsPage = () => {
           <p className="text-gray-500">No leads found matching your criteria.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 leads-grid">
           {filteredLeads.map((lead) => (
             <Card key={lead.id} className="hover:shadow-lg transition-shadow">
               <CardHeader className="pb-3">

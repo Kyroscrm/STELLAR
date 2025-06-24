@@ -1,13 +1,14 @@
-
 import React, { useState } from 'react';
-import { User, Menu, X, Briefcase, Users, FileText, Calendar, Receipt, UserPlus } from 'lucide-react';
+import { User, Menu, X, Briefcase, Users, FileText, Calendar, Receipt, UserPlus, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTour } from '@/contexts/TourContext';
 
 const AdminHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, logout } = useAuth();
+  const { startTour } = useTour();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -31,9 +32,9 @@ const AdminHeader = () => {
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
             <Link to="/admin" className="flex items-center gap-4">
-              <img 
-                src="/lovable-uploads/f6ae6373-2ac3-4ff4-8436-389ab0da2914.png" 
-                alt="Final Roofing & Retro-Fit Logo" 
+              <img
+                src="/lovable-uploads/f6ae6373-2ac3-4ff4-8436-389ab0da2914.png"
+                alt="Final Roofing & Retro-Fit Logo"
                 className="h-10 w-auto"
               />
               <div>
@@ -46,7 +47,7 @@ const AdminHeader = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-6">
+          <nav className="hidden lg:flex items-center space-x-6 sidebar-nav">
             {crmNavItems.map((item) => (
               <Link
                 key={item.href}
@@ -67,6 +68,15 @@ const AdminHeader = () => {
             </div>
             <Button variant="outline" onClick={handleLogout} size="sm">
               Logout
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => startTour('main')}
+              className="help-button"
+            >
+              <HelpCircle className="h-4 w-4 mr-1" />
+              Help
             </Button>
           </div>
 
@@ -95,7 +105,7 @@ const AdminHeader = () => {
                 {item.title}
               </Link>
             ))}
-            
+
             <div className="flex flex-col gap-2 pt-4 border-t border-gray-100">
               <div className="flex items-center gap-2 text-sm text-gray-600 py-2">
                 <User className="h-4 w-4" />
@@ -103,6 +113,14 @@ const AdminHeader = () => {
               </div>
               <Button variant="outline" onClick={handleLogout} className="w-full justify-start">
                 Logout
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => startTour('main')}
+                className="w-full justify-start help-button"
+              >
+                <HelpCircle className="h-4 w-4 mr-1" />
+                Help
               </Button>
             </div>
           </nav>
