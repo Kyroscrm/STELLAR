@@ -57,9 +57,12 @@ export const useUserPreferences = () => {
         // Create default preferences if none exist
         await createDefaultPreferences();
       }
-    } catch (error: any) {
-      console.error('Error fetching user preferences:', error);
-      toast.error('Failed to fetch user preferences');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(`Failed to fetch user preferences: ${error.message}`);
+      } else {
+        toast.error('Failed to fetch user preferences');
+      }
     } finally {
       setLoading(false);
     }
@@ -86,8 +89,12 @@ export const useUserPreferences = () => {
       const safePreferences = convertToUserPreferences(data);
       setPreferences(safePreferences);
       return safePreferences;
-    } catch (error: any) {
-      console.error('Error creating default preferences:', error);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(`Failed to create default preferences: ${error.message}`);
+      } else {
+        toast.error('Failed to create default preferences');
+      }
       return null;
     }
   };
@@ -108,9 +115,12 @@ export const useUserPreferences = () => {
       const safePreferences = convertToUserPreferences(data);
       setPreferences(safePreferences);
       return true;
-    } catch (error: any) {
-      console.error('Error updating preferences:', error);
-      toast.error('Failed to update preferences');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(`Failed to update preferences: ${error.message}`);
+      } else {
+        toast.error('Failed to update preferences');
+      }
       return false;
     }
   };
