@@ -1,7 +1,6 @@
-
-import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useCallback, useEffect, useState } from 'react';
 
 interface UserPresence {
   user_id: string;
@@ -41,36 +40,35 @@ export const useRealTimePresence = (roomId: string = 'main') => {
     const channel = supabase.channel(`presence_${roomId}`)
       .on('presence', { event: 'sync' }, () => {
         const newState = channel.presenceState();
-        
+
         // Convert Supabase presence state to our format safely
         const convertedState: Record<string, UserPresence[]> = {};
         Object.entries(newState).forEach(([key, presences]) => {
           // Filter and validate presence objects
-          const validPresences = (presences as any[]).filter((presence: any) => 
-            presence && 
-            typeof presence === 'object' && 
-            'user_id' in presence && 
-            'status' in presence && 
+          const validPresences = (presences as unknown[]).filter((presence: unknown) =>
+            presence &&
+            typeof presence === 'object' &&
+            'user_id' in presence &&
+            'status' in presence &&
             'last_seen' in presence
           ) as UserPresence[];
-          
+
           if (validPresences.length > 0) {
             convertedState[key] = validPresences;
           }
         });
-        
+
         setPresenceState(convertedState);
-        
+
         // Flatten presence state to get all online users
         const users = Object.values(convertedState).flat();
         setOnlineUsers(users);
-        console.log('Presence sync:', users);
       })
       .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-        console.log('User joined:', key, newPresences);
+        // User joined presence channel
       })
       .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-        console.log('User left:', key, leftPresences);
+        // User left presence channel
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {

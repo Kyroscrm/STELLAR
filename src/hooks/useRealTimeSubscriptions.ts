@@ -1,19 +1,18 @@
-
-import { useEffect, useCallback, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
 interface SubscriptionConfig {
   table: string;
   event: 'INSERT' | 'UPDATE' | 'DELETE' | '*';
   filter?: string;
-  onUpdate: (payload: any) => void;
+  onUpdate: (payload: unknown) => void;
 }
 
 export const useRealTimeSubscriptions = (configs: SubscriptionConfig[]) => {
   const { user } = useAuth();
-  const channelsRef = useRef<any[]>([]);
+  const channelsRef = useRef<unknown[]>([]);
 
   const cleanup = useCallback(() => {
     channelsRef.current.forEach(channel => {
@@ -34,11 +33,13 @@ export const useRealTimeSubscriptions = (configs: SubscriptionConfig[]) => {
         table: 'audit_trail',
         event: 'INSERT' as const,
         filter: `user_id=eq.${user.id}`,
-        onUpdate: (payload: any) => {
-          console.log('New audit record:', payload);
+        onUpdate: (payload: unknown) => {
           // Show notification for critical compliance events
-          if (payload.new?.compliance_level === 'critical') {
-            toast.warning(`Critical action logged: ${payload.new.action} on ${payload.new.table_name}`);
+          if (payload && typeof payload === 'object' && 'new' in payload) {
+            const newRecord = (payload as any).new;
+            if (newRecord?.compliance_level === 'critical') {
+              toast.warning(`Critical action logged: ${newRecord.action} on ${newRecord.table_name}`);
+            }
           }
         }
       }
@@ -46,7 +47,7 @@ export const useRealTimeSubscriptions = (configs: SubscriptionConfig[]) => {
 
     enhancedConfigs.forEach((config, index) => {
       const channelName = `${config.table}_${config.event}_${user.id}_${index}`;
-      
+
       const channel = supabase
         .channel(channelName)
         .on(
@@ -58,15 +59,11 @@ export const useRealTimeSubscriptions = (configs: SubscriptionConfig[]) => {
             filter: config.filter || `user_id=eq.${user.id}`
           },
           (payload) => {
-            console.log(`Real-time update on ${config.table}:`, payload);
             config.onUpdate(payload);
           }
         )
         .subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            console.log(`Subscribed to ${channelName}`);
-          } else if (status === 'CHANNEL_ERROR') {
-            console.error(`Error subscribing to ${channelName}`);
+          if (status === 'CHANNEL_ERROR') {
             toast.error(`Failed to connect to real-time updates for ${config.table}`);
           }
         });

@@ -112,10 +112,11 @@ export const useSecurityMonitoring = () => {
         toast.warning(`${detectedAlerts.length} security alert(s) detected`);
       }
 
-      console.log('Anomaly check completed:', detectedAlerts.length, 'alerts found');
       return detectedAlerts;
-    } catch (error: any) {
-      console.error('Error checking for anomalies:', error);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        // Error during anomaly check - handled silently
+      }
       return [];
     }
   };
