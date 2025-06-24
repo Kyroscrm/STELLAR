@@ -1,7 +1,6 @@
-
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 export const useLeadConversion = () => {
@@ -9,7 +8,7 @@ export const useLeadConversion = () => {
   const { user } = useAuth();
 
   const convertLeadToCustomer = async (
-    leadId: string, 
+    leadId: string,
     options?: { notes?: string; conversion_reason?: string }
   ) => {
     if (!user) {
@@ -19,8 +18,6 @@ export const useLeadConversion = () => {
 
     setIsConverting(true);
     try {
-      console.log('Converting lead to customer:', leadId);
-
       // First, get the lead data
       const { data: lead, error: leadError } = await supabase
         .from('leads')
@@ -30,7 +27,6 @@ export const useLeadConversion = () => {
         .single();
 
       if (leadError) {
-        console.error('Error fetching lead:', leadError);
         throw leadError;
       }
 
@@ -61,7 +57,6 @@ export const useLeadConversion = () => {
         .single();
 
       if (customerError) {
-        console.error('Error creating customer:', customerError);
         throw customerError;
       }
 
@@ -73,7 +68,6 @@ export const useLeadConversion = () => {
         .eq('user_id', user.id);
 
       if (updateError) {
-        console.error('Error updating lead status:', updateError);
         throw updateError;
       }
 
@@ -86,13 +80,15 @@ export const useLeadConversion = () => {
         description: `Lead converted to customer: ${customer.first_name} ${customer.last_name}`
       });
 
-      console.log('Lead converted successfully:', customer);
       toast.success('Lead converted to customer successfully!');
-      
+
       return customer;
-    } catch (error: any) {
-      console.error('Error converting lead:', error);
-      toast.error(error.message || 'Failed to convert lead to customer');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('Failed to convert lead to customer');
+      }
       return null;
     } finally {
       setIsConverting(false);

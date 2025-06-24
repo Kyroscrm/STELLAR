@@ -1,11 +1,10 @@
-
-import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { useOptimisticUpdate } from './useOptimisticUpdate';
 import { useErrorHandler } from './useErrorHandler';
+import { useOptimisticUpdate } from './useOptimisticUpdate';
 
 export type Estimate = Tables<'estimates'>;
 export type EstimateWithLineItems = Estimate & {
@@ -18,6 +17,12 @@ export type EstimateWithLineItems = Estimate & {
 
 type EstimateInsert = Omit<TablesInsert<'estimates'>, 'user_id'>;
 type EstimateUpdate = TablesUpdate<'estimates'>;
+
+interface EstimateLineItemData {
+  description: string;
+  quantity: number;
+  unit_price: number;
+}
 
 export const useEstimates = () => {
   const [estimates, setEstimates] = useState<EstimateWithLineItems[]>([]);
@@ -39,12 +44,10 @@ export const useEstimates = () => {
 
   const fetchEstimates = async () => {
     if (!validateUserAndSession()) return;
-    
+
     setLoading(true);
     setError(null);
     try {
-      console.log('Fetching estimates for user:', user.id);
-      
       const { data, error } = await supabase
         .from('estimates')
         .select(`
@@ -59,20 +62,24 @@ export const useEstimates = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       setEstimates(data || []);
-      console.log(`Successfully fetched ${data?.length || 0} estimates`);
-    } catch (error: any) {
-      console.error('Error fetching estimates:', error);
-      setError(error);
-      handleError(error, { title: 'Failed to fetch estimates' });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error);
+        handleError(error, { title: 'Failed to fetch estimates' });
+      } else {
+        const fallbackError = new Error('An unexpected error occurred while fetching estimates');
+        setError(fallbackError);
+        handleError(fallbackError, { title: 'Failed to fetch estimates' });
+      }
       setEstimates([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const createEstimate = async (estimateData: EstimateInsert & { lineItems?: any[] }) => {
+  const createEstimate = async (estimateData: EstimateInsert & { lineItems?: EstimateLineItemData[] }) => {
     if (!validateUserAndSession()) return null;
 
     const { lineItems, ...estimateFields } = estimateData;
@@ -91,8 +98,6 @@ export const useEstimates = () => {
         () => setEstimates(prev => [optimisticEstimate, ...prev]),
         // Actual update
         async () => {
-          console.log('Creating estimate:', estimateFields);
-          
           const { data, error } = await supabase
             .from('estimates')
             .insert({ ...estimateFields, user_id: user.id })
@@ -100,21 +105,21 @@ export const useEstimates = () => {
             .single();
 
           if (error) throw error;
-          
+
           // Create line items if provided
           if (lineItems && lineItems.length > 0) {
             const lineItemsToInsert = lineItems.map(item => ({
               ...item,
               estimate_id: data.id
             }));
-            
+
             const { error: lineItemsError } = await supabase
               .from('estimate_line_items')
               .insert(lineItemsToInsert);
-              
+
             if (lineItemsError) throw lineItemsError;
           }
-          
+
           // Fetch the complete estimate with line items
           const { data: completeEstimate, error: fetchError } = await supabase
             .from('estimates')
@@ -128,12 +133,12 @@ export const useEstimates = () => {
             `)
             .eq('id', data.id)
             .single();
-            
+
           if (fetchError) throw fetchError;
-          
+
           // Replace optimistic with real data
           setEstimates(prev => prev.map(e => e.id === optimisticEstimate.id ? completeEstimate : e));
-          
+
           // Log activity
           await supabase.from('activity_logs').insert({
             user_id: user.id,
@@ -143,7 +148,6 @@ export const useEstimates = () => {
             description: `Estimate created: ${data.title}`
           });
 
-          console.log('Estimate created successfully:', completeEstimate);
           return completeEstimate;
         },
         // Rollback
@@ -153,8 +157,7 @@ export const useEstimates = () => {
           errorMessage: 'Failed to create estimate'
         }
       );
-    } catch (error: any) {
-      console.error('Error creating estimate:', error);
+    } catch (error: unknown) {
       return null;
     }
   };
@@ -177,8 +180,6 @@ export const useEstimates = () => {
         () => setEstimates(prev => prev.map(e => e.id === id ? optimisticEstimate : e)),
         // Actual update
         async () => {
-          console.log('Updating estimate:', id, updates);
-          
           const { data, error } = await supabase
             .from('estimates')
             .update(updates)
@@ -188,7 +189,7 @@ export const useEstimates = () => {
             .single();
 
           if (error) throw error;
-          
+
           // Fetch complete estimate with relations
           const { data: completeEstimate, error: fetchError } = await supabase
             .from('estimates')
@@ -202,12 +203,12 @@ export const useEstimates = () => {
             `)
             .eq('id', id)
             .single();
-            
+
           if (fetchError) throw fetchError;
-          
+
           // Update with real data
           setEstimates(prev => prev.map(e => e.id === id ? completeEstimate : e));
-          
+
           // Log activity
           await supabase.from('activity_logs').insert({
             user_id: user.id,
@@ -217,7 +218,6 @@ export const useEstimates = () => {
             description: `Estimate updated: ${data.title}`
           });
 
-          console.log('Estimate updated successfully:', completeEstimate);
           return true;
         },
         // Rollback
@@ -227,8 +227,7 @@ export const useEstimates = () => {
           errorMessage: 'Failed to update estimate'
         }
       );
-    } catch (error: any) {
-      console.error('Error updating estimate:', error);
+    } catch (error: unknown) {
       return false;
     }
   };
@@ -249,8 +248,6 @@ export const useEstimates = () => {
         () => setEstimates(prev => prev.filter(e => e.id !== id)),
         // Actual update
         async () => {
-          console.log('Deleting estimate:', id);
-          
           const { error } = await supabase
             .from('estimates')
             .delete()
@@ -258,7 +255,7 @@ export const useEstimates = () => {
             .eq('user_id', user.id);
 
           if (error) throw error;
-          
+
           // Log activity
           await supabase.from('activity_logs').insert({
             user_id: user.id,
@@ -268,11 +265,10 @@ export const useEstimates = () => {
             description: `Estimate deleted: ${originalEstimate.title}`
           });
 
-          console.log('Estimate deleted successfully');
           return true;
         },
         // Rollback
-        () => setEstimates(prev => [...prev, originalEstimate].sort((a, b) => 
+        () => setEstimates(prev => [...prev, originalEstimate].sort((a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         )),
         {
@@ -280,8 +276,8 @@ export const useEstimates = () => {
           errorMessage: 'Failed to delete estimate'
         }
       );
-    } catch (error: any) {
-      console.error('Error deleting estimate:', error);
+    } catch (error: unknown) {
+      // Error handling is done within executeUpdate
     }
   };
 
