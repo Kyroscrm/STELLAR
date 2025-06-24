@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { useLeads } from '@/hooks/useLeads';
+import { useLeads, Lead } from '@/hooks/useLeads';
 import ViewLeadDialog from '@/components/ViewLeadDialog';
 import EditLeadDialog from '@/components/EditLeadDialog';
 import CreateLeadDialog from '@/components/CreateLeadDialog';
@@ -10,11 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { LeadGridSkeleton, StatsCardSkeleton } from '@/components/ui/loading-skeleton';
+import SkeletonLoader from '@/components/ui/skeleton-loader';
+import ErrorMessage from '@/components/ui/error-message';
 import { LEAD_STATUS_COLORS } from '@/types/supabase-enums';
-import { 
-  Search, 
-  Filter, 
+import {
+  Search,
+  Filter,
   MoreHorizontal,
   Mail,
   Phone,
@@ -30,12 +30,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const LeadsPage = () => {
-  const { leads, loading, updateLead, deleteLead, fetchLeads } = useLeads();
+  const { leads, loading, error, updateLead, deleteLead, fetchLeads } = useLeads();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [convertLeadDialogOpen, setConvertLeadDialogOpen] = useState(false);
-  const [selectedLead, setSelectedLead] = useState<any>(null);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
   const getStatusColor = (status: string) => {
     return LEAD_STATUS_COLORS[status as keyof typeof LEAD_STATUS_COLORS] || 'bg-gray-100 text-gray-800';
@@ -55,15 +55,15 @@ const LeadsPage = () => {
   };
 
   const filteredLeads = leads.filter(lead => {
-    const matchesSearch = !searchTerm || 
+    const matchesSearch = !searchTerm ||
       lead.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lead.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (lead.email && lead.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (lead.phone && lead.phone.toLowerCase().includes(searchTerm.toLowerCase()));
-    
+
     const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
     const matchesSource = sourceFilter === 'all' || lead.source === sourceFilter;
-    
+
     return matchesSearch && matchesStatus && matchesSource;
   });
 
@@ -76,7 +76,7 @@ const LeadsPage = () => {
   };
 
   const handleStatusChange = async (leadId: string, newStatus: string) => {
-    await updateLead(leadId, { status: newStatus as any });
+    await updateLead(leadId, { status: newStatus as 'new' | 'contacted' | 'qualified' | 'won' | 'lost' | 'converted' });
   };
 
   const handleDeleteLead = async (leadId: string) => {
@@ -89,7 +89,7 @@ const LeadsPage = () => {
     fetchLeads();
   };
 
-  const handleConvertLead = (lead: any) => {
+  const handleConvertLead = (lead: Lead) => {
     setSelectedLead(lead);
     setConvertLeadDialogOpen(true);
   };
@@ -99,6 +99,17 @@ const LeadsPage = () => {
     setSelectedLead(null);
     fetchLeads();
   };
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <ErrorMessage
+          message={error.message || "Failed to load leads. Please try again."}
+          onRetry={fetchLeads}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -115,7 +126,7 @@ const LeadsPage = () => {
 
       {/* Stats Cards */}
       {loading ? (
-        <StatsCardSkeleton />
+        <SkeletonLoader type="stats" count={5} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <Card>
@@ -159,14 +170,14 @@ const LeadsPage = () => {
       <div className="flex gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input 
-            placeholder="Search leads..." 
+          <Input
+            placeholder="Search leads..."
             className="pl-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <select 
+        <select
           className="px-3 py-2 border border-gray-300 rounded-md"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
@@ -179,7 +190,7 @@ const LeadsPage = () => {
           <option value="lost">Lost</option>
           <option value="converted">Converted</option>
         </select>
-        <select 
+        <select
           className="px-3 py-2 border border-gray-300 rounded-md"
           value={sourceFilter}
           onChange={(e) => setSourceFilter(e.target.value)}
@@ -202,7 +213,11 @@ const LeadsPage = () => {
 
       {/* Leads Grid */}
       {loading ? (
-        <LeadGridSkeleton />
+        <SkeletonLoader type="card" count={6} />
+      ) : filteredLeads.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500">No leads found matching your criteria.</p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredLeads.map((lead) => (
@@ -230,38 +245,29 @@ const LeadsPage = () => {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem asChild>
-                        <ViewLeadDialog 
+                        <ViewLeadDialog
                           lead={lead}
                           trigger={<span className="w-full cursor-pointer">View Details</span>}
                         />
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <EditLeadDialog 
-                          lead={lead} 
+                        <EditLeadDialog
+                          lead={lead}
                           onSuccess={handleEditSuccess}
                           trigger={<span className="w-full cursor-pointer">Edit Lead</span>}
                         />
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <CreateEstimateFromLeadDialog 
+                        <CreateEstimateFromLeadDialog
                           lead={lead}
                           onSuccess={fetchLeads}
                           trigger={<span className="w-full cursor-pointer">Create Estimate</span>}
                         />
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleStatusChange(lead.id, 'contacted')}>
-                        Mark Contacted
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleStatusChange(lead.id, 'qualified')}>
-                        Mark Qualified
-                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleConvertLead(lead)}>
                         Convert to Customer
                       </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="text-red-600"
-                        onClick={() => handleDeleteLead(lead.id)}
-                      >
+                      <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteLead(lead.id)}>
                         Delete Lead
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -270,36 +276,43 @@ const LeadsPage = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Mail className="h-4 w-4 mr-2" />
-                    {lead.email || 'N/A'}
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Phone className="h-4 w-4 mr-2" />
-                    {lead.phone || 'N/A'}
-                  </div>
+                  {lead.email && (
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Mail className="h-4 w-4 mr-2" />
+                      {lead.email}
+                    </div>
+                  )}
+                  {lead.phone && (
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Phone className="h-4 w-4 mr-2" />
+                      {lead.phone}
+                    </div>
+                  )}
                   {lead.address && (
                     <div className="flex items-center text-sm text-gray-600">
                       <MapPin className="h-4 w-4 mr-2" />
-                      {lead.address}, {lead.city}, {lead.state}, {lead.zip_code}
+                      {lead.address}
+                      {lead.city && `, ${lead.city}`}
+                      {lead.state && `, ${lead.state}`}
                     </div>
                   )}
-                  {lead.estimated_value && (
-                    <div className="flex items-center text-sm font-medium text-green-600">
+                  {lead.created_at && (
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Added {new Date(lead.created_at).toLocaleDateString()}
+                    </div>
+                  )}
+                  {lead.estimated_value > 0 && (
+                    <div className="flex items-center text-sm text-gray-600">
                       <DollarSign className="h-4 w-4 mr-2" />
                       Est. Value: ${lead.estimated_value.toLocaleString()}
                     </div>
                   )}
-                  {lead.expected_close_date && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Close Date: {new Date(lead.expected_close_date).toLocaleDateString()}
-                    </div>
-                  )}
                   {lead.notes && (
-                    <p className="text-sm text-gray-500 bg-gray-50 p-2 rounded line-clamp-3">
-                      {lead.notes}
-                    </p>
+                    <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded mt-2">
+                      {lead.notes.substring(0, 100)}
+                      {lead.notes.length > 100 && '...'}
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -308,26 +321,15 @@ const LeadsPage = () => {
         </div>
       )}
 
-      {filteredLeads.length === 0 && !loading && (
-        <div className="text-center py-12">
-          <p className="text-gray-500">No leads found matching your criteria.</p>
-          <CreateLeadDialog 
-            trigger={
-              <Button className="mt-4">
-                Create Your First Lead
-              </Button>
-            }
-            onSuccess={fetchLeads}
-          />
-        </div>
+      {/* Convert Lead Dialog */}
+      {selectedLead && (
+        <ConvertLeadDialog
+          lead={selectedLead}
+          open={convertLeadDialogOpen}
+          onOpenChange={setConvertLeadDialogOpen}
+          onSuccess={handleConvertSuccess}
+        />
       )}
-
-      <ConvertLeadDialog
-        open={convertLeadDialogOpen}
-        onOpenChange={setConvertLeadDialogOpen}
-        lead={selectedLead}
-        onSuccess={handleConvertSuccess}
-      />
     </div>
   );
 };

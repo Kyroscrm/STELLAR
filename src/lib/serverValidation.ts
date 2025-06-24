@@ -1,36 +1,35 @@
 
+import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { customerSchema, leadSchema, jobSchema, taskSchema, estimateSchema, invoiceSchema } from './validation';
-
-export interface ValidationResult {
-  isValid: boolean;
-  errors: Record<string, string>;
-}
+import { ValidationResult } from '../types/app-types';
 
 // Server-side validation helper
-export const validateOnServer = async (
-  schema: any,
-  data: any,
-  additionalChecks?: (data: any) => Promise<Record<string, string>>
+export const validateOnServer = async <T>(
+  schema: z.ZodSchema<T>,
+  data: unknown,
+  additionalChecks?: (data: T) => Promise<Record<string, string>>
 ): Promise<ValidationResult> => {
   const errors: Record<string, string> = {};
 
   // Zod validation
   try {
-    schema.parse(data);
-  } catch (error: any) {
-    if (error.errors) {
-      error.errors.forEach((err: any) => {
+    const parsed = schema.parse(data);
+
+    // Additional server-side checks
+    if (additionalChecks) {
+      const serverErrors = await additionalChecks(parsed);
+      Object.assign(errors, serverErrors);
+    }
+  } catch (error: unknown) {
+    if (error instanceof z.ZodError) {
+      error.errors.forEach((err) => {
         const path = err.path.join('.');
         errors[path] = err.message;
       });
+    } else {
+      errors.general = 'Validation failed';
     }
-  }
-
-  // Additional server-side checks
-  if (additionalChecks) {
-    const serverErrors = await additionalChecks(data);
-    Object.assign(errors, serverErrors);
   }
 
   return {
@@ -40,7 +39,7 @@ export const validateOnServer = async (
 };
 
 // Customer-specific server validation
-export const validateCustomer = async (data: any): Promise<ValidationResult> => {
+export const validateCustomer = async (data: unknown): Promise<ValidationResult> => {
   return validateOnServer(customerSchema, data, async (customerData) => {
     const errors: Record<string, string> = {};
 
@@ -75,7 +74,7 @@ export const validateCustomer = async (data: any): Promise<ValidationResult> => 
 };
 
 // Lead-specific server validation
-export const validateLead = async (data: any): Promise<ValidationResult> => {
+export const validateLead = async (data: unknown): Promise<ValidationResult> => {
   return validateOnServer(leadSchema, data, async (leadData) => {
     const errors: Record<string, string> = {};
 
@@ -108,7 +107,7 @@ export const validateLead = async (data: any): Promise<ValidationResult> => {
 };
 
 // Job-specific server validation
-export const validateJob = async (data: any): Promise<ValidationResult> => {
+export const validateJob = async (data: unknown): Promise<ValidationResult> => {
   return validateOnServer(jobSchema, data, async (jobData) => {
     const errors: Record<string, string> = {};
 
@@ -147,7 +146,7 @@ export const validateJob = async (data: any): Promise<ValidationResult> => {
 };
 
 // Task-specific server validation
-export const validateTask = async (data: any): Promise<ValidationResult> => {
+export const validateTask = async (data: unknown): Promise<ValidationResult> => {
   return validateOnServer(taskSchema, data, async (taskData) => {
     const errors: Record<string, string> = {};
 
@@ -190,7 +189,7 @@ export const validateTask = async (data: any): Promise<ValidationResult> => {
 };
 
 // Estimate-specific server validation
-export const validateEstimate = async (data: any): Promise<ValidationResult> => {
+export const validateEstimate = async (data: unknown): Promise<ValidationResult> => {
   return validateOnServer(estimateSchema, data, async (estimateData) => {
     const errors: Record<string, string> = {};
 
@@ -236,7 +235,7 @@ export const validateEstimate = async (data: any): Promise<ValidationResult> => 
 };
 
 // Invoice-specific server validation
-export const validateInvoice = async (data: any): Promise<ValidationResult> => {
+export const validateInvoice = async (data: unknown): Promise<ValidationResult> => {
   return validateOnServer(invoiceSchema, data, async (invoiceData) => {
     const errors: Record<string, string> = {};
 

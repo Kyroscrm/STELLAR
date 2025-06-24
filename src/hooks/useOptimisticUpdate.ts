@@ -10,7 +10,7 @@ interface OptimisticUpdateOptions<T> {
   errorMessage?: string;
 }
 
-export function useOptimisticUpdate<T = any>() {
+export function useOptimisticUpdate<T = unknown>() {
   const [isUpdating, setIsUpdating] = useState(false);
   const { handleError } = useErrorHandler();
 
@@ -44,14 +44,14 @@ export function useOptimisticUpdate<T = any>() {
     } catch (error) {
       // Rollback optimistic update
       rollback();
-      
+
       // Handle error
       handleError(error, {
         title: errorMessage,
         showToast: true,
         logError: true
       });
-      
+
       onError?.(error as Error);
       throw error;
     } finally {

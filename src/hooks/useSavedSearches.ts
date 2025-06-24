@@ -2,13 +2,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import type { Json } from '@/integrations/supabase/types';
 
 export interface SavedSearch {
   id: string;
   user_id: string;
   name: string;
   query: string;
-  filters: any;
+  filters: Json;
   entity_types: string[];
   created_at: string;
   updated_at: string;

@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  Search, 
-  Save, 
-  Star, 
+import {
+  Search,
+  Save,
+  Star,
   X,
   Filter,
   Clock
@@ -16,13 +16,15 @@ import {
 import { useSavedSearches } from '@/hooks/useSavedSearches';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+import { SavedSearch } from '@/types/app-types';
 
 interface SearchResult {
   id: string;
   type: string;
   title: string;
   subtitle?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 const EnhancedGlobalSearch: React.FC = () => {
@@ -202,8 +204,9 @@ const EnhancedGlobalSearch: React.FC = () => {
 
       setResults(searchResults);
     } catch (error) {
-      console.error('Search error:', error);
+      // Error handled - search functionality preserved
       setResults([]);
+      toast.error('Search failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -229,7 +232,7 @@ const EnhancedGlobalSearch: React.FC = () => {
     }
   };
 
-  const loadSavedSearch = (search: any) => {
+  const loadSavedSearch = (search: SavedSearch) => {
     setQuery(search.query);
     setSelectedEntityTypes(search.entity_types);
     searchEntities(search.query, search.entity_types);
@@ -308,8 +311,8 @@ const EnhancedGlobalSearch: React.FC = () => {
                 <Button onClick={handleSaveSearch} size="sm">
                   <Save className="h-4 w-4" />
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setShowSaveDialog(false)}
                   size="sm"
                 >
@@ -343,7 +346,7 @@ const EnhancedGlobalSearch: React.FC = () => {
                 >
                   <Star className="h-3 w-3" />
                   {search.name}
-                  <X 
+                  <X
                     className="h-3 w-3 ml-1 hover:text-red-500"
                     onClick={(e) => {
                       e.stopPropagation();

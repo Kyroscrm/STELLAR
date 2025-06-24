@@ -9,7 +9,7 @@ export interface AutomationRule {
   trigger_type: string;
   action_type: string;
   enabled: boolean;
-  conditions: any;
+  conditions: Record<string, unknown>;
   estimate_id?: string;
   created_at: string;
   updated_at: string;

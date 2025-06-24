@@ -7,11 +7,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTasks } from '@/hooks/useTasks';
 import { toast } from 'sonner';
+import { TaskFormData } from '@/types/app-types';
 
 interface TaskFormProps {
-  onSubmit: (data: any) => Promise<void> | void;
+  onSubmit: (data: TaskFormData) => Promise<void> | void;
   onCancel: () => void;
-  initialData?: any;
+  initialData?: TaskFormData;
   isSubmitting?: boolean;
 }
 
@@ -27,13 +28,13 @@ const TaskForm: React.FC<TaskFormProps> = ({
     priority: 'medium',
     status: 'pending',
     due_date: '',
-    estimated_hours: '',
+    estimated_hours: 0,
     ...initialData
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.title.trim()) {
       toast.error('Title is required');
       return;
@@ -43,8 +44,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       await onSubmit(formData);
       toast.success(initialData ? 'Task updated successfully' : 'Task created successfully');
     } catch (error) {
-      console.error('Error submitting task:', error);
-      toast.error('Failed to save task');
+      toast.error('Failed to save task: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 

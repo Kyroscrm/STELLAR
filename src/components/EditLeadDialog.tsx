@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Edit } from 'lucide-react';
 import LeadForm from '@/components/LeadForm';
 import { useLeads, Lead } from '@/hooks/useLeads';
+import { LeadFormData } from '@/types/app-types';
 
 interface EditLeadDialogProps {
   lead: Lead;
@@ -12,8 +13,8 @@ interface EditLeadDialogProps {
   onSuccess?: () => void;
 }
 
-const EditLeadDialog: React.FC<EditLeadDialogProps> = ({ 
-  lead, 
+const EditLeadDialog: React.FC<EditLeadDialogProps> = ({
+  lead,
   trigger,
   onSuccess
 }) => {
@@ -21,7 +22,7 @@ const EditLeadDialog: React.FC<EditLeadDialogProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { updateLead } = useLeads();
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: LeadFormData) => {
     setIsSubmitting(true);
     try {
       const success = await updateLead(lead.id, data);

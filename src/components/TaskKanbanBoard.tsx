@@ -13,6 +13,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { AlertCircle, BarChart3, Calendar, CheckCircle2, Clock, Edit, Eye, Filter, List as ListIcon, MoreHorizontal, Plus, Search, Trash2, User } from 'lucide-react';
 import React, { useState } from 'react';
 import { toast } from 'sonner';
+import { Task } from '@/types/app-types';
 
 // Define valid task statuses that match Supabase enum
 const VALID_TASK_STATUSES = ['pending', 'in_progress', 'completed', 'cancelled'] as const;
@@ -79,7 +80,7 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({
 
 // Sortable Task Card Component
 interface SortableTaskCardProps {
-  task: any;
+  task: Task;
   onEdit: () => void;
   onView: () => void;
   onDelete: () => void;
@@ -217,9 +218,9 @@ const TaskKanbanBoard = () => {
   } = useTasks();
   const [showNewTaskForm, setShowNewTaskForm] = useState(false);
   const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null);
-  const [editingTask, setEditingTask] = useState<any>(null);
-  const [viewingTask, setViewingTask] = useState<any>(null);
-  const [activeTask, setActiveTask] = useState<any>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [viewingTask, setViewingTask] = useState<Task | null>(null);
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');

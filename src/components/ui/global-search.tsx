@@ -17,7 +17,7 @@ interface SearchResult {
   title: string;
   subtitle?: string;
   type: 'customer' | 'lead' | 'job' | 'estimate' | 'invoice' | 'task';
-  data: any;
+  data: Record<string, unknown>;
 }
 
 const typeIcons = {
@@ -146,8 +146,8 @@ export const GlobalSearch: React.FC = () => {
       invoice: '/admin/invoices',
       task: '/admin/tasks'
     };
-    
-    console.log(`Navigate to ${routes[result.type]} for ${result.type} ${result.id}`);
+
+    // TODO: Implement navigation
     setIsOpen(false);
     setQuery('');
   };
@@ -178,7 +178,7 @@ export const GlobalSearch: React.FC = () => {
               autoFocus
             />
           </div>
-          
+
           {results.length > 0 && (
             <div className="max-h-96 overflow-y-auto space-y-2">
               {results.map((result) => {
@@ -206,7 +206,7 @@ export const GlobalSearch: React.FC = () => {
               })}
             </div>
           )}
-          
+
           {query && results.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               No results found for "{query}"

@@ -8,24 +8,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useErrorHandler, useOptimisticUpdate } from '@/hooks';
 import { InvoiceWithCustomer, useInvoices } from '@/hooks/useInvoices';
-import { InvoiceFormData, invoiceSchema } from '@/lib/validation';
+import { invoiceSchema } from '@/lib/validation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Edit, Plus, Trash2 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-
-interface EditInvoiceDialogProps {
-  invoice: InvoiceWithCustomer;
-  trigger?: React.ReactNode;
-  onSuccess?: () => void;
-}
+import { InvoiceFormData } from '@/types/app-types';
 
 interface LineItem {
   description: string;
   quantity: number;
   unit_price: number;
-  total: number;
+  total?: number;
+  sort_order?: number;
+}
+
+interface EditInvoiceDialogProps {
+  invoice: InvoiceWithCustomer;
+  trigger?: React.ReactNode;
+  onSuccess?: () => void;
 }
 
 const EditInvoiceDialog: React.FC<EditInvoiceDialogProps> = ({
@@ -51,9 +53,11 @@ const EditInvoiceDialog: React.FC<EditInvoiceDialogProps> = ({
       estimate_id: invoice.estimate_id || '',
       due_date: invoice.due_date || '',
       tax_rate: invoice.tax_rate || 0,
-      status: (invoice.status as any) || 'draft',
+      status: (invoice.status as InvoiceFormData['status']) || 'draft',
+      payment_status: (invoice.payment_status as InvoiceFormData['payment_status']) || 'pending',
       notes: invoice.notes || '',
       payment_terms: invoice.payment_terms || '',
+      line_items: [],
     },
   });
 
@@ -64,14 +68,15 @@ const EditInvoiceDialog: React.FC<EditInvoiceDialogProps> = ({
         description: item.description,
         quantity: Number(item.quantity),
         unit_price: Number(item.unit_price),
-        total: Number(item.total)
+        total: Number(item.total),
+        sort_order: item.sort_order
       }));
       setLineItems(items);
     }
   }, [invoice.invoice_line_items]);
 
   const addLineItem = () => {
-    setLineItems([...lineItems, { description: '', quantity: 1, unit_price: 0, total: 0 }]);
+    setLineItems([...lineItems, { description: '', quantity: 1, unit_price: 0, total: 0, sort_order: lineItems.length }]);
   };
 
   const updateLineItem = (index: number, field: keyof LineItem, value: string | number) => {
@@ -90,7 +95,7 @@ const EditInvoiceDialog: React.FC<EditInvoiceDialogProps> = ({
   };
 
   const calculateSubtotal = () => {
-    return lineItems.reduce((sum, item) => sum + item.total, 0);
+    return lineItems.reduce((sum, item) => sum + (item.total || 0), 0);
   };
 
   const handleSubmit = async (data: InvoiceFormData) => {
@@ -102,13 +107,21 @@ const EditInvoiceDialog: React.FC<EditInvoiceDialogProps> = ({
         return;
       }
 
-      // Invoice update data is processed
+      const formData: InvoiceFormData = {
+        ...data,
+        status: data.status || 'draft',
+        payment_status: data.payment_status || 'pending',
+        line_items: lineItems.map((item, index) => ({
+          ...item,
+          sort_order: index
+        }))
+      };
 
       await executeUpdate(
         () => {
           // Optimistic update would go here if we had local state
         },
-        () => updateInvoice(invoice.id, data),
+        () => updateInvoice(invoice.id, formData),
         () => {
           // Rollback would go here if we had local state
         },
@@ -198,6 +211,7 @@ const EditInvoiceDialog: React.FC<EditInvoiceDialogProps> = ({
                           <SelectItem value="paid">Paid</SelectItem>
                           <SelectItem value="overdue">Overdue</SelectItem>
                           <SelectItem value="cancelled">Cancelled</SelectItem>
+                          <SelectItem value="viewed">Viewed</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -286,7 +300,7 @@ const EditInvoiceDialog: React.FC<EditInvoiceDialogProps> = ({
                             />
                           </div>
                           <div className="col-span-1 text-right font-medium">
-                            ${item.total.toFixed(2)}
+                            ${item.total?.toFixed(2) || '0.00'}
                           </div>
                           <div className="col-span-1">
                             <Button

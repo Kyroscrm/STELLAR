@@ -9,23 +9,25 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useCustomers } from '@/hooks/useCustomers';
 import { useJobs } from '@/hooks/useJobs';
 import { useJobNumberGenerator } from '@/hooks/useJobNumberGenerator';
-import { invoiceSchema, InvoiceFormData } from '@/lib/validation';
+import { invoiceSchema } from '@/lib/validation';
 import { RefreshCw, Plus, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-
-interface InvoiceFormProps {
-  onSubmit: (data: InvoiceFormData & { lineItems: LineItem[] }) => Promise<void>;
-  onCancel: () => void;
-  initialData?: any;
-  isSubmitting?: boolean;
-}
+import { Invoice, InvoiceFormData } from '@/types/app-types';
 
 interface LineItem {
   description: string;
   quantity: number;
   unit_price: number;
-  total: number;
+  total?: number;
+  sort_order?: number;
+}
+
+interface InvoiceFormProps {
+  onSubmit: (data: InvoiceFormData) => Promise<void>;
+  onCancel: () => void;
+  initialData?: Invoice;
+  isSubmitting?: boolean;
 }
 
 const InvoiceForm: React.FC<InvoiceFormProps> = ({
@@ -37,7 +39,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
   const { customers } = useCustomers();
   const { jobs } = useJobs();
   const { generateInvoiceNumber, loading: generatingNumber } = useJobNumberGenerator();
-  
+
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
 
   const form = useForm<InvoiceFormData>({
@@ -51,10 +53,11 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
       estimate_id: initialData?.estimate_id || '',
       due_date: initialData?.due_date || '',
       tax_rate: initialData?.tax_rate || 0,
-      status: (initialData?.status as any) || 'draft',
-      payment_status: (initialData?.payment_status as any) || 'pending',
+      status: initialData?.status || 'draft',
+      payment_status: initialData?.payment_status || 'pending' as const,
       notes: initialData?.notes || '',
       payment_terms: initialData?.payment_terms || '',
+      line_items: [],
     },
   });
 
@@ -64,17 +67,17 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
   };
 
   const addLineItem = () => {
-    setLineItems([...lineItems, { description: '', quantity: 1, unit_price: 0, total: 0 }]);
+    setLineItems([...lineItems, { description: '', quantity: 1, unit_price: 0, total: 0, sort_order: lineItems.length }]);
   };
 
   const updateLineItem = (index: number, field: keyof LineItem, value: string | number) => {
     const updated = [...lineItems];
     updated[index] = { ...updated[index], [field]: value };
-    
+
     if (field === 'quantity' || field === 'unit_price') {
       updated[index].total = Number(updated[index].quantity) * Number(updated[index].unit_price);
     }
-    
+
     setLineItems(updated);
   };
 
@@ -83,7 +86,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
   };
 
   const calculateSubtotal = () => {
-    return lineItems.reduce((sum, item) => sum + item.total, 0);
+    return lineItems.reduce((sum, item) => sum + (item.total || 0), 0);
   };
 
   // Auto-generate invoice number on mount if not provided
@@ -106,11 +109,19 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
         return;
       }
 
-      console.log('Submitting invoice with data:', data);
-      await onSubmit({ ...data, lineItems });
+      const formData: InvoiceFormData = {
+        ...data,
+        status: data.status || 'draft',
+        payment_status: data.payment_status || 'pending',
+        line_items: lineItems.map((item, index) => ({
+          ...item,
+          sort_order: index
+        }))
+      };
+
+      await onSubmit(formData);
     } catch (error) {
-      console.error('Error submitting invoice:', error);
-      toast.error('Failed to submit invoice');
+      toast.error('Failed to submit invoice: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
@@ -169,8 +180,8 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Customer *</FormLabel>
-                <Select 
-                  onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} 
+                <Select
+                  onValueChange={(value) => field.onChange(value === 'none' ? '' : value)}
                   value={field.value || ''}
                 >
                   <FormControl>
@@ -198,8 +209,8 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Job (Optional)</FormLabel>
-                <Select 
-                  onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} 
+                <Select
+                  onValueChange={(value) => field.onChange(value === 'none' ? '' : value)}
                   value={field.value || ''}
                 >
                   <FormControl>
@@ -329,8 +340,8 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
               <FormItem>
                 <FormLabel>Tax Rate (%)</FormLabel>
                 <FormControl>
-                  <Input 
-                    type="number" 
+                  <Input
+                    type="number"
                     step="0.01"
                     min="0"
                     max="100"
@@ -363,6 +374,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                     <SelectItem value="paid">Paid</SelectItem>
                     <SelectItem value="overdue">Overdue</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="viewed">Viewed</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

@@ -38,7 +38,7 @@ const EstimateLineItemsManager: React.FC<EstimateLineItemsManagerProps> = ({
     }
   };
 
-  const handleUpdateItem = async (id: string, field: string, value: any) => {
+  const handleUpdateItem = async (id: string, field: string, value: string | number) => {
     await updateLineItem(id, { [field]: value });
   };
 

@@ -64,6 +64,14 @@ export type Database = {
           id: string
           metadata: Json | null
           user_id: string
+          old_data: Json | null
+          new_data: Json | null
+          changed_fields: string[] | null
+          ip_address: string | null
+          user_agent: string | null
+          session_id: string | null
+          compliance_level: string | null
+          risk_score: number | null
         }
         Insert: {
           action: string
@@ -74,6 +82,14 @@ export type Database = {
           id?: string
           metadata?: Json | null
           user_id: string
+          old_data?: Json | null
+          new_data?: Json | null
+          changed_fields?: string[] | null
+          ip_address?: string | null
+          user_agent?: string | null
+          session_id?: string | null
+          compliance_level?: string | null
+          risk_score?: number | null
         }
         Update: {
           action?: string
@@ -84,8 +100,31 @@ export type Database = {
           id?: string
           metadata?: Json | null
           user_id?: string
+          old_data?: Json | null
+          new_data?: Json | null
+          changed_fields?: string[] | null
+          ip_address?: string | null
+          user_agent?: string | null
+          session_id?: string | null
+          compliance_level?: string | null
+          risk_score?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "activity_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "user_sessions"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       api_keys: {
         Row: {
@@ -1653,6 +1692,7 @@ export type Database = {
           last_name: string | null
           phone: string | null
           role: Database["public"]["Enums"]["user_role"] | null
+          role_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -1665,6 +1705,7 @@ export type Database = {
           last_name?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          role_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -1677,9 +1718,18 @@ export type Database = {
           last_name?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          role_id?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       reports: {
         Row: {
@@ -2225,6 +2275,53 @@ export type Database = {
         }
         Relationships: []
       }
+      user_sessions: {
+        Row: {
+          id: string
+          user_id: string
+          login_time: string
+          logout_time: string | null
+          ip_address: string | null
+          user_agent: string | null
+          device_info: Json | null
+          location_data: Json | null
+          is_active: boolean
+          last_active_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          login_time?: string
+          logout_time?: string | null
+          ip_address?: string | null
+          user_agent?: string | null
+          device_info?: Json | null
+          location_data?: Json | null
+          is_active?: boolean
+          last_active_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          login_time?: string
+          logout_time?: string | null
+          ip_address?: string | null
+          user_agent?: string | null
+          device_info?: Json | null
+          location_data?: Json | null
+          is_active?: boolean
+          last_active_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       webhooks: {
         Row: {
           active: boolean | null
@@ -2388,6 +2485,87 @@ export type Database = {
         }
         Relationships: []
       }
+      permissions: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      roles: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      role_permissions: {
+        Row: {
+          role_id: string
+          permission_id: string
+          created_at: string
+        }
+        Insert: {
+          role_id: string
+          permission_id: string
+          created_at?: string
+        }
+        Update: {
+          role_id?: string
+          permission_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -2420,8 +2598,122 @@ export type Database = {
           p_entity_id: string
           p_description?: string
           p_metadata?: Json
+          p_old_data?: Json
+          p_new_data?: Json
+          p_changed_fields?: string[]
+          p_ip_address?: string
+          p_user_agent?: string
+          p_session_id?: string
+          p_compliance_level?: string
+          p_risk_score?: number
         }
-        Returns: undefined
+        Returns: string
+      }
+      start_user_session: {
+        Args: {
+          p_user_id: string
+          p_ip_address?: string
+          p_user_agent?: string
+          p_device_info?: Json
+          p_location_data?: Json
+        }
+        Returns: string
+      }
+      end_user_session: {
+        Args: {
+          p_session_id: string
+        }
+        Returns: boolean
+      }
+      update_session_activity: {
+        Args: {
+          p_session_id: string
+        }
+        Returns: boolean
+      }
+      get_changed_fields: {
+        Args: {
+          old_record: Json
+          new_record: Json
+        }
+        Returns: string[]
+      }
+      get_request_metadata: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      set_request_metadata: {
+        Args: {
+          p_ip_address?: string
+          p_user_agent?: string
+          p_session_id?: string
+        }
+        Returns: boolean
+      }
+      clear_request_metadata: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      get_entity_audit_logs: {
+        Args: {
+          p_entity_type: string
+          p_entity_id: string
+          p_limit?: number
+          p_offset?: number
+        }
+        Returns: {
+          id: string
+          user_id: string
+          action: string
+          description: string
+          old_data: Json
+          new_data: Json
+          changed_fields: string[]
+          ip_address: string
+          user_agent: string
+          session_id: string
+          compliance_level: string
+          risk_score: number
+          created_at: string
+        }[]
+      }
+      get_field_change_history: {
+        Args: {
+          p_entity_type: string
+          p_entity_id: string
+          p_field_name: string
+          p_limit?: number
+        }
+        Returns: {
+          log_id: string
+          user_id: string
+          old_value: Json
+          new_value: Json
+          changed_at: string
+        }[]
+      }
+      get_user_activity: {
+        Args: {
+          p_user_id?: string
+          p_from_date?: string
+          p_to_date?: string
+          p_limit?: number
+          p_offset?: number
+        }
+        Returns: {
+          id: string
+          entity_type: string
+          entity_id: string
+          action: string
+          description: string
+          changed_fields: string[]
+          ip_address: string
+          user_agent: string
+          session_id: string
+          compliance_level: string
+          risk_score: number
+          created_at: string
+        }[]
       }
       validate_client_portal_token: {
         Args: { p_token: string }
@@ -2430,6 +2722,13 @@ export type Database = {
           user_id: string
           is_valid: boolean
         }[]
+      }
+      has_permission: {
+        Args: {
+          user_id: string
+          permission_name: string
+        }
+        Returns: boolean
       }
     }
     Enums: {
@@ -2485,6 +2784,7 @@ export type Database = {
       task_status: "pending" | "in_progress" | "completed" | "cancelled"
       user_role: "admin" | "manager" | "staff" | "client"
       workflow_status: "active" | "inactive" | "error"
+      session_status: "active" | "expired" | "terminated"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2657,6 +2957,7 @@ export const Constants = {
       task_status: ["pending", "in_progress", "completed", "cancelled"],
       user_role: ["admin", "manager", "staff", "client"],
       workflow_status: ["active", "inactive", "error"],
+      session_status: ["active", "expired", "terminated"],
     },
   },
 } as const

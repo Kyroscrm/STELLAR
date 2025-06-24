@@ -1,9 +1,10 @@
-
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText } from 'lucide-react';
+import { FileText, AlertTriangle } from 'lucide-react';
+import { EstimateLineItem } from '@/types/app-types';
+import { toast } from 'sonner';
 
 interface LineItem {
   id: string;
@@ -15,20 +16,32 @@ interface LineItem {
 }
 
 interface EstimateLineItemsDisplayProps {
-  estimateId: string;
+  estimateId?: string;
+  lineItems?: EstimateLineItem[];
+  readOnly?: boolean;
 }
 
 const EstimateLineItemsDisplay: React.FC<EstimateLineItemsDisplayProps> = ({
-  estimateId
+  estimateId,
+  lineItems: providedLineItems,
+  readOnly = false
 }) => {
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(estimateId ? true : false);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    loadLineItems();
-  }, [estimateId]);
+    if (providedLineItems) {
+      setLineItems(providedLineItems as LineItem[]);
+      setLoading(false);
+    } else if (estimateId) {
+      loadLineItems();
+    }
+  }, [estimateId, providedLineItems]);
 
   const loadLineItems = async () => {
+    if (!estimateId) return;
+
     try {
       const { data, error } = await supabase
         .from('estimate_line_items')
@@ -38,8 +51,10 @@ const EstimateLineItemsDisplay: React.FC<EstimateLineItemsDisplayProps> = ({
 
       if (error) throw error;
       setLineItems(data || []);
-    } catch (error) {
-      console.error('Error loading line items:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load line items';
+      setError(new Error(errorMessage));
+      toast.error('Failed to load estimate line items');
     } finally {
       setLoading(false);
     }
@@ -58,6 +73,30 @@ const EstimateLineItemsDisplay: React.FC<EstimateLineItemsDisplayProps> = ({
         <CardContent>
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-red-500" />
+            Error Loading Line Items
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-4 text-red-500">
+            <p>{error.message}</p>
+            <button
+              onClick={() => loadLineItems()}
+              className="mt-2 text-sm underline"
+            >
+              Try Again
+            </button>
           </div>
         </CardContent>
       </Card>

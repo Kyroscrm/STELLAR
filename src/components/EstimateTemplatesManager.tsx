@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useEstimateTemplates } from '@/hooks/useEstimateTemplates';
+import { useEstimateTemplates, EstimateTemplate } from '@/hooks/useEstimateTemplates';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,7 +50,7 @@ const EstimateTemplatesManager = () => {
   const { templates, loading, createTemplate, updateTemplate, deleteTemplate } = useEstimateTemplates();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<any>(null);
+  const [editingTemplate, setEditingTemplate] = useState<EstimateTemplate | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [formData, setFormData] = useState<TemplateFormData>({
     name: '',
@@ -72,7 +72,7 @@ const EstimateTemplatesManager = () => {
     });
   };
 
-  const handleEdit = (template: any) => {
+  const handleEdit = (template: EstimateTemplate) => {
     setEditingTemplate(template);
     setFormData({
       name: template.name,
@@ -99,10 +99,10 @@ const EstimateTemplatesManager = () => {
     }));
   };
 
-  const handleLineItemChange = (index: number, field: string, value: any) => {
+  const handleLineItemChange = (index: number, field: string, value: string | number) => {
     setFormData(prev => ({
       ...prev,
-      line_items: prev.line_items.map((item, i) => 
+      line_items: prev.line_items.map((item, i) =>
         i === index ? { ...item, [field]: value } : item
       )
     }));
@@ -110,14 +110,14 @@ const EstimateTemplatesManager = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim()) {
       toast.error('Template name is required');
       return;
     }
 
     const validLineItems = formData.line_items.filter(item => item.description.trim());
-    
+
     if (validLineItems.length === 0) {
       toast.error('At least one line item is required');
       return;
@@ -128,10 +128,10 @@ const EstimateTemplatesManager = () => {
       line_items: validLineItems
     };
 
-    const result = editingTemplate 
+    const result = editingTemplate
       ? await updateTemplate(editingTemplate.id, templateData)
       : await createTemplate(templateData);
-      
+
     if (result) {
       setIsCreateModalOpen(false);
       setIsEditModalOpen(false);
@@ -222,7 +222,7 @@ const EstimateTemplatesManager = () => {
                     Add Item
                   </Button>
                 </div>
-                
+
                 <div className="space-y-3">
                   {formData.line_items.map((item, index) => (
                     <div key={index} className="grid grid-cols-12 gap-2 items-end">
@@ -255,9 +255,9 @@ const EstimateTemplatesManager = () => {
                       </div>
                       <div className="col-span-1">
                         {formData.line_items.length > 1 && (
-                          <Button 
-                            type="button" 
-                            variant="ghost" 
+                          <Button
+                            type="button"
+                            variant="ghost"
                             size="sm"
                             onClick={() => handleRemoveLineItem(index)}
                           >
@@ -353,7 +353,7 @@ const EstimateTemplatesManager = () => {
                   Add Item
                 </Button>
               </div>
-              
+
               <div className="space-y-3">
                 {formData.line_items.map((item, index) => (
                   <div key={index} className="grid grid-cols-12 gap-2 items-end">
@@ -386,9 +386,9 @@ const EstimateTemplatesManager = () => {
                     </div>
                     <div className="col-span-1">
                       {formData.line_items.length > 1 && (
-                        <Button 
-                          type="button" 
-                          variant="ghost" 
+                        <Button
+                          type="button"
+                          variant="ghost"
                           size="sm"
                           onClick={() => handleRemoveLineItem(index)}
                         >
@@ -470,15 +470,15 @@ const EstimateTemplatesManager = () => {
                     <TableCell>{(template.tax_rate * 100).toFixed(1)}%</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
                           onClick={() => handleEdit(template)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
                           onClick={() => setDeleteConfirmId(template.id)}
                         >
@@ -504,7 +504,7 @@ const EstimateTemplatesManager = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
               className="bg-red-600 hover:bg-red-700"
             >

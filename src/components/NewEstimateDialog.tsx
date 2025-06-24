@@ -8,13 +8,14 @@ import { useEstimates } from '@/hooks/useEstimates';
 import { useEstimateLineItems } from '@/hooks/useEstimateLineItems';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { EstimateFormData } from '@/lib/validation';
 
 interface NewEstimateDialogProps {
   trigger?: React.ReactNode;
   onSuccess?: () => void;
 }
 
-const NewEstimateDialog: React.FC<NewEstimateDialogProps> = ({ 
+const NewEstimateDialog: React.FC<NewEstimateDialogProps> = ({
   trigger,
   onSuccess
 }) => {
@@ -24,7 +25,7 @@ const NewEstimateDialog: React.FC<NewEstimateDialogProps> = ({
   const { addMultipleLineItems } = useEstimateLineItems();
   const { user } = useAuth();
 
-  const handleSuccess = async (data: any) => {
+  const handleSuccess = async (data: EstimateFormData) => {
     setIsSubmitting(true);
     try {
       const estimateData = {
@@ -44,19 +45,19 @@ const NewEstimateDialog: React.FC<NewEstimateDialogProps> = ({
       };
 
       const result = await createEstimate(estimateData);
-      
+
       if (result) {
         // Use the centralized line item logic from the hook
         if (data.lineItems && data.lineItems.length > 0) {
           await addMultipleLineItems(result.id, data.lineItems);
         }
-        
+
         setOpen(false);
         onSuccess?.();
         toast.success('Estimate created successfully');
       }
     } catch (error) {
-      console.error('Error creating estimate:', error);
+      toast.error('Failed to create estimate: ' + (error instanceof Error ? error.message : 'Unknown error'));
       toast.error('Failed to create estimate');
     } finally {
       setIsSubmitting(false);

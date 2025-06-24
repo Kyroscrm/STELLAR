@@ -50,6 +50,36 @@ npm run dev
 - Click on "New codespace" to launch a new Codespace environment.
 - Edit files directly within the Codespace and commit and push your changes once you're done.
 
+## CI/CD Pipeline
+
+This project uses GitHub Actions for continuous integration and deployment:
+
+### CI Workflow
+
+The CI workflow runs on every pull request and push to the main branch:
+
+- **Linting**: Ensures code follows style guidelines
+- **Type Checking**: Verifies TypeScript types
+- **Testing**: Runs unit and integration tests
+- **Building**: Builds the application to verify it compiles correctly
+
+### CD Workflow
+
+The CD workflow runs on every push to the main branch:
+
+- Builds the application for production
+- Deploys to Vercel automatically
+
+### Required Secrets
+
+For deployment to work, add these secrets to your GitHub repository:
+
+- `VERCEL_TOKEN`: Your Vercel API token
+- `VERCEL_ORG_ID`: Your Vercel organization ID
+- `VERCEL_PROJECT_ID`: Your Vercel project ID
+- `VITE_SUPABASE_URL`: Your Supabase URL
+- `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+
 ## What technologies are used for this project?
 
 This project is built with:

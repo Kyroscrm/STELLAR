@@ -12,8 +12,8 @@ interface EditCustomerDialogProps {
   onSuccess?: () => void;
 }
 
-const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({ 
-  customer, 
+const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
+  customer,
   trigger,
   onSuccess
 }) => {
@@ -21,7 +21,7 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { updateCustomer } = useCustomers();
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: CustomerFormData) => {
     setIsSubmitting(true);
     try {
       const success = await updateCustomer(customer.id, data);

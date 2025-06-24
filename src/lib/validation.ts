@@ -1,8 +1,7 @@
-
 import { z } from 'zod';
 
 // Enhanced validation patterns
-const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+const phoneRegex = /^[+]?[1-9][\d]{0,15}$/;
 const zipCodeRegex = /^\d{5}(-\d{4})?$/;
 
 // Customer validation schema - Enhanced
@@ -12,7 +11,7 @@ export const customerSchema = z.object({
   email: z.string().email('Please enter a valid email').optional().or(z.literal('')),
   phone: z.string()
     .optional()
-    .refine((val) => !val || phoneRegex.test(val.replace(/[\s\-\(\)]/g, '')), {
+    .refine((val) => !val || phoneRegex.test(val.replace(/[\s\-()]/g, '')), {
       message: 'Please enter a valid phone number'
     }),
   company_name: z.string().max(100, 'Company name must be less than 100 characters').optional(),
@@ -28,7 +27,7 @@ export const customerSchema = z.object({
   emergency_contact_name: z.string().max(100, 'Emergency contact name must be less than 100 characters').optional(),
   emergency_contact_phone: z.string()
     .optional()
-    .refine((val) => !val || phoneRegex.test(val.replace(/[\s\-\(\)]/g, '')), {
+    .refine((val) => !val || phoneRegex.test(val.replace(/[\s\-()]/g, '')), {
       message: 'Please enter a valid emergency contact phone number'
     }),
 });
@@ -40,7 +39,7 @@ export const leadSchema = z.object({
   email: z.string().email('Please enter a valid email').optional().or(z.literal('')),
   phone: z.string()
     .optional()
-    .refine((val) => !val || phoneRegex.test(val.replace(/[\s\-\(\)]/g, '')), {
+    .refine((val) => !val || phoneRegex.test(val.replace(/[\s\-()]/g, '')), {
       message: 'Please enter a valid phone number'
     }),
   address: z.string().max(200, 'Address must be less than 200 characters').optional(),
@@ -99,10 +98,17 @@ export const invoiceSchema = z.object({
   estimate_id: z.string().uuid('Invalid estimate ID').optional(),
   due_date: z.string().optional(),
   tax_rate: z.number().min(0, 'Tax rate must be non-negative').max(1, 'Tax rate must be less than or equal to 100%').optional(),
-  status: z.enum(['draft', 'sent', 'paid', 'overdue', 'cancelled']).optional(),
+  status: z.enum(['draft', 'sent', 'paid', 'overdue', 'cancelled', 'viewed']).optional(),
   payment_status: z.enum(['completed', 'failed', 'pending', 'refunded']).optional(),
   payment_terms: z.string().max(500, 'Payment terms must be less than 500 characters').optional(),
   notes: z.string().max(1000, 'Notes must be less than 1000 characters').optional(),
+  line_items: z.array(z.object({
+    description: z.string().min(1, 'Description is required').max(200, 'Description must be less than 200 characters'),
+    quantity: z.number().min(0.01, 'Quantity must be greater than 0'),
+    unit_price: z.number().min(0, 'Unit price must be non-negative'),
+    total: z.number().min(0, 'Total must be non-negative').optional(),
+    sort_order: z.number().optional()
+  })).optional()
 });
 
 // Task validation schema - Enhanced

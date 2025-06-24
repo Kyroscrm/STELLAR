@@ -4,10 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { EstimateTemplateLineItem } from '@/types/app-types';
 
 // Override the Supabase type to have proper line_items type for frontend
 export type EstimateTemplate = Omit<Tables<'estimate_templates'>, 'line_items'> & {
-  line_items: any[];
+  line_items: EstimateTemplateLineItem[];
 };
 
 export const useEstimateTemplates = () => {
@@ -26,7 +27,7 @@ export const useEstimateTemplates = () => {
     return true;
   };
 
-  const parseLineItems = (lineItems: any): any[] => {
+  const parseLineItems = (lineItems: unknown): EstimateTemplateLineItem[] => {
     if (!lineItems) return [];
 
     if (Array.isArray(lineItems)) {
@@ -42,13 +43,16 @@ export const useEstimateTemplates = () => {
       }
     }
 
-    if (typeof lineItems === 'object') {
+    if (typeof lineItems === 'object' && lineItems !== null) {
+      // Cast to record to access properties safely
+      const obj = lineItems as Record<string, unknown>;
+
       // If it's a JSON object, try to extract array-like data
-      if (lineItems.length !== undefined && typeof lineItems.length === 'number') {
-        return Array.from(lineItems);
+      if (obj.length !== undefined && typeof obj.length === 'number') {
+        return Array.from(lineItems as ArrayLike<EstimateTemplateLineItem>);
       }
       // If it's a regular object, wrap it in an array
-      return [lineItems];
+      return [lineItems as EstimateTemplateLineItem];
     }
 
     return [];

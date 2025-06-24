@@ -27,7 +27,7 @@ interface ActivityLog {
   entity_id: string;
   action: string;
   description: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   created_at: string;
 }
 

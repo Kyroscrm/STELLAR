@@ -2,17 +2,33 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
+import { RealtimeChannel, RealtimePostgresChangesPayload, REALTIME_POSTGRES_CHANGES_LISTEN_EVENT } from '@supabase/supabase-js';
 
-interface SubscriptionConfig {
-  table: string;
-  event: 'INSERT' | 'UPDATE' | 'DELETE' | '*';
-  filter?: string;
-  onUpdate: (payload: unknown) => void;
+export type RealtimeEvent = 'INSERT' | 'UPDATE' | 'DELETE' | '*';
+
+interface AuditTrailRecord {
+  id: string;
+  user_id: string;
+  table_name: string;
+  action: string;
+  compliance_level: string;
+  created_at: string;
 }
 
-export const useRealTimeSubscriptions = (configs: SubscriptionConfig[]) => {
+export interface SubscriptionConfig<T = unknown> {
+  table: string;
+  event: RealtimeEvent;
+  filter?: string;
+  onUpdate: (payload: RealtimePostgresChangesPayload<T>) => void;
+}
+
+interface UseRealTimeSubscriptionsReturn {
+  cleanup: () => void;
+}
+
+export const useRealTimeSubscriptions = <T = unknown>(configs: SubscriptionConfig<T>[]): UseRealTimeSubscriptionsReturn => {
   const { user } = useAuth();
-  const channelsRef = useRef<unknown[]>([]);
+  const channelsRef = useRef<RealtimeChannel[]>([]);
 
   const cleanup = useCallback(() => {
     channelsRef.current.forEach(channel => {
@@ -33,13 +49,11 @@ export const useRealTimeSubscriptions = (configs: SubscriptionConfig[]) => {
         table: 'audit_trail',
         event: 'INSERT' as const,
         filter: `user_id=eq.${user.id}`,
-        onUpdate: (payload: unknown) => {
+        onUpdate: (payload: RealtimePostgresChangesPayload<AuditTrailRecord>) => {
           // Show notification for critical compliance events
-          if (payload && typeof payload === 'object' && 'new' in payload) {
-            const newRecord = (payload as any).new;
-            if (newRecord?.compliance_level === 'critical') {
-              toast.warning(`Critical action logged: ${newRecord.action} on ${newRecord.table_name}`);
-            }
+          const newRecord = payload.new as AuditTrailRecord | null;
+          if (newRecord?.compliance_level === 'critical') {
+            toast.warning(`Critical action logged: ${newRecord.action} on ${newRecord.table_name}`);
           }
         }
       }
@@ -51,16 +65,14 @@ export const useRealTimeSubscriptions = (configs: SubscriptionConfig[]) => {
       const channel = supabase
         .channel(channelName)
         .on(
-          'postgres_changes' as any,
+          REALTIME_POSTGRES_CHANGES_LISTEN_EVENT,
           {
             event: config.event,
             schema: 'public',
             table: config.table,
             filter: config.filter || `user_id=eq.${user.id}`
           },
-          (payload) => {
-            config.onUpdate(payload);
-          }
+          config.onUpdate
         )
         .subscribe((status) => {
           if (status === 'CHANNEL_ERROR') {

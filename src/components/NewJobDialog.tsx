@@ -18,17 +18,17 @@ interface NewJobDialogProps {
   onSuccess?: () => void;
 }
 
-const NewJobDialog: React.FC<NewJobDialogProps> = ({ 
-  trigger, 
+const NewJobDialog: React.FC<NewJobDialogProps> = ({
+  trigger,
   open: controlledOpen,
   onOpenChange,
-  onSuccess 
+  onSuccess
 }) => {
   const { createJob } = useJobs();
   const { customers } = useCustomers();
   const [loading, setLoading] = useState(false);
   const [internalOpen, setInternalOpen] = useState(false);
-  
+
   const isControlled = controlledOpen !== undefined;
   const isOpen = isControlled ? controlledOpen : internalOpen;
   const setOpen = isControlled ? (onOpenChange || (() => {})) : setInternalOpen;
@@ -50,7 +50,7 @@ const NewJobDialog: React.FC<NewJobDialogProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Ensure title is always present
     if (!formData.title.trim()) {
       toast.error('Job title is required');
@@ -60,7 +60,7 @@ const NewJobDialog: React.FC<NewJobDialogProps> = ({
     try {
       // Validate with Zod schema
       const result = jobSchema.safeParse(formData);
-      
+
       if (!result.success) {
         const firstError = result.error.errors[0];
         toast.error(`Validation error: ${firstError.message}`);
@@ -84,18 +84,17 @@ const NewJobDialog: React.FC<NewJobDialogProps> = ({
       };
 
       setLoading(true);
-      
+
       const createdJob = await createJob(jobData);
-      
+
       if (createdJob) {
         toast.success('Job created successfully');
         setOpen(false);
         resetForm();
         onSuccess?.();
       }
-    } catch (error: any) {
-      console.error('Error creating job:', error);
-      toast.error('Failed to create job');
+    } catch (error: unknown) {
+              toast.error('Failed to create job: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -129,7 +128,7 @@ const NewJobDialog: React.FC<NewJobDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Create New Job</DialogTitle>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="title">Job Title *</Label>

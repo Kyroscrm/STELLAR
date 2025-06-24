@@ -2,10 +2,10 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Users, 
-  Briefcase, 
-  FileText, 
+import {
+  Users,
+  Briefcase,
+  FileText,
   DollarSign,
   TrendingUp,
   AlertTriangle,
@@ -13,14 +13,9 @@ import {
   Clock
 } from 'lucide-react';
 
-interface DashboardStatsProps {
-  customers: any[];
-  leads: any[];
-  jobs: any[];
-  estimates: any[];
-  invoices: any[];
-  tasks: any[];
-}
+import { DashboardStatsData } from '@/types/app-types';
+
+type DashboardStatsProps = DashboardStatsData;
 
 const DashboardStats: React.FC<DashboardStatsProps> = ({
   customers,
@@ -37,9 +32,9 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
 
   const pendingEstimates = estimates.filter(estimate => estimate.status === 'sent').length;
   const activeTasks = tasks.filter(task => task.status === 'in_progress').length;
-  const overdueInvoices = invoices.filter(invoice => 
-    invoice.status === 'sent' && 
-    invoice.due_date && 
+  const overdueInvoices = invoices.filter(invoice =>
+    invoice.status === 'sent' &&
+    invoice.due_date &&
     new Date(invoice.due_date) < new Date()
   ).length;
 

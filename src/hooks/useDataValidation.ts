@@ -15,7 +15,7 @@ export const useDataValidation = () => {
   const [isValidating, setIsValidating] = useState(false);
   const { handleError } = useErrorHandler();
 
-  const validateData = async <T>(data: Record<string, any>, schema: z.ZodSchema<T>): Promise<ValidationResult<T>> => {
+  const validateData = async <T>(data: Record<string, unknown>, schema: z.ZodSchema<T>): Promise<ValidationResult<T>> => {
     setIsValidating(true);
     try {
       const validatedData = validateFormData(data, schema);
@@ -47,7 +47,7 @@ export const useDataValidation = () => {
         });
       } else {
         // Handle other validation errors
-        const message = error.message || 'Validation failed';
+        const message = error instanceof Error ? error.message : 'Validation failed';
         handleError(error, {
           title: 'Validation Error',
           showToast: true
@@ -67,7 +67,7 @@ export const useDataValidation = () => {
   };
 
   const validateAndSubmit = async <T, R>(
-    data: Record<string, any>,
+    data: Record<string, unknown>,
     schema: z.ZodSchema<T>,
     submitFn: (validatedData: T) => Promise<R>
   ): Promise<R | null> => {
@@ -88,7 +88,7 @@ export const useDataValidation = () => {
 
   const validateField = async <T>(
     fieldName: string,
-    value: any,
+    value: unknown,
     schema: z.ZodSchema<T>
   ): Promise<{ isValid: boolean; error?: string }> => {
     try {
@@ -97,7 +97,7 @@ export const useDataValidation = () => {
 
       // Try to parse just this field value directly
       if (schema instanceof z.ZodObject) {
-        const shape = schema._def.schema || schema.shape;
+        const shape = schema.shape;
         if (shape && shape[fieldName]) {
           await shape[fieldName].parseAsync(value);
         } else {
@@ -110,7 +110,7 @@ export const useDataValidation = () => {
       }
 
       return { isValid: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof z.ZodError) {
         const fieldError = error.errors.find(err =>
           err.path.length === 0 || err.path.includes(fieldName)

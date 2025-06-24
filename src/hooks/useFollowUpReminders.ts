@@ -12,7 +12,7 @@ export interface FollowUpReminder {
   reminder_date: string;
   status: string;
   created_at: string;
-  entity_data?: any; // Added entity_data property
+  entity_data?: Record<string, unknown>; // Added entity_data property
 }
 
 export const useFollowUpReminders = () => {

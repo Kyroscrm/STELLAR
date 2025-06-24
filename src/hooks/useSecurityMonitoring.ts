@@ -8,7 +8,7 @@ export interface SecurityAlert {
   type: 'suspicious_activity' | 'failed_login' | 'unusual_access' | 'data_breach';
   severity: 'low' | 'medium' | 'high' | 'critical';
   description: string;
-  metadata: any;
+  metadata: Record<string, unknown>;
   created_at: string;
 }
 

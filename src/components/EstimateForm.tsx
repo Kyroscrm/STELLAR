@@ -15,6 +15,7 @@ import { estimateSchema, EstimateFormData } from '@/lib/validation';
 import { RefreshCw, Plus, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import EstimateTemplateSelector from './EstimateTemplateSelector';
+import { EstimateTemplate, EstimateTemplateLineItem } from '@/types/app-types';
 
 interface EstimateFormProps {
   onSubmit: (data: EstimateFormData & { lineItems: LineItem[] }) => Promise<void>;
@@ -39,7 +40,7 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
   const { customers } = useCustomers();
   const { jobs } = useJobs();
   const { generateEstimateNumber, loading: generatingNumber } = useJobNumberGenerator();
-  
+
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
 
@@ -53,7 +54,7 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
       job_id: initialData?.job_id || '',
       valid_until: initialData?.valid_until || '',
       tax_rate: initialData?.tax_rate || 0,
-      status: (initialData?.status as any) || 'draft',
+      status: initialData?.status || 'draft',
       notes: initialData?.notes || '',
       terms: initialData?.terms || '',
     },
@@ -71,11 +72,11 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
   const updateLineItem = (index: number, field: keyof LineItem, value: string | number) => {
     const updated = [...lineItems];
     updated[index] = { ...updated[index], [field]: value };
-    
+
     if (field === 'quantity' || field === 'unit_price') {
       updated[index].total = Number(updated[index].quantity) * Number(updated[index].unit_price);
     }
-    
+
     setLineItems(updated);
   };
 
@@ -87,21 +88,21 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
     return lineItems.reduce((sum, item) => sum + item.total, 0);
   };
 
-  const handleTemplateSelect = (template: any) => {
+  const handleTemplateSelect = (template: EstimateTemplate) => {
     // Apply template data to form
     form.setValue('title', template.name);
     form.setValue('tax_rate', template.tax_rate);
     form.setValue('terms', template.terms || '');
     form.setValue('notes', template.notes || '');
-    
+
     // Apply template line items
-    const templateLineItems = template.line_items.map((item: any) => ({
+    const templateLineItems = template.line_items.map((item: EstimateTemplateLineItem) => ({
       description: item.description,
       quantity: item.quantity,
       unit_price: item.unit_price,
       total: item.quantity * item.unit_price
     }));
-    
+
     setLineItems(templateLineItems);
     setShowTemplateSelector(false);
   };
@@ -130,7 +131,7 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
     try {
       await onSubmit({ ...data, lineItems });
     } catch (error) {
-      console.error('Error submitting estimate:', error);
+      toast.error('Failed to submit estimate: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
@@ -362,8 +363,8 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
               <FormItem>
                 <FormLabel>Tax Rate (%)</FormLabel>
                 <FormControl>
-                  <Input 
-                    type="number" 
+                  <Input
+                    type="number"
                     step="0.01"
                     min="0"
                     max="100"

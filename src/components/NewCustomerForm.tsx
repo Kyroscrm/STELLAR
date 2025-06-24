@@ -3,12 +3,13 @@ import React, { useState } from 'react';
 import CustomerForm from '@/components/CustomerForm';
 import { useCustomers } from '@/hooks/useCustomers';
 import { toast } from 'sonner';
+import { Customer, CustomerFormData } from '@/types/app-types';
 
 interface NewCustomerFormProps {
   onSuccess: () => void;
   onCancel: () => void;
   onClose?: () => void;
-  customer?: any;
+  customer?: Customer;
 }
 
 const NewCustomerForm: React.FC<NewCustomerFormProps> = ({
@@ -20,7 +21,7 @@ const NewCustomerForm: React.FC<NewCustomerFormProps> = ({
   const { createCustomer, updateCustomer } = useCustomers();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: CustomerFormData) => {
     setIsSubmitting(true);
     try {
       // Ensure required fields are provided
@@ -53,8 +54,7 @@ const NewCustomerForm: React.FC<NewCustomerFormProps> = ({
         onClose?.();
       }
     } catch (error) {
-      console.error('Error saving customer:', error);
-      toast.error('Failed to save customer');
+      toast.error('Failed to save customer: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setIsSubmitting(false);
     }

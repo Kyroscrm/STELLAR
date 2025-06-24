@@ -3,20 +3,36 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useNotifications } from './useNotifications';
+import { Tables } from '@/integrations/supabase/types';
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
-interface RealTimeNotification {
+export type NotificationType = 'info' | 'success' | 'warning' | 'error';
+export type NotificationPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export interface RealTimeNotification {
   id: string;
-  type: 'info' | 'success' | 'warning' | 'error';
+  type: NotificationType;
   title: string;
   message: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
+  priority: NotificationPriority;
   entity_type?: string;
   entity_id?: string;
   auto_dismiss?: boolean;
   action_url?: string;
 }
 
-export const useRealTimeNotifications = () => {
+type UserNotificationRecord = Tables<'user_notifications'>;
+type LeadRecord = Tables<'leads'>;
+type JobRecord = Tables<'jobs'>;
+type TaskRecord = Tables<'tasks'>;
+type InvoiceRecord = Tables<'invoices'>;
+
+interface UseRealTimeNotificationsReturn {
+  connected: boolean;
+  showNotification: (notification: RealTimeNotification) => void;
+}
+
+export const useRealTimeNotifications = (): UseRealTimeNotificationsReturn => {
   const { user } = useAuth();
   const { createNotification } = useNotifications();
   const [connected, setConnected] = useState(false);
@@ -65,18 +81,18 @@ export const useRealTimeNotifications = () => {
           table: 'user_notifications',
           filter: `user_id=eq.${user.id}`
         },
-        (payload) => {
-          const notification = payload.new;
+        (payload: RealtimePostgresChangesPayload<UserNotificationRecord>) => {
+          const notification = payload.new as UserNotificationRecord | null;
           if (notification && !notification.dismissed) {
             showNotification({
               id: notification.id,
-              type: notification.type || 'info',
+              type: notification.type as NotificationType,
               title: notification.title,
               message: notification.message,
-              priority: notification.priority || 'medium',
-              entity_type: notification.entity_type,
-              entity_id: notification.entity_id,
-              action_url: notification.action_url,
+              priority: notification.priority as NotificationPriority,
+              entity_type: notification.entity_type || undefined,
+              entity_id: notification.entity_id || undefined,
+              action_url: notification.action_url || undefined,
               auto_dismiss: false
             });
           }
@@ -96,14 +112,19 @@ export const useRealTimeNotifications = () => {
   useEffect(() => {
     if (!user) return;
 
-    const configs = [
-      // New leads
-      {
-        table: 'leads',
-        event: 'INSERT' as const,
-        onUpdate: (payload: unknown) => {
-          if (payload && typeof payload === 'object' && 'new' in payload) {
-            const newLead = payload.new as any;
+    const channel = supabase
+      .channel(`activity_notifications_${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'leads',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload: RealtimePostgresChangesPayload<LeadRecord>) => {
+          const newLead = payload.new as LeadRecord | null;
+          if (newLead) {
             showNotification({
               id: `lead_${newLead.id}`,
               type: 'info',
@@ -116,85 +137,82 @@ export const useRealTimeNotifications = () => {
             });
           }
         }
-      },
-      // Job status changes
-      {
-        table: 'jobs',
-        event: 'UPDATE' as const,
-        onUpdate: (payload: unknown) => {
-          if (payload && typeof payload === 'object' && 'old' in payload && 'new' in payload) {
-            const oldJob = (payload as any).old;
-            const newJob = (payload as any).new;
-            if (oldJob.status !== newJob.status) {
-              showNotification({
-                id: `job_${newJob.id}`,
-                type: 'success',
-                title: 'Job Status Updated',
-                message: `Job "${newJob.title}" status changed to ${newJob.status}`,
-                priority: 'medium',
-                entity_type: 'job',
-                entity_id: newJob.id,
-                action_url: '/admin/jobs'
-              });
-            }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'jobs',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload: RealtimePostgresChangesPayload<JobRecord>) => {
+          const oldJob = payload.old as JobRecord | null;
+          const newJob = payload.new as JobRecord | null;
+          if (oldJob && newJob && oldJob.status !== newJob.status) {
+            showNotification({
+              id: `job_${newJob.id}`,
+              type: 'success',
+              title: 'Job Status Updated',
+              message: `Job "${newJob.title}" status changed to ${newJob.status}`,
+              priority: 'medium',
+              entity_type: 'job',
+              entity_id: newJob.id,
+              action_url: '/admin/jobs'
+            });
           }
         }
-      },
-      // Task completions
-      {
-        table: 'tasks',
-        event: 'UPDATE' as const,
-        onUpdate: (payload: unknown) => {
-          if (payload && typeof payload === 'object' && 'old' in payload && 'new' in payload) {
-            const oldTask = (payload as any).old;
-            const newTask = (payload as any).new;
-            if (oldTask.status !== 'completed' && newTask.status === 'completed') {
-              showNotification({
-                id: `task_${newTask.id}`,
-                type: 'success',
-                title: 'Task Completed',
-                message: `Task "${newTask.title}" has been completed`,
-                priority: 'low',
-                entity_type: 'task',
-                entity_id: newTask.id,
-                action_url: '/admin/tasks'
-              });
-            }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'tasks',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload: RealtimePostgresChangesPayload<TaskRecord>) => {
+          const oldTask = payload.old as TaskRecord | null;
+          const newTask = payload.new as TaskRecord | null;
+          if (oldTask && newTask && oldTask.status !== 'completed' && newTask.status === 'completed') {
+            showNotification({
+              id: `task_${newTask.id}`,
+              type: 'success',
+              title: 'Task Completed',
+              message: `Task "${newTask.title}" has been completed`,
+              priority: 'low',
+              entity_type: 'task',
+              entity_id: newTask.id,
+              action_url: '/admin/tasks'
+            });
           }
         }
-      },
-      // Invoice payments
-      {
-        table: 'invoices',
-        event: 'UPDATE' as const,
-        onUpdate: (payload: unknown) => {
-          if (payload && typeof payload === 'object' && 'old' in payload && 'new' in payload) {
-            const oldInvoice = (payload as any).old;
-            const newInvoice = (payload as any).new;
-            if (oldInvoice.status !== 'paid' && newInvoice.status === 'paid') {
-              showNotification({
-                id: `invoice_${newInvoice.id}`,
-                type: 'success',
-                title: 'Payment Received',
-                message: `Invoice #${newInvoice.invoice_number} has been paid`,
-                priority: 'high',
-                entity_type: 'invoice',
-                entity_id: newInvoice.id,
-                action_url: '/admin/invoices'
-              });
-            }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'invoices',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload: RealtimePostgresChangesPayload<InvoiceRecord>) => {
+          const oldInvoice = payload.old as InvoiceRecord | null;
+          const newInvoice = payload.new as InvoiceRecord | null;
+          if (oldInvoice && newInvoice && oldInvoice.status !== 'paid' && newInvoice.status === 'paid') {
+            showNotification({
+              id: `invoice_${newInvoice.id}`,
+              type: 'success',
+              title: 'Payment Received',
+              message: `Invoice #${newInvoice.invoice_number} has been paid`,
+              priority: 'high',
+              entity_type: 'invoice',
+              entity_id: newInvoice.id,
+              action_url: '/admin/invoices'
+            });
           }
         }
-      }
-    ];
-
-    // Use the real-time subscriptions hook
-    const channel = supabase
-      .channel(`activity_notifications_${user.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads', filter: `user_id=eq.${user.id}` }, configs[0].onUpdate)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs', filter: `user_id=eq.${user.id}` }, configs[1].onUpdate)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${user.id}` }, configs[2].onUpdate)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices', filter: `user_id=eq.${user.id}` }, configs[3].onUpdate)
+      )
       .subscribe();
 
     return () => {

@@ -6,11 +6,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Plus, 
-  Trash2, 
-  GripVertical, 
-  Copy, 
+import {
+  Plus,
+  Trash2,
+  GripVertical,
+  Copy,
   Package,
   Percent,
   Settings
@@ -19,6 +19,7 @@ import { useEstimateLineItems, EstimateLineItem } from '@/hooks/useEstimateLineI
 import { useLineItemTemplates } from '@/hooks/useLineItemTemplates';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { toast } from 'sonner';
+import { EstimateTemplateLineItem } from '@/types/app-types';
 
 interface AdvancedLineItemManagerProps {
   estimateId: string;
@@ -32,7 +33,7 @@ const AdvancedLineItemManager: React.FC<AdvancedLineItemManagerProps> = ({
   const { lineItems, loading, addLineItem, updateLineItem, deleteLineItem } = useEstimateLineItems(estimateId);
   const { templates, createTemplate } = useLineItemTemplates();
   const { preferences, updatePreference } = useUserPreferences();
-  
+
   const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>(preferences?.discount_type || 'percentage');
   const [discountValue, setDiscountValue] = useState(preferences?.default_discount_value || 0);
   const [showTemplates, setShowTemplates] = useState(preferences?.show_templates || false);
@@ -97,13 +98,13 @@ const AdvancedLineItemManager: React.FC<AdvancedLineItemManagerProps> = ({
     }
   };
 
-  const handleAddFromTemplate = async (template: any) => {
+  const handleAddFromTemplate = async (template: EstimateTemplateLineItem) => {
     const result = await addLineItem({
       description: template.description,
       quantity: 1,
       unit_price: template.unit_price
     });
-    
+
     if (result) {
       toast.success(`Added ${template.name} to estimate`);
     }
@@ -131,13 +132,13 @@ const AdvancedLineItemManager: React.FC<AdvancedLineItemManagerProps> = ({
       quantity: item.quantity,
       unit_price: item.unit_price
     });
-    
+
     if (result) {
       toast.success('Line item duplicated');
     }
   };
 
-  const handleBulkUpdate = (field: string, value: any) => {
+  const handleBulkUpdate = (field: string, value: unknown) => {
     lineItems.forEach(item => {
       updateLineItem(item.id, { [field]: value });
     });
@@ -336,7 +337,7 @@ const AdvancedLineItemManager: React.FC<AdvancedLineItemManagerProps> = ({
               <span className="text-sm">Subtotal:</span>
               <span className="font-medium">${calculateSubtotal().toFixed(2)}</span>
             </div>
-            
+
             {/* Discount Section */}
             <div className="flex items-center justify-between gap-4">
               <span className="text-sm">Discount:</span>
@@ -363,7 +364,7 @@ const AdvancedLineItemManager: React.FC<AdvancedLineItemManagerProps> = ({
                 </span>
               </div>
             </div>
-            
+
             <div className="flex justify-between items-center text-lg font-bold border-t pt-2">
               <span>Total:</span>
               <span>${calculateTotal().toFixed(2)}</span>

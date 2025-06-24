@@ -3,12 +3,13 @@ import LeadForm from '@/components/LeadForm';
 import { useLeads } from '@/hooks/useLeads';
 import React, { useState } from 'react';
 import { toast } from 'sonner';
+import { Lead, LeadFormData } from '@/types/app-types';
 
 interface NewLeadFormProps {
   onSuccess: () => void;
   onCancel: () => void;
   onClose?: () => void;
-  lead?: any;
+  lead?: Lead;
 }
 
 const NewLeadForm: React.FC<NewLeadFormProps> = ({
@@ -20,7 +21,7 @@ const NewLeadForm: React.FC<NewLeadFormProps> = ({
   const { createLead, updateLead } = useLeads();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: LeadFormData) => {
     setIsSubmitting(true);
     try {
       // Ensure required fields are provided
