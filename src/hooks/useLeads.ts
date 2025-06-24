@@ -1,11 +1,10 @@
-
-import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { useOptimisticUpdate } from './useOptimisticUpdate';
 import { useErrorHandler } from './useErrorHandler';
+import { useOptimisticUpdate } from './useOptimisticUpdate';
 
 export type Lead = Tables<'leads'>;
 type LeadInsert = Omit<TablesInsert<'leads'>, 'user_id'>;
@@ -31,12 +30,10 @@ export const useLeads = () => {
 
   const fetchLeads = async () => {
     if (!validateUserAndSession()) return;
-    
+
     setLoading(true);
     setError(null);
     try {
-      console.log('Fetching leads for user:', user.id);
-      
       const { data, error } = await supabase
         .from('leads')
         .select('*')
@@ -44,13 +41,17 @@ export const useLeads = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       setLeads(data || []);
-      console.log(`Successfully fetched ${data?.length || 0} leads`);
-    } catch (error: any) {
-      console.error('Error fetching leads:', error);
-      setError(error);
-      handleError(error, { title: 'Failed to fetch leads' });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error);
+        handleError(error, { title: 'Failed to fetch leads' });
+      } else {
+        const fallbackError = new Error('An unexpected error occurred while fetching leads');
+        setError(fallbackError);
+        handleError(fallbackError, { title: 'Failed to fetch leads' });
+      }
       setLeads([]);
     } finally {
       setLoading(false);
@@ -74,8 +75,6 @@ export const useLeads = () => {
         () => setLeads(prev => [optimisticLead, ...prev]),
         // Actual update
         async () => {
-          console.log('Creating lead:', leadData);
-          
           const { data, error } = await supabase
             .from('leads')
             .insert({ ...leadData, user_id: user.id })
@@ -83,10 +82,10 @@ export const useLeads = () => {
             .single();
 
           if (error) throw error;
-          
+
           // Replace optimistic with real data
           setLeads(prev => prev.map(l => l.id === optimisticLead.id ? data : l));
-          
+
           // Log activity
           await supabase.from('activity_logs').insert({
             user_id: user.id,
@@ -96,7 +95,6 @@ export const useLeads = () => {
             description: `Lead created: ${data.first_name} ${data.last_name}`
           });
 
-          console.log('Lead created successfully:', data);
           return data;
         },
         // Rollback
@@ -106,8 +104,7 @@ export const useLeads = () => {
           errorMessage: 'Failed to create lead'
         }
       );
-    } catch (error: any) {
-      console.error('Error creating lead:', error);
+    } catch (error: unknown) {
       return null;
     }
   };
@@ -130,8 +127,6 @@ export const useLeads = () => {
         () => setLeads(prev => prev.map(l => l.id === id ? optimisticLead : l)),
         // Actual update
         async () => {
-          console.log('Updating lead:', id, updates);
-          
           const { data, error } = await supabase
             .from('leads')
             .update(updates)
@@ -141,10 +136,10 @@ export const useLeads = () => {
             .single();
 
           if (error) throw error;
-          
+
           // Update with real data
           setLeads(prev => prev.map(l => l.id === id ? data : l));
-          
+
           // Log activity
           await supabase.from('activity_logs').insert({
             user_id: user.id,
@@ -154,7 +149,6 @@ export const useLeads = () => {
             description: `Lead updated: ${data.first_name} ${data.last_name}`
           });
 
-          console.log('Lead updated successfully:', data);
           return true;
         },
         // Rollback
@@ -164,8 +158,7 @@ export const useLeads = () => {
           errorMessage: 'Failed to update lead'
         }
       );
-    } catch (error: any) {
-      console.error('Error updating lead:', error);
+    } catch (error: unknown) {
       return false;
     }
   };
@@ -186,8 +179,6 @@ export const useLeads = () => {
         () => setLeads(prev => prev.filter(l => l.id !== id)),
         // Actual update
         async () => {
-          console.log('Deleting lead:', id);
-          
           const { error } = await supabase
             .from('leads')
             .delete()
@@ -195,7 +186,7 @@ export const useLeads = () => {
             .eq('user_id', user.id);
 
           if (error) throw error;
-          
+
           // Log activity
           await supabase.from('activity_logs').insert({
             user_id: user.id,
@@ -205,11 +196,10 @@ export const useLeads = () => {
             description: `Lead deleted: ${originalLead.first_name} ${originalLead.last_name}`
           });
 
-          console.log('Lead deleted successfully');
           return true;
         },
         // Rollback
-        () => setLeads(prev => [...prev, originalLead].sort((a, b) => 
+        () => setLeads(prev => [...prev, originalLead].sort((a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         )),
         {
@@ -217,8 +207,8 @@ export const useLeads = () => {
           errorMessage: 'Failed to delete lead'
         }
       );
-    } catch (error: any) {
-      console.error('Error deleting lead:', error);
+    } catch (error: unknown) {
+      // Error handling is done within executeUpdate
     }
   };
 

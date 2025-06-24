@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export type Customer = Tables<'customers'>;
@@ -45,13 +45,11 @@ export const useOptimizedCustomers = (filters: CustomerFilters = {}) => {
   // Optimized fetch with search and pagination
   const fetchCustomers = useCallback(async (filterObj: CustomerFilters = {}) => {
     if (!validateUserAndSession()) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
-      console.log('Fetching optimized customers for user:', user.id, 'with filters:', filterObj);
-      
       let query = supabase
         .from('customers')
         .select('*', { count: 'exact' })
@@ -67,7 +65,7 @@ export const useOptimizedCustomers = (filters: CustomerFilters = {}) => {
       if (filterObj.city) {
         query = query.eq('city', filterObj.city);
       }
-      
+
       if (filterObj.state) {
         query = query.eq('state', filterObj.state);
       }
@@ -76,7 +74,7 @@ export const useOptimizedCustomers = (filters: CustomerFilters = {}) => {
       if (filterObj.limit) {
         query = query.limit(filterObj.limit);
       }
-      
+
       if (filterObj.offset) {
         query = query.range(filterObj.offset, (filterObj.offset + (filterObj.limit || 50)) - 1);
       }
@@ -87,14 +85,18 @@ export const useOptimizedCustomers = (filters: CustomerFilters = {}) => {
       const { data, error, count } = await query;
 
       if (error) throw error;
-      
+
       setCustomers(data || []);
       setTotalCount(count || 0);
-      console.log(`Successfully fetched ${data?.length || 0} customers out of ${count || 0} total`);
-    } catch (error: any) {
-      console.error('Error fetching customers:', error);
-      setError(error);
-      toast.error('Failed to fetch customers');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error);
+        toast.error('Failed to fetch customers');
+      } else {
+        const fallbackError = new Error('An unexpected error occurred while fetching customers');
+        setError(fallbackError);
+        toast.error(fallbackError.message);
+      }
       setCustomers([]);
       setTotalCount(0);
     } finally {
@@ -120,8 +122,6 @@ export const useOptimizedCustomers = (filters: CustomerFilters = {}) => {
     setTotalCount(prev => prev + 1);
 
     try {
-      console.log('Creating customer:', customerData);
-      
       const { data, error } = await supabase
         .from('customers')
         .insert({ ...customerData, user_id: user.id })
@@ -129,10 +129,10 @@ export const useOptimizedCustomers = (filters: CustomerFilters = {}) => {
         .single();
 
       if (error) throw error;
-      
+
       // Replace optimistic with real data
       setCustomers(prev => prev.map(c => c.id === optimisticId ? data : c));
-      
+
       // Log activity in background
       supabase.from('activity_logs').insert({
         user_id: user.id,
@@ -141,18 +141,23 @@ export const useOptimizedCustomers = (filters: CustomerFilters = {}) => {
         action: 'created',
         description: `Customer created: ${data.first_name} ${data.last_name}`
       }).then(({ error }) => {
-        if (error) console.warn('Failed to log activity:', error);
+        if (error) {
+          // Background activity logging failure - don't show to user
+        }
       });
 
       toast.success('Customer created successfully');
-      console.log('Customer created successfully:', data);
       return data;
-    } catch (error: any) {
-      console.error('Error creating customer:', error);
+    } catch (error: unknown) {
       // Rollback optimistic update
       setCustomers(prev => prev.filter(c => c.id !== optimisticId));
       setTotalCount(prev => prev - 1);
-      toast.error(error.message || 'Failed to create customer');
+
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('Failed to create customer');
+      }
       return null;
     }
   }, [user, validateUserAndSession]);
@@ -168,16 +173,14 @@ export const useOptimizedCustomers = (filters: CustomerFilters = {}) => {
     }
 
     // Optimistic update
-    const optimisticCustomer = { 
-      ...originalCustomer, 
-      ...updates, 
-      updated_at: new Date().toISOString() 
+    const optimisticCustomer = {
+      ...originalCustomer,
+      ...updates,
+      updated_at: new Date().toISOString()
     };
     setCustomers(prev => prev.map(c => c.id === id ? optimisticCustomer : c));
 
     try {
-      console.log('Updating customer:', id, updates);
-      
       const { data, error } = await supabase
         .from('customers')
         .update(updates)
@@ -187,10 +190,10 @@ export const useOptimizedCustomers = (filters: CustomerFilters = {}) => {
         .single();
 
       if (error) throw error;
-      
+
       // Update with real data
       setCustomers(prev => prev.map(c => c.id === id ? data : c));
-      
+
       // Log activity in background
       supabase.from('activity_logs').insert({
         user_id: user.id,
@@ -199,17 +202,22 @@ export const useOptimizedCustomers = (filters: CustomerFilters = {}) => {
         action: 'updated',
         description: `Customer updated: ${data.first_name} ${data.last_name}`
       }).then(({ error }) => {
-        if (error) console.warn('Failed to log activity:', error);
+        if (error) {
+          // Background activity logging failure - don't show to user
+        }
       });
 
       toast.success('Customer updated successfully');
-      console.log('Customer updated successfully:', data);
       return true;
-    } catch (error: any) {
-      console.error('Error updating customer:', error);
+    } catch (error: unknown) {
       // Rollback optimistic update
       setCustomers(prev => prev.map(c => c.id === id ? originalCustomer : c));
-      toast.error(error.message || 'Failed to update customer');
+
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('Failed to update customer');
+      }
       return false;
     }
   }, [user, customers, validateUserAndSession]);
@@ -229,8 +237,6 @@ export const useOptimizedCustomers = (filters: CustomerFilters = {}) => {
     setTotalCount(prev => prev - 1);
 
     try {
-      console.log('Deleting customer:', id);
-      
       const { error } = await supabase
         .from('customers')
         .delete()
@@ -238,7 +244,7 @@ export const useOptimizedCustomers = (filters: CustomerFilters = {}) => {
         .eq('user_id', user.id);
 
       if (error) throw error;
-      
+
       // Log activity in background
       supabase.from('activity_logs').insert({
         user_id: user.id,
@@ -247,19 +253,24 @@ export const useOptimizedCustomers = (filters: CustomerFilters = {}) => {
         action: 'deleted',
         description: `Customer deleted: ${originalCustomer.first_name} ${originalCustomer.last_name}`
       }).then(({ error }) => {
-        if (error) console.warn('Failed to log activity:', error);
+        if (error) {
+          // Background activity logging failure - don't show to user
+        }
       });
 
       toast.success('Customer deleted successfully');
-      console.log('Customer deleted successfully');
-    } catch (error: any) {
-      console.error('Error deleting customer:', error);
+    } catch (error: unknown) {
       // Rollback optimistic update
-      setCustomers(prev => [...prev, originalCustomer].sort((a, b) => 
+      setCustomers(prev => [...prev, originalCustomer].sort((a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       ));
       setTotalCount(prev => prev + 1);
-      toast.error(error.message || 'Failed to delete customer');
+
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('Failed to delete customer');
+      }
     }
   }, [user, customers, validateUserAndSession]);
 
@@ -272,13 +283,13 @@ export const useOptimizedCustomers = (filters: CustomerFilters = {}) => {
   // Load more for pagination
   const loadMore = useCallback(async () => {
     if (loading || customers.length >= totalCount) return;
-    
-    const newFilters = { 
-      ...filters, 
+
+    const newFilters = {
+      ...filters,
       offset: customers.length,
       limit: filters.limit || 50
     };
-    
+
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -289,11 +300,14 @@ export const useOptimizedCustomers = (filters: CustomerFilters = {}) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       setCustomers(prev => [...prev, ...(data || [])]);
-    } catch (error: any) {
-      console.error('Error loading more customers:', error);
-      toast.error('Failed to load more customers');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error('Failed to load more customers');
+      } else {
+        toast.error('Failed to load more customers');
+      }
     } finally {
       setLoading(false);
     }
@@ -325,15 +339,14 @@ export const useOptimizedCustomers = (filters: CustomerFilters = {}) => {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('Real-time customer insert:', payload);
           const newCustomer = payload.new as Customer;
-          
+
           setCustomers(prev => {
             // Check if already exists (optimistic update)
             const exists = prev.some(c => c.id === newCustomer.id);
             if (exists) return prev;
-            
-            return [newCustomer, ...prev].sort((a, b) => 
+
+            return [newCustomer, ...prev].sort((a, b) =>
               new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
             );
           });
@@ -349,9 +362,8 @@ export const useOptimizedCustomers = (filters: CustomerFilters = {}) => {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('Real-time customer update:', payload);
           const updatedCustomer = payload.new as Customer;
-          
+
           debouncedUpdate(() => {
             setCustomers(prev => prev.map(c => c.id === updatedCustomer.id ? updatedCustomer : c));
           });
@@ -366,19 +378,15 @@ export const useOptimizedCustomers = (filters: CustomerFilters = {}) => {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('Real-time customer delete:', payload);
           const deletedCustomer = payload.old as Customer;
-          
+
           setCustomers(prev => prev.filter(c => c.id !== deletedCustomer.id));
           setTotalCount(prev => Math.max(0, prev - 1));
         }
       )
       .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('Real-time customers subscription active');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('Real-time customers subscription error');
-          // Fallback to periodic refresh
+        if (status === 'CHANNEL_ERROR') {
+          // Fallback to periodic refresh on subscription error
           debouncedUpdate(() => fetchCustomers(filters));
         }
       });

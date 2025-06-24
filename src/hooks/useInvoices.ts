@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export type Invoice = Tables<'invoices'>;
@@ -10,9 +10,9 @@ export type InvoiceLineItem = Tables<'invoice_line_items'>;
 // Extended Invoice type with customer data
 export type InvoiceWithCustomer = Invoice & {
   invoice_line_items: InvoiceLineItem[];
-  customers?: { 
+  customers?: {
     id: string;
-    first_name: string; 
+    first_name: string;
     last_name: string;
     email?: string;
     phone?: string;
@@ -29,6 +29,12 @@ export type InvoiceFormData = Omit<InvoiceInsert, 'user_id'> & {
   payment_status?: 'completed' | 'failed' | 'pending' | 'refunded';
 };
 
+interface InvoiceLineItemData {
+  description: string;
+  quantity: number;
+  unit_price: number;
+}
+
 export const useInvoices = () => {
   const [invoices, setInvoices] = useState<InvoiceWithCustomer[]>([]);
   const [loading, setLoading] = useState(false);
@@ -40,7 +46,7 @@ export const useInvoices = () => {
       setInvoices([]);
       return;
     }
-    
+
     setLoading(true);
     setError(null);
     try {
@@ -56,18 +62,22 @@ export const useInvoices = () => {
 
       if (error) throw error;
       setInvoices(data || []);
-      console.log(`Fetched ${data?.length || 0} invoices with customer data`);
-    } catch (error: any) {
-      console.error('Error fetching invoices:', error);
-      setError(error);
-      toast.error('Failed to fetch invoices');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error);
+        toast.error('Failed to fetch invoices');
+      } else {
+        const fallbackError = new Error('An unexpected error occurred while fetching invoices');
+        setError(fallbackError);
+        toast.error(fallbackError.message);
+      }
       setInvoices([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const addInvoice = async (invoiceData: InvoiceFormData & { lineItems: any[] }) => {
+  const addInvoice = async (invoiceData: InvoiceFormData & { lineItems: InvoiceLineItemData[] }) => {
     if (!user) {
       toast.error('You must be logged in to create invoices');
       return null;
@@ -76,7 +86,7 @@ export const useInvoices = () => {
     setError(null);
     try {
       const { lineItems, ...invoiceFields } = invoiceData;
-      
+
       // Clean up UUID fields - convert empty strings to undefined
       const cleanedInvoiceFields = {
         ...invoiceFields,
@@ -94,9 +104,7 @@ export const useInvoices = () => {
           delete cleanedInvoiceFields[key as keyof typeof cleanedInvoiceFields];
         }
       });
-      
-      console.log('Creating invoice with cleaned data:', cleanedInvoiceFields);
-      
+
       const { data: invoice, error: invoiceError } = await supabase
         .from('invoices')
         .insert(cleanedInvoiceFields)
@@ -118,18 +126,16 @@ export const useInvoices = () => {
           // Remove total - let the database trigger calculate it
         }));
 
-        console.log('Inserting line items:', lineItemsToInsert);
-
         const { error: lineItemsError } = await supabase
           .from('invoice_line_items')
           .insert(lineItemsToInsert);
 
         if (lineItemsError) throw lineItemsError;
       }
-      
+
       await fetchInvoices();
       toast.success('Invoice created successfully');
-      
+
       await supabase.from('activity_logs').insert({
         user_id: user.id,
         entity_type: 'invoice',
@@ -139,10 +145,15 @@ export const useInvoices = () => {
       });
 
       return invoice;
-    } catch (error: any) {
-      console.error('Error creating invoice:', error);
-      setError(error);
-      toast.error(error.message || 'Failed to create invoice');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error);
+        toast.error(error.message);
+      } else {
+        const fallbackError = new Error('Failed to create invoice');
+        setError(fallbackError);
+        toast.error(fallbackError.message);
+      }
       return null;
     }
   };
@@ -186,10 +197,10 @@ export const useInvoices = () => {
         .single();
 
       if (error) throw error;
-      
+
       await fetchInvoices();
       toast.success('Invoice updated successfully');
-      
+
       await supabase.from('activity_logs').insert({
         user_id: user.id,
         entity_type: 'invoice',
@@ -199,10 +210,15 @@ export const useInvoices = () => {
       });
 
       return true;
-    } catch (error: any) {
-      console.error('Error updating invoice:', error);
-      setError(error);
-      toast.error(error.message || 'Failed to update invoice');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error);
+        toast.error(error.message);
+      } else {
+        const fallbackError = new Error('Failed to update invoice');
+        setError(fallbackError);
+        toast.error(fallbackError.message);
+      }
       return false;
     }
   };
@@ -222,10 +238,10 @@ export const useInvoices = () => {
         .eq('user_id', user.id);
 
       if (error) throw error;
-      
+
       setInvoices(prev => prev.filter(invoice => invoice.id !== id));
       toast.success('Invoice deleted successfully');
-      
+
       await supabase.from('activity_logs').insert({
         user_id: user.id,
         entity_type: 'invoice',
@@ -233,10 +249,15 @@ export const useInvoices = () => {
         action: 'deleted',
         description: `Invoice deleted`
       });
-    } catch (error: any) {
-      console.error('Error deleting invoice:', error);
-      setError(error);
-      toast.error(error.message || 'Failed to delete invoice');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error);
+        toast.error(error.message);
+      } else {
+        const fallbackError = new Error('Failed to delete invoice');
+        setError(fallbackError);
+        toast.error(fallbackError.message);
+      }
     }
   };
 
