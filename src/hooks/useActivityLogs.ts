@@ -1,27 +1,43 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { Tables, TablesInsert, Json } from '@/integrations/supabase/types';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { ActivityLog, ApiError } from '@/types/app-types';
+import { useErrorHandler } from './useErrorHandler';
 
-export interface ActivityLog {
-  id: string;
-  user_id: string;
-  action: string;
-  entity_type: string;
-  entity_id: string;
-  description: string;
-  metadata: unknown;
-  created_at: string;
+export type ActivityLogInsert = Omit<TablesInsert<'activity_logs'>, 'user_id'>;
+
+interface UseActivityLogsReturn {
+  logs: ActivityLog[];
+  loading: boolean;
+  error: Error | null;
+  fetchLogs: (limit?: number) => Promise<void>;
+  logActivity: (
+    action: string,
+    entityType: string,
+    entityId: string,
+    description?: string,
+    metadata?: Json
+  ) => Promise<ActivityLog | null>;
 }
 
-export const useActivityLogs = () => {
+const isSupabaseError = (error: unknown): error is ApiError => {
+  return typeof error === 'object' && error !== null && 'error' in error && typeof (error as ApiError).error === 'object';
+};
+
+export const useActivityLogs = (): UseActivityLogsReturn => {
   const { user, session } = useAuth();
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const { handleError } = useErrorHandler();
 
   const validateUserAndSession = () => {
     if (!user || !session) {
-      toast.error('Authentication required. Please log in again.');
+      const errorMsg = 'Authentication required. Please log in again.';
+      setError(new Error(errorMsg));
+      toast.error(errorMsg);
       return false;
     }
     return true;
@@ -31,6 +47,7 @@ export const useActivityLogs = () => {
     if (!validateUserAndSession()) return;
 
     setLoading(true);
+    setError(null);
     try {
       const { data, error } = await supabase
         .from('activity_logs')
@@ -44,17 +61,31 @@ export const useActivityLogs = () => {
       setLogs(data || []);
     } catch (error: unknown) {
       if (error instanceof Error) {
-        toast.error('Failed to fetch activity logs');
+        setError(error);
+        handleError(error, { title: 'Failed to fetch activity logs' });
+      } else if (isSupabaseError(error)) {
+        const supabaseError = new Error(error.error.message);
+        setError(supabaseError);
+        handleError(supabaseError, { title: 'Failed to fetch activity logs' });
       } else {
-        toast.error('Failed to fetch activity logs');
+        const fallbackError = new Error('An unexpected error occurred while fetching activity logs');
+        setError(fallbackError);
+        handleError(fallbackError, { title: 'Failed to fetch activity logs' });
       }
+      setLogs([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const logActivity = async (action: string, entityType: string, entityId: string, description?: string, metadata?: unknown) => {
-    if (!validateUserAndSession()) return;
+  const logActivity = async (
+    action: string,
+    entityType: string,
+    entityId: string,
+    description?: string,
+    metadata?: Json
+  ): Promise<ActivityLog | null> => {
+    if (!validateUserAndSession()) return null;
 
     try {
       const { data, error } = await supabase
@@ -72,9 +103,19 @@ export const useActivityLogs = () => {
 
       if (error) throw error;
 
+      // Update state with the new log entry
       setLogs(prev => [data, ...prev.slice(0, 49)]); // Keep only latest 50
       return data;
     } catch (error: unknown) {
+      if (error instanceof Error) {
+        handleError(error, { title: 'Failed to log activity', showToast: false });
+      } else if (isSupabaseError(error)) {
+        const supabaseError = new Error(error.error.message);
+        handleError(supabaseError, { title: 'Failed to log activity', showToast: false });
+      } else {
+        const fallbackError = new Error('An unexpected error occurred while logging activity');
+        handleError(fallbackError, { title: 'Failed to log activity', showToast: false });
+      }
       return null;
     }
   };
@@ -86,7 +127,8 @@ export const useActivityLogs = () => {
   return {
     logs,
     loading,
-    logActivity,
-    fetchLogs
+    error,
+    fetchLogs,
+    logActivity
   };
 };

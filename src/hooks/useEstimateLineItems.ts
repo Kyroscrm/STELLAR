@@ -1,19 +1,52 @@
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { EstimateLineItem, ApiError } from '@/types/app-types';
+import { useErrorHandler } from './useErrorHandler';
+import { useOptimisticUpdate } from './useOptimisticUpdate';
 
-export type EstimateLineItem = Tables<'estimate_line_items'>;
 type EstimateLineItemInsert = TablesInsert<'estimate_line_items'>;
 type EstimateLineItemUpdate = TablesUpdate<'estimate_line_items'>;
 
-export const useEstimateLineItems = (estimateId?: string) => {
+interface UseEstimateLineItemsReturn {
+  lineItems: EstimateLineItem[];
+  loading: boolean;
+  error: Error | null;
+  fetchLineItems: () => Promise<void>;
+  addLineItem: (itemData: Omit<EstimateLineItemInsert, 'estimate_id' | 'total'>) => Promise<EstimateLineItem | null>;
+  addMultipleLineItems: (targetEstimateId: string, itemsData: Array<Omit<EstimateLineItemInsert, 'estimate_id' | 'total' | 'sort_order'>>) => Promise<EstimateLineItem[] | null>;
+  updateLineItem: (id: string, updates: EstimateLineItemUpdate) => Promise<EstimateLineItem | null>;
+  deleteLineItem: (id: string) => Promise<void>;
+  reorderLineItems: (reorderedItems: EstimateLineItem[]) => Promise<void>;
+}
+
+const isSupabaseError = (error: unknown): error is ApiError => {
+  return typeof error === 'object' && error !== null && 'error' in error && typeof (error as ApiError).error === 'object';
+};
+
+export const useEstimateLineItems = (estimateId?: string): UseEstimateLineItemsReturn => {
+  const { user, session } = useAuth();
   const [lineItems, setLineItems] = useState<EstimateLineItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
+  const { handleError } = useErrorHandler();
+  const { executeUpdate } = useOptimisticUpdate();
+
+  const validateUserAndSession = () => {
+    if (!user || !session) {
+      const errorMsg = 'Authentication required. Please log in again.';
+      setError(new Error(errorMsg));
+      toast.error(errorMsg);
+      return false;
+    }
+    return true;
+  };
 
   const fetchLineItems = async () => {
     if (!estimateId) return;
+    if (!validateUserAndSession()) return;
 
     setLoading(true);
     setError(null);
@@ -27,13 +60,19 @@ export const useEstimateLineItems = (estimateId?: string) => {
       if (error) throw error;
       setLineItems(data || []);
     } catch (error: unknown) {
-      // Error handled - line items fetch functionality preserved
       if (error instanceof Error) {
-        setError(error.message);
+        setError(error);
+        handleError(error, { title: 'Failed to fetch line items' });
+      } else if (isSupabaseError(error)) {
+        const supabaseError = new Error(error.error.message);
+        setError(supabaseError);
+        handleError(supabaseError, { title: 'Failed to fetch line items' });
       } else {
-        setError('Failed to fetch line items');
+        const fallbackError = new Error('An unexpected error occurred while fetching line items');
+        setError(fallbackError);
+        handleError(fallbackError, { title: 'Failed to fetch line items' });
       }
-      toast.error('Failed to fetch line items');
+      setLineItems([]);
     } finally {
       setLoading(false);
     }
@@ -41,9 +80,11 @@ export const useEstimateLineItems = (estimateId?: string) => {
 
   const addLineItem = async (itemData: Omit<EstimateLineItemInsert, 'estimate_id' | 'total'>) => {
     if (!estimateId) {
-      toast.error('No estimate ID provided');
+      handleError(new Error('No estimate ID provided'), { title: 'Failed to add line item' });
       return null;
     }
+
+    if (!validateUserAndSession()) return null;
 
     // Optimistic update
     const optimisticItem: EstimateLineItem = {
@@ -55,43 +96,52 @@ export const useEstimateLineItems = (estimateId?: string) => {
       total: Number(itemData.quantity) * Number(itemData.unit_price),
       sort_order: lineItems.length,
       created_at: new Date().toISOString(),
-    };
-
-    setLineItems(prev => [...prev, optimisticItem]);
+    } as EstimateLineItem;
 
     try {
-      const { data, error } = await supabase
-        .from('estimate_line_items')
-        .insert({
-          ...itemData,
-          estimate_id: estimateId,
-          sort_order: lineItems.length
-        })
-        .select()
-        .single();
+      return await executeUpdate(
+        // Optimistic update
+        () => setLineItems(prev => [...prev, optimisticItem]),
+        // Actual update
+        async () => {
+          const { data, error } = await supabase
+            .from('estimate_line_items')
+            .insert({
+              ...itemData,
+              estimate_id: estimateId,
+              sort_order: lineItems.length
+            })
+            .select()
+            .single();
 
-      if (error) throw error;
+          if (error) throw error;
 
-      // Replace optimistic with real data
-      setLineItems(prev => prev.map(item =>
-        item.id === optimisticItem.id ? data : item
-      ));
+          // Replace optimistic with real data
+          setLineItems(prev => prev.map(item =>
+            item.id === optimisticItem.id ? data : item
+          ));
 
-      toast.success('Line item added');
-      return data;
+          return data;
+        },
+        // Rollback
+        () => setLineItems(prev => prev.filter(item => item.id !== optimisticItem.id)),
+        {
+          successMessage: 'Line item added',
+          errorMessage: 'Failed to add line item'
+        }
+      );
     } catch (error: unknown) {
-      // Error handled - rollback optimistic update
-      setLineItems(prev => prev.filter(item => item.id !== optimisticItem.id));
-      toast.error('Failed to add line item');
       return null;
     }
   };
 
   const addMultipleLineItems = async (targetEstimateId: string, itemsData: Array<Omit<EstimateLineItemInsert, 'estimate_id' | 'total' | 'sort_order'>>) => {
     if (!targetEstimateId) {
-      toast.error('Estimate ID is required to add line items');
+      handleError(new Error('Estimate ID is required to add line items'), { title: 'Failed to add line items' });
       return null;
     }
+
+    if (!validateUserAndSession()) return null;
 
     if (!itemsData || itemsData.length === 0) {
       return [];
@@ -122,120 +172,177 @@ export const useEstimateLineItems = (estimateId?: string) => {
       total: Number(item.quantity) * Number(item.unit_price),
       sort_order: item.sort_order,
       created_at: new Date().toISOString(),
-    }));
-
-    setLineItems(prev => [...prev, ...optimisticItems]);
+    } as EstimateLineItem));
 
     try {
-      const { data, error } = await supabase
-        .from('estimate_line_items')
-        .insert(itemsToInsert)
-        .select();
+      return await executeUpdate(
+        // Optimistic update
+        () => setLineItems(prev => [...prev, ...optimisticItems]),
+        // Actual update
+        async () => {
+          const { data, error } = await supabase
+            .from('estimate_line_items')
+            .insert(itemsToInsert)
+            .select();
 
-      if (error) throw error;
+          if (error) throw error;
 
-      // Replace optimistic items with real data
-      setLineItems(prev => {
-        const newItems = prev.filter(item => !item.id.startsWith('temp-'));
-        return [...newItems, ...(data || [])].sort((a, b) => a.sort_order - b.sort_order);
-      });
+          // Replace optimistic items with real data
+          setLineItems(prev => {
+            const newItems = prev.filter(item => !item.id.startsWith('temp-'));
+            return [...newItems, ...(data || [])].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+          });
 
-      toast.success(`${data?.length || 0} line items added successfully`);
-      return data;
+          return data;
+        },
+        // Rollback
+        () => setLineItems(prev => prev.filter(item => !optimisticItems.some(opt => opt.id === item.id))),
+        {
+          successMessage: `${itemsToInsert.length} line items added successfully`,
+          errorMessage: 'Failed to add line items'
+        }
+      );
     } catch (error: unknown) {
-      // Error handled - rollback optimistic updates
-      setLineItems(prev => prev.filter(item => !optimisticItems.some(opt => opt.id === item.id)));
-      toast.error('Failed to add line items');
       return null;
     }
   };
 
   const updateLineItem = async (id: string, updates: EstimateLineItemUpdate) => {
-    const originalItem = lineItems.find(item => item.id === id);
-    if (!originalItem) return null;
+    if (!validateUserAndSession()) return null;
 
-    // Optimistic update
+    const originalItem = lineItems.find(item => item.id === id);
+    if (!originalItem) {
+      handleError(new Error('Line item not found'), { title: 'Failed to update line item' });
+      return null;
+    }
+
+    // Calculate new total if quantity or price changed
     const updatedItem = {
       ...originalItem,
       ...updates,
-      total: updates.quantity && updates.unit_price
+      total: updates.quantity !== undefined && updates.unit_price !== undefined
         ? Number(updates.quantity) * Number(updates.unit_price)
-        : originalItem.total
+        : updates.quantity !== undefined
+          ? Number(updates.quantity) * Number(originalItem.unit_price)
+          : updates.unit_price !== undefined
+            ? Number(originalItem.quantity) * Number(updates.unit_price)
+            : originalItem.total
     };
 
-    setLineItems(prev => prev.map(item => item.id === id ? updatedItem : item));
-
     try {
-      const { data, error } = await supabase
-        .from('estimate_line_items')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+      return await executeUpdate(
+        // Optimistic update
+        () => setLineItems(prev => prev.map(item => item.id === id ? updatedItem : item)),
+        // Actual update
+        async () => {
+          const updatesToSend = {
+            ...updates,
+            total: updatedItem.total
+          };
 
-      if (error) throw error;
+          const { data, error } = await supabase
+            .from('estimate_line_items')
+            .update(updatesToSend)
+            .eq('id', id)
+            .select()
+            .single();
 
-      // Update with real data
-      setLineItems(prev => prev.map(item => item.id === id ? data : item));
-      return data;
+          if (error) throw error;
+
+          // Update with real data
+          setLineItems(prev => prev.map(item => item.id === id ? data : item));
+          return data;
+        },
+        // Rollback
+        () => setLineItems(prev => prev.map(item => item.id === id ? originalItem : item)),
+        {
+          successMessage: 'Line item updated',
+          errorMessage: 'Failed to update line item'
+        }
+      );
     } catch (error: unknown) {
-      // Error handled - rollback optimistic update
-      setLineItems(prev => prev.map(item => item.id === id ? originalItem : item));
-      toast.error('Failed to update line item');
       return null;
     }
   };
 
   const deleteLineItem = async (id: string) => {
-    const originalItem = lineItems.find(item => item.id === id);
-    if (!originalItem) return;
+    if (!validateUserAndSession()) return;
 
-    // Optimistic update
-    setLineItems(prev => prev.filter(item => item.id !== id));
+    const originalItem = lineItems.find(item => item.id === id);
+    if (!originalItem) {
+      handleError(new Error('Line item not found'), { title: 'Failed to delete line item' });
+      return;
+    }
 
     try {
-      const { error } = await supabase
-        .from('estimate_line_items')
-        .delete()
-        .eq('id', id);
+      await executeUpdate(
+        // Optimistic update
+        () => setLineItems(prev => prev.filter(item => item.id !== id)),
+        // Actual update
+        async () => {
+          const { error } = await supabase
+            .from('estimate_line_items')
+            .delete()
+            .eq('id', id);
 
-      if (error) throw error;
-      toast.success('Line item deleted');
+          if (error) throw error;
+          return true;
+        },
+        // Rollback
+        () => setLineItems(prev => [...prev, originalItem].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))),
+        {
+          successMessage: 'Line item deleted',
+          errorMessage: 'Failed to delete line item'
+        }
+      );
     } catch (error: unknown) {
-      // Error handled - rollback optimistic update
-      setLineItems(prev => [...prev, originalItem].sort((a, b) => a.sort_order - b.sort_order));
-      toast.error('Failed to delete line item');
+      // Error handling is managed by executeUpdate
     }
   };
 
   const reorderLineItems = async (reorderedItems: EstimateLineItem[]) => {
+    if (!validateUserAndSession()) return;
+
     const originalItems = [...lineItems];
 
-    // Optimistic update
-    setLineItems(reorderedItems);
-
     try {
-      const updates = reorderedItems.map((item, index) => ({
-        id: item.id,
-        sort_order: index
-      }));
+      await executeUpdate(
+        // Optimistic update
+        () => setLineItems(reorderedItems),
+        // Actual update
+        async () => {
+          const updates = reorderedItems.map((item, index) => ({
+            id: item.id,
+            sort_order: index
+          }));
 
-      for (const update of updates) {
-        await supabase
-          .from('estimate_line_items')
-          .update({ sort_order: update.sort_order })
-          .eq('id', update.id);
-      }
+          for (const update of updates) {
+            const { error } = await supabase
+              .from('estimate_line_items')
+              .update({ sort_order: update.sort_order })
+              .eq('id', update.id);
+
+            if (error) throw error;
+          }
+          return true;
+        },
+        // Rollback
+        () => setLineItems(originalItems),
+        {
+          successMessage: 'Line items reordered',
+          errorMessage: 'Failed to reorder line items'
+        }
+      );
     } catch (error: unknown) {
-      // Error handled - rollback optimistic update
-      setLineItems(originalItems);
-      toast.error('Failed to reorder line items');
+      // Error handling is managed by executeUpdate
     }
   };
 
   useEffect(() => {
-    fetchLineItems();
-  }, [estimateId]);
+    if (estimateId) {
+      fetchLineItems();
+    }
+  }, [estimateId, user, session]);
 
   return {
     lineItems,
