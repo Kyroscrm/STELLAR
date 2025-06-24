@@ -1,5 +1,4 @@
-
-import { useEffect, useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 
 interface PerformanceMetrics {
   queryTime: number;
@@ -13,11 +12,11 @@ export const usePerformanceMonitor = (componentName: string) => {
 
   const measureQuery = useCallback((label: string) => {
     const start = performance.now();
-    
+
     return {
       end: () => {
         const duration = performance.now() - start;
-        console.log(`[${componentName}] ${label} took ${duration.toFixed(2)}ms`);
+        // Performance measurement completed - could be used for metrics collection
         return duration;
       }
     };
@@ -26,17 +25,17 @@ export const usePerformanceMonitor = (componentName: string) => {
   const measureRender = useCallback(() => {
     const renderTime = performance.now() - startTime;
     if (renderTime > 16) { // Warn if render takes longer than 16ms (60fps threshold)
-      console.warn(`[${componentName}] Slow render detected: ${renderTime.toFixed(2)}ms`);
+      // Slow render detected - could be used for performance optimization alerts
     }
     return renderTime;
   }, [componentName, startTime]);
 
-  // Log component mount/unmount
+  // Track component lifecycle
   useEffect(() => {
-    console.log(`[${componentName}] Component mounted`);
-    
+    // Component mounted - could be used for lifecycle tracking
+
     return () => {
-      console.log(`[${componentName}] Component unmounted`);
+      // Component unmounted - could be used for lifecycle tracking
     };
   }, [componentName]);
 

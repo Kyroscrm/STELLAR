@@ -1,8 +1,7 @@
-
-import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesUpdate } from '@/integrations/supabase/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 type Profile = Tables<'profiles'>;
@@ -15,7 +14,7 @@ export const useProfile = () => {
 
   const fetchProfile = async () => {
     if (!user || !session) return;
-    
+
     setLoading(true);
     try {
       // Use a more direct query to avoid RLS recursion
@@ -26,14 +25,13 @@ export const useProfile = () => {
         .maybeSingle();
 
       if (error) {
-        console.log('Profile fetch error (this might be expected):', error);
-        // Don't throw error, just set profile to null
+        // Profile fetch error is expected in some cases - don't show to user
         setProfile(null);
       } else {
         setProfile(data || null);
       }
-    } catch (error: any) {
-      console.log('Profile fetch error:', error);
+    } catch (error: unknown) {
+      // Profile fetch error is expected in some cases - don't show to user
       setProfile(null);
     } finally {
       setLoading(false);
@@ -58,13 +56,16 @@ export const useProfile = () => {
         .single();
 
       if (error) throw error;
-      
+
       setProfile(data);
       toast.success('Profile updated successfully');
       return data;
-    } catch (error: any) {
-      console.error('Error updating profile:', error);
-      toast.error('Failed to update profile');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error('Failed to update profile');
+      } else {
+        toast.error('Failed to update profile');
+      }
       return null;
     }
   };
@@ -87,13 +88,16 @@ export const useProfile = () => {
         .single();
 
       if (error) throw error;
-      
+
       setProfile(data);
       toast.success('Profile created successfully');
       return data;
-    } catch (error: any) {
-      console.error('Error creating profile:', error);
-      toast.error('Failed to create profile');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error('Failed to create profile');
+      } else {
+        toast.error('Failed to create profile');
+      }
       return null;
     }
   };
