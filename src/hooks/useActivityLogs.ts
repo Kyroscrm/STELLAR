@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { ActivityLog, ApiError } from '@/types/app-types';
 import { useErrorHandler } from './useErrorHandler';
+import { useOptimisticUpdate } from './useOptimisticUpdate';
 import { enforcePolicy, SecurityError, handleSupabaseError } from '@/lib/security';
 
 export type ActivityLogInsert = Omit<TablesInsert<'activity_logs'>, 'user_id'>;
@@ -29,6 +30,7 @@ export const useActivityLogs = (): UseActivityLogsReturn => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const { handleError } = useErrorHandler();
+  const { executeUpdate } = useOptimisticUpdate();
 
   const validateUserAndSession = () => {
     if (!user || !session) {
@@ -83,28 +85,68 @@ export const useActivityLogs = (): UseActivityLogsReturn => {
   ): Promise<ActivityLog | null> => {
     if (!validateUserAndSession()) return null;
 
+    // Create optimistic log entry
+    const optimisticLog = {
+      id: `temp-${Date.now()}`,
+      user_id: user.id,
+      action,
+      entity_type: entityType,
+      entity_id: entityId,
+      description: description || `${action} ${entityType}`,
+      metadata: metadata || {},
+      created_at: new Date().toISOString(),
+      session_id: null,
+      old_data: {},
+      new_data: {},
+      changed_fields: [],
+      ip_address: '',
+      user_agent: '',
+      severity: 'info',
+      risk_score: 0,
+      compliance_level: 'standard'
+    } as unknown as ActivityLog;
+
     try {
-      const data = await enforcePolicy('activity_logs:create', async () => {
-        const { data, error } = await supabase
-          .from('activity_logs')
-          .insert({
-            user_id: user.id,
-            action,
-            entity_type: entityType,
-            entity_id: entityId,
-            description: description || `${action} ${entityType}`,
-            metadata: metadata || {}
-          })
-          .select()
-          .single();
+      return await executeUpdate(
+        // Optimistic update
+        () => setLogs(prev => [optimisticLog, ...prev.slice(0, 49)]), // Keep only latest 50
+        // Actual update
+        async () => {
+          const data = await enforcePolicy('activity_logs:create', async () => {
+            const { data, error } = await supabase
+              .from('activity_logs')
+              .insert({
+                user_id: user.id,
+                action,
+                entity_type: entityType,
+                entity_id: entityId,
+                description: description || `${action} ${entityType}`,
+                metadata: metadata || {}
+              })
+              .select()
+              .single();
 
-        if (error) throw error;
-        return data;
-      });
+            if (error) throw error;
+            return data;
+          });
 
-      // Update state with the new log entry
-      setLogs(prev => [data, ...prev.slice(0, 49)]); // Keep only latest 50
-      return data;
+          return data;
+        },
+        // Rollback
+        () => setLogs(prev => prev.filter(log => log.id !== optimisticLog.id)),
+        {
+          // Don't show toasts for activity logs since they're background operations
+          successMessage: '',
+          errorMessage: '',
+          onError: (error) => {
+            handleError(error, {
+              title: 'Failed to log activity',
+              showToast: false,
+              logError: true
+            });
+          }
+        }
+      );
     } catch (error: unknown) {
       if (error instanceof SecurityError) {
         handleError(error, { title: 'Access Denied: You do not have permission to create activity logs.', showToast: false });

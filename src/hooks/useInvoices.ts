@@ -134,52 +134,88 @@ export const useInvoices = (): UseInvoicesReturn => {
         }
       });
 
-      const invoice = await enforcePolicy('invoices:create', async () => {
-        const { data: invoice, error: invoiceError } = await supabase
-          .from('invoices')
-          .insert(cleanedInvoiceFields)
-          .select(`
-            *,
-            invoice_line_items(*),
-            customers(id, first_name, last_name, email, phone)
-          `)
-          .single();
+      // Create optimistic invoice
+      const optimisticInvoice: InvoiceWithCustomer = {
+        id: `temp-${Date.now()}`,
+        ...cleanedInvoiceFields,
+        user_id: user.id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        // Add missing required properties with default values
+        paid_at: null,
+        stripe_session_id: null,
+        subtotal: line_items?.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0) || 0,
+        tax_amount: 0,
+        total_amount: line_items?.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0) || 0,
+        invoice_line_items: line_items?.map((item, index) => ({
+          id: `temp-${Date.now()}-${index}`,
+          invoice_id: `temp-${Date.now()}`,
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total: item.quantity * item.unit_price,
+          sort_order: item.sort_order || index,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })) || []
+      } as unknown as InvoiceWithCustomer; // Use type assertion to handle any remaining type issues
 
-        if (invoiceError) throw invoiceError;
+      return await executeUpdate(
+        // Optimistic update
+        () => setInvoices(prev => [optimisticInvoice, ...prev]),
+        // Actual update
+        async () => {
+          const invoice = await enforcePolicy('invoices:create', async () => {
+            const { data: invoice, error: invoiceError } = await supabase
+              .from('invoices')
+              .insert(cleanedInvoiceFields)
+              .select(`
+                *,
+                invoice_line_items(*),
+                customers(id, first_name, last_name, email, phone)
+              `)
+              .single();
 
-        if (line_items && line_items.length > 0) {
-          const lineItemsToInsert = line_items.map(item => ({
-            invoice_id: invoice.id,
-            description: item.description,
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-            sort_order: item.sort_order
-            // Remove total - let the database trigger calculate it
-          }));
+            if (invoiceError) throw invoiceError;
 
-          const { error: lineItemsError } = await supabase
-            .from('invoice_line_items')
-            .insert(lineItemsToInsert);
+            if (line_items && line_items.length > 0) {
+              const lineItemsToInsert = line_items.map(item => ({
+                invoice_id: invoice.id,
+                description: item.description,
+                quantity: item.quantity,
+                unit_price: item.unit_price,
+                sort_order: item.sort_order
+                // Remove total - let the database trigger calculate it
+              }));
 
-          if (lineItemsError) throw lineItemsError;
+              const { error: lineItemsError } = await supabase
+                .from('invoice_line_items')
+                .insert(lineItemsToInsert);
+
+              if (lineItemsError) throw lineItemsError;
+            }
+
+            // Log activity
+            await supabase.from('activity_logs').insert({
+              user_id: user.id,
+              entity_type: 'invoice',
+              entity_id: invoice.id,
+              action: 'created',
+              description: `Invoice created: ${invoice.title}`
+            });
+
+            return invoice;
+          });
+
+          return invoice;
+        },
+        // Rollback
+        () => setInvoices(prev => prev.filter(i => i.id !== optimisticInvoice.id)),
+        {
+          successMessage: 'Invoice created successfully',
+          errorMessage: 'Failed to create invoice'
         }
-
-        // Log activity
-        await supabase.from('activity_logs').insert({
-          user_id: user.id,
-          entity_type: 'invoice',
-          entity_id: invoice.id,
-          action: 'created',
-          description: `Invoice created: ${invoice.title}`
-        });
-
-        return invoice;
-      });
-
-      // Optimistically update the local state
-      setInvoices(prev => [invoice, ...prev]);
-      toast.success('Invoice created successfully');
-      return invoice;
+      );
     } catch (error: unknown) {
       if (error instanceof SecurityError) {
         handleError(error, { title: 'Access Denied: You do not have permission to create invoices.' });
