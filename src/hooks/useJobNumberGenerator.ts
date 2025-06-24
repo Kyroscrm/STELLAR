@@ -19,14 +19,12 @@ export const useJobNumberGenerator = () => {
       });
 
       if (error) {
-        console.warn('RPC function not available, using fallback:', error);
         // Fallback to timestamp-based number
         return `EST-${Date.now().toString().slice(-6)}`;
       }
       
       return (data as string) || 'EST-001';
     } catch (error) {
-      console.error('Error generating estimate number:', error);
       // Fallback to timestamp-based number only if RPC fails
       return `EST-${Date.now().toString().slice(-6)}`;
     } finally {
@@ -46,14 +44,12 @@ export const useJobNumberGenerator = () => {
       });
 
       if (error) {
-        console.warn('RPC function not available, using fallback:', error);
         // Fallback to timestamp-based number
         return `INV-${Date.now().toString().slice(-6)}`;
       }
       
       return (data as string) || 'INV-001';
     } catch (error) {
-      console.error('Error generating invoice number:', error);
       // Fallback to timestamp-based number only if RPC fails
       return `INV-${Date.now().toString().slice(-6)}`;
     } finally {
@@ -73,14 +69,12 @@ export const useJobNumberGenerator = () => {
       });
 
       if (error) {
-        console.warn('RPC function not available, using fallback:', error);
         // Fallback to timestamp-based number
         return `JOB-${Date.now().toString().slice(-6)}`;
       }
       
       return (data as string) || 'JOB-001';
     } catch (error) {
-      console.error('Error generating job number:', error);
       // Fallback to timestamp-based number only if RPC fails
       return `JOB-${Date.now().toString().slice(-6)}`;
     } finally {

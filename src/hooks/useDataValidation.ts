@@ -27,8 +27,6 @@ export const useDataValidation = () => {
         fieldErrors: null 
       };
     } catch (error: any) {
-      console.error('Validation error:', error);
-      
       let fieldErrors: Record<string, string> = {};
       let errorMessages: Record<string, string[]> = {};
       
@@ -98,7 +96,7 @@ export const useDataValidation = () => {
       
       // Try to parse just this field value directly
       if (schema instanceof z.ZodObject) {
-        const shape = schema._def.schema || schema.shape;
+        const shape = (schema as any).shape;
         if (shape && shape[fieldName]) {
           await shape[fieldName].parseAsync(value);
         } else {

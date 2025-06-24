@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
@@ -13,6 +12,8 @@ export type EstimateWithLineItems = Estimate & {
   customers?: {
     first_name: string;
     last_name: string;
+    email?: string;
+    phone?: string;
   };
 };
 
@@ -43,8 +44,6 @@ export const useEstimates = () => {
     setLoading(true);
     setError(null);
     try {
-      console.log('Fetching estimates for user:', user.id);
-      
       const { data, error } = await supabase
         .from('estimates')
         .select(`
@@ -52,7 +51,9 @@ export const useEstimates = () => {
           estimate_line_items (*),
           customers (
             first_name,
-            last_name
+            last_name,
+            email,
+            phone
           )
         `)
         .eq('user_id', user.id)
@@ -61,9 +62,7 @@ export const useEstimates = () => {
       if (error) throw error;
       
       setEstimates(data || []);
-      console.log(`Successfully fetched ${data?.length || 0} estimates`);
     } catch (error: any) {
-      console.error('Error fetching estimates:', error);
       setError(error);
       handleError(error, { title: 'Failed to fetch estimates' });
       setEstimates([]);
@@ -91,8 +90,6 @@ export const useEstimates = () => {
         () => setEstimates(prev => [optimisticEstimate, ...prev]),
         // Actual update
         async () => {
-          console.log('Creating estimate:', estimateFields);
-          
           const { data, error } = await supabase
             .from('estimates')
             .insert({ ...estimateFields, user_id: user.id })
@@ -123,7 +120,9 @@ export const useEstimates = () => {
               estimate_line_items (*),
               customers (
                 first_name,
-                last_name
+                last_name,
+                email,
+                phone
               )
             `)
             .eq('id', data.id)
@@ -143,7 +142,6 @@ export const useEstimates = () => {
             description: `Estimate created: ${data.title}`
           });
 
-          console.log('Estimate created successfully:', completeEstimate);
           return completeEstimate;
         },
         // Rollback
@@ -154,7 +152,6 @@ export const useEstimates = () => {
         }
       );
     } catch (error: any) {
-      console.error('Error creating estimate:', error);
       return null;
     }
   };
@@ -177,8 +174,6 @@ export const useEstimates = () => {
         () => setEstimates(prev => prev.map(e => e.id === id ? optimisticEstimate : e)),
         // Actual update
         async () => {
-          console.log('Updating estimate:', id, updates);
-          
           const { data, error } = await supabase
             .from('estimates')
             .update(updates)
@@ -197,7 +192,9 @@ export const useEstimates = () => {
               estimate_line_items (*),
               customers (
                 first_name,
-                last_name
+                last_name,
+                email,
+                phone
               )
             `)
             .eq('id', id)
@@ -217,7 +214,6 @@ export const useEstimates = () => {
             description: `Estimate updated: ${data.title}`
           });
 
-          console.log('Estimate updated successfully:', completeEstimate);
           return true;
         },
         // Rollback
@@ -228,7 +224,6 @@ export const useEstimates = () => {
         }
       );
     } catch (error: any) {
-      console.error('Error updating estimate:', error);
       return false;
     }
   };
@@ -249,8 +244,6 @@ export const useEstimates = () => {
         () => setEstimates(prev => prev.filter(e => e.id !== id)),
         // Actual update
         async () => {
-          console.log('Deleting estimate:', id);
-          
           const { error } = await supabase
             .from('estimates')
             .delete()
@@ -268,7 +261,6 @@ export const useEstimates = () => {
             description: `Estimate deleted: ${originalEstimate.title}`
           });
 
-          console.log('Estimate deleted successfully');
           return true;
         },
         // Rollback
@@ -281,7 +273,7 @@ export const useEstimates = () => {
         }
       );
     } catch (error: any) {
-      console.error('Error deleting estimate:', error);
+      // Error already handled by executeUpdate
     }
   };
 

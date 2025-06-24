@@ -35,8 +35,6 @@ export const useLeads = () => {
     setLoading(true);
     setError(null);
     try {
-      console.log('Fetching leads for user:', user.id);
-      
       const { data, error } = await supabase
         .from('leads')
         .select('*')
@@ -46,9 +44,7 @@ export const useLeads = () => {
       if (error) throw error;
       
       setLeads(data || []);
-      console.log(`Successfully fetched ${data?.length || 0} leads`);
     } catch (error: any) {
-      console.error('Error fetching leads:', error);
       setError(error);
       handleError(error, { title: 'Failed to fetch leads' });
       setLeads([]);
@@ -74,8 +70,6 @@ export const useLeads = () => {
         () => setLeads(prev => [optimisticLead, ...prev]),
         // Actual update
         async () => {
-          console.log('Creating lead:', leadData);
-          
           const { data, error } = await supabase
             .from('leads')
             .insert({ ...leadData, user_id: user.id })
@@ -96,7 +90,6 @@ export const useLeads = () => {
             description: `Lead created: ${data.first_name} ${data.last_name}`
           });
 
-          console.log('Lead created successfully:', data);
           return data;
         },
         // Rollback
@@ -107,7 +100,6 @@ export const useLeads = () => {
         }
       );
     } catch (error: any) {
-      console.error('Error creating lead:', error);
       return null;
     }
   };
@@ -130,8 +122,6 @@ export const useLeads = () => {
         () => setLeads(prev => prev.map(l => l.id === id ? optimisticLead : l)),
         // Actual update
         async () => {
-          console.log('Updating lead:', id, updates);
-          
           const { data, error } = await supabase
             .from('leads')
             .update(updates)
@@ -154,7 +144,6 @@ export const useLeads = () => {
             description: `Lead updated: ${data.first_name} ${data.last_name}`
           });
 
-          console.log('Lead updated successfully:', data);
           return true;
         },
         // Rollback
@@ -165,7 +154,6 @@ export const useLeads = () => {
         }
       );
     } catch (error: any) {
-      console.error('Error updating lead:', error);
       return false;
     }
   };
@@ -186,8 +174,6 @@ export const useLeads = () => {
         () => setLeads(prev => prev.filter(l => l.id !== id)),
         // Actual update
         async () => {
-          console.log('Deleting lead:', id);
-          
           const { error } = await supabase
             .from('leads')
             .delete()
@@ -205,7 +191,6 @@ export const useLeads = () => {
             description: `Lead deleted: ${originalLead.first_name} ${originalLead.last_name}`
           });
 
-          console.log('Lead deleted successfully');
           return true;
         },
         // Rollback
@@ -218,7 +203,7 @@ export const useLeads = () => {
         }
       );
     } catch (error: any) {
-      console.error('Error deleting lead:', error);
+      // Error already handled by executeUpdate
     }
   };
 

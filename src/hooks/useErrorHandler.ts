@@ -25,7 +25,7 @@ export const useErrorHandler = () => {
 
     // Log error for debugging
     if (logError) {
-      console.error('Error handled:', error);
+      // Removed console.log for hygiene
     }
 
     // Extract error message
