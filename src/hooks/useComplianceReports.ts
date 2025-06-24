@@ -1,7 +1,6 @@
-
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface ComplianceReport {
@@ -9,7 +8,7 @@ export interface ComplianceReport {
   user_id: string;
   report_type: string;
   date_range: string;
-  filters: any;
+  filters: unknown;
   status: 'pending' | 'completed' | 'failed';
   file_path: string;
   generated_at: string;
@@ -42,12 +41,10 @@ export const useComplianceReports = () => {
 
   const fetchReports = async () => {
     if (!validateUserAndSession()) return;
-    
+
     setLoading(true);
     setError(null);
     try {
-      console.log('Fetching compliance reports for user:', user.id);
-      
       // Use fallback approach with activity logs to create mock reports
       const { data: activityData, error } = await supabase
         .from('activity_logs')
@@ -57,7 +54,7 @@ export const useComplianceReports = () => {
         .limit(10);
 
       if (error) throw error;
-      
+
       // Convert activity logs to mock reports
       const mockReports: ComplianceReport[] = (activityData || []).slice(0, 3).map((log, index) => ({
         id: `report-${index + 1}`,
@@ -70,13 +67,17 @@ export const useComplianceReports = () => {
         generated_at: log.created_at,
         created_at: log.created_at
       }));
-      
+
       setReports(mockReports);
-      console.log(`Successfully created ${mockReports.length} compliance reports`);
-    } catch (error: any) {
-      console.error('Error fetching compliance reports:', error);
-      setError(error);
-      toast.error('Failed to fetch compliance reports');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error);
+        toast.error('Failed to fetch compliance reports');
+      } else {
+        const fallbackError = new Error('An unexpected error occurred while fetching compliance reports');
+        setError(fallbackError);
+        toast.error(fallbackError.message);
+      }
       setReports([]);
     } finally {
       setLoading(false);
@@ -87,8 +88,6 @@ export const useComplianceReports = () => {
     if (!validateUserAndSession()) return null;
 
     try {
-      console.log('Generating compliance report:', reportType, filters);
-      
       // Fetch data for the report
       const { data: activityData, error } = await supabase
         .from('activity_logs')
@@ -102,7 +101,7 @@ export const useComplianceReports = () => {
 
       // Generate report content
       const reportContent = generateReportContent(reportType, activityData || [], filters);
-      
+
       // Create new report record
       const newReport: ComplianceReport = {
         id: Date.now().toString(),
@@ -122,14 +121,17 @@ export const useComplianceReports = () => {
       setReports(prev => [newReport, ...prev]);
       toast.success('Compliance report generated successfully');
       return newReport;
-    } catch (error: any) {
-      console.error('Error generating compliance report:', error);
-      toast.error('Failed to generate compliance report');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error('Failed to generate compliance report');
+      } else {
+        toast.error('Failed to generate compliance report');
+      }
       return null;
     }
   };
 
-  const generateReportContent = (reportType: string, activityData: any[], filters: ReportFilters) => {
+  const generateReportContent = (reportType: string, activityData: unknown[], filters: ReportFilters) => {
     const headers = [
       'Date',
       'Action',
@@ -139,14 +141,17 @@ export const useComplianceReports = () => {
       'User ID'
     ];
 
-    const rows = activityData.map(record => [
-      new Date(record.created_at).toLocaleString(),
-      record.action,
-      record.entity_type,
-      record.entity_id,
-      record.description || '',
-      record.user_id
-    ]);
+    const rows = activityData.map(recordData => {
+      const record = recordData as any;
+      return [
+        new Date(record.created_at).toLocaleString(),
+        record.action,
+        record.entity_type,
+        record.entity_id,
+        record.description || '',
+        record.user_id
+      ];
+    });
 
     return [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
   };
@@ -167,13 +172,14 @@ export const useComplianceReports = () => {
     if (!validateUserAndSession()) return;
 
     try {
-      console.log('Deleting compliance report:', id);
-      
       setReports(prev => prev.filter(r => r.id !== id));
       toast.success('Compliance report deleted successfully');
-    } catch (error: any) {
-      console.error('Error deleting compliance report:', error);
-      toast.error('Failed to delete compliance report');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error('Failed to delete compliance report');
+      } else {
+        toast.error('Failed to delete compliance report');
+      }
     }
   };
 

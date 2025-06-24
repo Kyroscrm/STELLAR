@@ -1,7 +1,6 @@
-
-import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface EnhancedActivityLog {
@@ -11,7 +10,7 @@ export interface EnhancedActivityLog {
   entity_type: string;
   entity_id: string;
   description: string;
-  metadata: any;
+  metadata: unknown;
   created_at: string;
   // Enhanced fields
   compliance_level?: 'standard' | 'high' | 'critical';
@@ -42,8 +41,6 @@ export const useEnhancedActivityLogs = (options: { limit?: number; includeAudit?
     setLoading(true);
     setError(null);
     try {
-      console.log('Fetching enhanced activity logs for user:', user.id);
-      
       // Fetch regular activity logs
       const { data: activityData, error: activityError } = await supabase
         .from('activity_logs')
@@ -61,11 +58,15 @@ export const useEnhancedActivityLogs = (options: { limit?: number; includeAudit?
       }));
 
       setLogs(enhancedLogs);
-      console.log(`Successfully fetched ${enhancedLogs.length} enhanced activity logs`);
-    } catch (error: any) {
-      console.error('Error fetching enhanced activity logs:', error);
-      setError(error);
-      toast.error('Failed to fetch activity logs');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error);
+        toast.error('Failed to fetch activity logs');
+      } else {
+        const fallbackError = new Error('An unexpected error occurred while fetching activity logs');
+        setError(fallbackError);
+        toast.error(fallbackError.message);
+      }
       setLogs([]);
     } finally {
       setLoading(false);
@@ -77,14 +78,12 @@ export const useEnhancedActivityLogs = (options: { limit?: number; includeAudit?
     entityType: string,
     entityId: string,
     description?: string,
-    metadata?: any,
+    metadata?: unknown,
     includeAuditTrail: boolean = true
   ) => {
     if (!validateUserAndSession()) return null;
 
     try {
-      console.log('Logging enhanced activity:', { action, entityType, entityId, description });
-      
       // Log to activity_logs table using the existing log_activity function
       const { error: activityError } = await supabase.rpc('log_activity', {
         p_action: action,
@@ -117,13 +116,11 @@ export const useEnhancedActivityLogs = (options: { limit?: number; includeAudit?
         };
 
         setLogs(prev => [enhancedLog, ...prev.slice(0, limit - 1)]);
-        console.log('Enhanced activity logged successfully:', enhancedLog);
         return enhancedLog;
       }
 
       return null;
-    } catch (error: any) {
-      console.error('Error logging enhanced activity:', error);
+    } catch (error: unknown) {
       return null;
     }
   };
@@ -140,7 +137,7 @@ export const useEnhancedActivityLogs = (options: { limit?: number; includeAudit?
 
   const calculateRiskScore = (entityType: string, action: string): number => {
     let score = 0;
-    
+
     // Base score by action
     switch (action.toLowerCase()) {
       case 'delete':
