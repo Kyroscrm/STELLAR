@@ -1,7 +1,6 @@
-
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface AuditRecord {
@@ -10,8 +9,8 @@ export interface AuditRecord {
   table_name: string;
   record_id: string;
   action: 'INSERT' | 'UPDATE' | 'DELETE' | 'SELECT';
-  old_values: any;
-  new_values: any;
+  old_values: unknown;
+  new_values: unknown;
   changed_fields: string[];
   ip_address: string;
   user_agent: string;
@@ -48,12 +47,10 @@ export const useAuditTrail = () => {
 
   const fetchAuditRecords = async (filters: AuditFilters = {}, limit: number = 100) => {
     if (!validateUserAndSession()) return;
-    
+
     setLoading(true);
     setError(null);
     try {
-      console.log('Fetching audit records for user:', user.id);
-      
       // Use activity logs as fallback since audit_trail table doesn't exist yet
       const { data: activityData, error: activityError } = await supabase
         .from('activity_logs')
@@ -83,11 +80,15 @@ export const useAuditTrail = () => {
       }));
 
       setAuditRecords(convertedRecords);
-      console.log(`Successfully fetched ${convertedRecords.length} audit records`);
-    } catch (error: any) {
-      console.error('Error fetching audit records:', error);
-      setError(error);
-      toast.error('Failed to fetch audit records');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error);
+        toast.error('Failed to fetch audit records');
+      } else {
+        const fallbackError = new Error('An unexpected error occurred while fetching audit records');
+        setError(fallbackError);
+        toast.error(fallbackError.message);
+      }
       setAuditRecords([]);
     } finally {
       setLoading(false);
@@ -99,13 +100,11 @@ export const useAuditTrail = () => {
     recordId: string,
     action: string,
     description?: string,
-    metadata?: any
+    metadata?: unknown
   ) => {
     if (!validateUserAndSession()) return null;
 
     try {
-      console.log('Logging custom audit event:', { tableName, recordId, action });
-      
       // Use the existing log_activity function
       const { error } = await supabase.rpc('log_activity', {
         p_action: action,
@@ -116,11 +115,9 @@ export const useAuditTrail = () => {
       });
 
       if (error) throw error;
-      
-      console.log('Audit event logged successfully');
+
       return true;
-    } catch (error: any) {
-      console.error('Error logging custom audit event:', error);
+    } catch (error: unknown) {
       return null;
     }
   };
@@ -167,9 +164,12 @@ export const useAuditTrail = () => {
 
       toast.success('Audit trail exported successfully');
       return true;
-    } catch (error: any) {
-      console.error('Error exporting audit records:', error);
-      toast.error('Failed to export audit records');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error('Failed to export audit records');
+      } else {
+        toast.error('Failed to export audit records');
+      }
       return false;
     }
   };

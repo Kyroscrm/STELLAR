@@ -1,33 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCorners, DragOverEvent } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useJobs, JobWithCustomer } from '@/hooks/useJobs';
-import { MapPin, DollarSign, Calendar, User, MoreVertical, Eye, Edit, Plus } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import ViewJobDialog from './ViewJobDialog';
-import EditJobDialog from './EditJobDialog';
-import JobForm from './JobForm';
+import { JobWithCustomer, useJobs } from '@/hooks/useJobs';
+import { closestCorners, DndContext, DragEndEvent, DragOverEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { Calendar, DollarSign, Edit, Eye, MapPin, MoreVertical, Plus, User } from 'lucide-react';
+import React, { useState } from 'react';
 import { toast } from 'sonner';
+import JobForm from './JobForm';
+import ViewJobDialog from './ViewJobDialog';
 
 // Define valid job statuses that match Supabase enum
 const VALID_JOB_STATUSES = ['quoted', 'approved', 'scheduled', 'in_progress', 'completed', 'cancelled'] as const;
@@ -66,8 +64,8 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({ column, children, job
           {column.title} ({jobCount})
         </h3>
       </div>
-      
-      <div className="space-y-3 min-h-[400px] transition-colors rounded-lg p-2" 
+
+      <div className="space-y-3 min-h-[400px] transition-colors rounded-lg p-2"
            style={{ backgroundColor: isOver ? 'rgba(59, 130, 246, 0.05)' : 'transparent' }}>
         {children}
       </div>
@@ -91,7 +89,7 @@ const SortableJobCard: React.FC<SortableJobCardProps> = ({ job, onEdit, onView, 
     transform,
     transition,
     isDragging,
-  } = useSortable({ 
+  } = useSortable({
     id: job.id,
     data: {
       type: 'job',
@@ -153,7 +151,7 @@ const SortableJobCard: React.FC<SortableJobCardProps> = ({ job, onEdit, onView, 
               {job.description}
             </p>
           )}
-          
+
           <div className="space-y-2">
             {job.customers && (
               <div className="flex items-center text-xs text-gray-500">
@@ -168,7 +166,7 @@ const SortableJobCard: React.FC<SortableJobCardProps> = ({ job, onEdit, onView, 
                 ${job.budget.toLocaleString()}
               </div>
             )}
-            
+
             {job.address && (
               <div className="flex items-center text-xs text-gray-500">
                 <MapPin className="h-3 w-3 mr-1" />
@@ -204,36 +202,32 @@ const JobKanbanBoard = () => {
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     const job = jobs.find(j => j.id === active.id);
-    console.log('Drag start:', { jobId: active.id, job });
     setActiveJob(job || null);
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-    console.log('Drag end:', { active: active.id, over: over?.id });
-    
+
     setActiveJob(null);
 
     if (!over) {
-      console.log('No drop target');
       return;
     }
 
     const jobId = active.id as string;
     const job = jobs.find(j => j.id === jobId);
-    
+
     if (!job) {
-      console.log('Job not found:', jobId);
       return;
     }
 
     // Determine the new status based on drop target
     let newStatus: ValidJobStatus | null = null;
-    
+
     // Check if dropping directly over a column
     if (VALID_JOB_STATUSES.includes(over.id as ValidJobStatus)) {
       newStatus = over.id as ValidJobStatus;
-    } 
+    }
     // Check if dropping over another job, get its column status
     else {
       const targetJob = jobs.find(j => j.id === over.id);
@@ -252,59 +246,50 @@ const JobKanbanBoard = () => {
     }
 
     if (!newStatus) {
-      console.log('Invalid drop target - no valid status found:', over.id);
       toast.error('Invalid drop target');
       return;
     }
 
     // Don't update if status hasn't changed
     if (job.status === newStatus) {
-      console.log('Status unchanged:', job.status, '->', newStatus);
       return;
     }
-
-    console.log('Updating job status:', { jobId, oldStatus: job.status, newStatus });
 
     try {
       // Update job status with optimistic UI
       const success = await updateJob(jobId, { status: newStatus });
-      
+
       if (success) {
         const statusDisplay = newStatus.replace('_', ' ');
         toast.success(`Job moved to ${statusDisplay}`);
-        console.log('Job status updated successfully');
       } else {
         toast.error('Failed to update job status');
-        console.error('Job update failed');
       }
     } catch (error) {
-      console.error('Error updating job status:', error);
       toast.error('Failed to update job status');
     }
   };
 
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
-    
+
     if (!over) return;
-    
+
     // Allow dropping over columns, jobs, or any valid drop target
-    const isValidDropTarget = 
+    const isValidDropTarget =
       VALID_JOB_STATUSES.includes(over.id as ValidJobStatus) ||
       jobs.some(j => j.id === over.id) ||
       columns.some(col => over.id.toString().includes(col.id));
-      
-    console.log('Drag over:', { active: active.id, over: over.id, isValid: isValidDropTarget });
   };
 
   const handleDeleteJob = async () => {
     if (!deleteJobId) return;
-    
+
     try {
       await deleteJob(deleteJobId);
       setDeleteJobId(null);
     } catch (error) {
-      console.error('Error deleting job:', error);
+      // Error handling is done in the deleteJob function
     }
   };
 
@@ -347,7 +332,7 @@ const JobKanbanBoard = () => {
       >
         <div className="grid grid-cols-1 md:grid-cols-6 gap-6 min-h-screen">
           {columns.map((column) => (
-            <SortableContext 
+            <SortableContext
               key={column.id}
               items={[
                 column.id, // Add column as droppable target
@@ -355,7 +340,7 @@ const JobKanbanBoard = () => {
               ]}
               strategy={verticalListSortingStrategy}
             >
-              <DroppableColumn 
+              <DroppableColumn
                 column={column}
                 jobCount={getJobsByStatus(column.id).length}
               >

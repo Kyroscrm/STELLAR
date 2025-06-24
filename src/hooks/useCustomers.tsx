@@ -1,8 +1,7 @@
-
-import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export type Customer = Tables<'customers'>;
@@ -16,10 +15,9 @@ export const useCustomers = () => {
 
   const fetchCustomers = async () => {
     if (!user || !session) {
-      console.log('No user or session available for fetching customers');
       return;
     }
-    
+
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -29,15 +27,16 @@ export const useCustomers = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching customers:', error);
         throw error;
       }
-      
-      console.log(`Fetched ${data?.length || 0} customers`);
+
       setCustomers(data || []);
-    } catch (error: any) {
-      console.error('Error fetching customers:', error);
-      toast.error('Failed to fetch customers');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error('Failed to fetch customers');
+      } else {
+        toast.error('Failed to fetch customers');
+      }
       setCustomers([]);
     } finally {
       setLoading(false);
@@ -51,8 +50,6 @@ export const useCustomers = () => {
     }
 
     try {
-      console.log('Creating customer:', customerData);
-      
       const { data, error } = await supabase
         .from('customers')
         .insert({ ...customerData, user_id: user.id })
@@ -60,14 +57,12 @@ export const useCustomers = () => {
         .single();
 
       if (error) {
-        console.error('Error creating customer:', error);
         throw error;
       }
-      
-      console.log('Customer created successfully:', data);
+
       setCustomers(prev => [data, ...prev]);
       toast.success('Customer created successfully');
-      
+
       // Log activity
       await supabase.from('activity_logs').insert({
         user_id: user.id,
@@ -78,9 +73,12 @@ export const useCustomers = () => {
       });
 
       return data;
-    } catch (error: any) {
-      console.error('Error creating customer:', error);
-      toast.error(error.message || 'Failed to create customer');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(error.message || 'Failed to create customer');
+      } else {
+        toast.error('Failed to create customer');
+      }
       return null;
     }
   };
@@ -92,8 +90,6 @@ export const useCustomers = () => {
     }
 
     try {
-      console.log('Updating customer:', id, updates);
-      
       const { data, error } = await supabase
         .from('customers')
         .update(updates)
@@ -103,14 +99,12 @@ export const useCustomers = () => {
         .single();
 
       if (error) {
-        console.error('Error updating customer:', error);
         throw error;
       }
-      
-      console.log('Customer updated successfully:', data);
+
       setCustomers(prev => prev.map(customer => customer.id === id ? data : customer));
       toast.success('Customer updated successfully');
-      
+
       // Log activity
       await supabase.from('activity_logs').insert({
         user_id: user.id,
@@ -121,9 +115,12 @@ export const useCustomers = () => {
       });
 
       return data;
-    } catch (error: any) {
-      console.error('Error updating customer:', error);
-      toast.error(error.message || 'Failed to update customer');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(error.message || 'Failed to update customer');
+      } else {
+        toast.error('Failed to update customer');
+      }
       return null;
     }
   };
@@ -135,8 +132,6 @@ export const useCustomers = () => {
     }
 
     try {
-      console.log('Deleting customer:', id);
-      
       const { error } = await supabase
         .from('customers')
         .delete()
@@ -144,14 +139,12 @@ export const useCustomers = () => {
         .eq('user_id', user.id);
 
       if (error) {
-        console.error('Error deleting customer:', error);
         throw error;
       }
-      
-      console.log('Customer deleted successfully');
+
       setCustomers(prev => prev.filter(customer => customer.id !== id));
       toast.success('Customer deleted successfully');
-      
+
       // Log activity
       await supabase.from('activity_logs').insert({
         user_id: user.id,
@@ -160,9 +153,12 @@ export const useCustomers = () => {
         action: 'deleted',
         description: `Customer deleted`
       });
-    } catch (error: any) {
-      console.error('Error deleting customer:', error);
-      toast.error(error.message || 'Failed to delete customer');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(error.message || 'Failed to delete customer');
+      } else {
+        toast.error('Failed to delete customer');
+      }
     }
   };
 
