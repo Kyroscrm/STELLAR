@@ -1,16 +1,15 @@
-
-import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface DashboardPreferences {
   id: string;
   user_id: string;
-  layout: any;
-  widget_positions: any;
+  layout: unknown;
+  widget_positions: unknown;
   visible_widgets: string[];
-  theme_settings: any;
+  theme_settings: unknown;
   created_at: string;
   updated_at: string;
 }
@@ -33,8 +32,6 @@ export const useDashboardPreferences = () => {
 
     setLoading(true);
     try {
-      console.log('Fetching dashboard preferences for user:', user.id);
-      
       const { data, error } = await supabase
         .from('dashboard_preferences')
         .select('*')
@@ -45,13 +42,15 @@ export const useDashboardPreferences = () => {
 
       if (data) {
         setPreferences(data);
-        console.log('Dashboard preferences fetched successfully');
       } else {
         await createDefaultPreferences();
       }
-    } catch (error: any) {
-      console.error('Error fetching dashboard preferences:', error);
-      toast.error('Failed to fetch dashboard preferences');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error('Failed to fetch dashboard preferences');
+      } else {
+        toast.error('Failed to fetch dashboard preferences');
+      }
     } finally {
       setLoading(false);
     }
@@ -61,8 +60,6 @@ export const useDashboardPreferences = () => {
     if (!validateUserAndSession()) return;
 
     try {
-      console.log('Creating default dashboard preferences');
-      
       const { data, error } = await supabase
         .from('dashboard_preferences')
         .insert({
@@ -76,12 +73,10 @@ export const useDashboardPreferences = () => {
         .single();
 
       if (error) throw error;
-      
+
       setPreferences(data);
-      console.log('Default dashboard preferences created successfully');
       return data;
-    } catch (error: any) {
-      console.error('Error creating default dashboard preferences:', error);
+    } catch (error: unknown) {
       return null;
     }
   };
@@ -94,8 +89,6 @@ export const useDashboardPreferences = () => {
     setPreferences(optimisticPreferences);
 
     try {
-      console.log('Updating dashboard preferences:', updates);
-      
       const { data, error } = await supabase
         .from('dashboard_preferences')
         .update(updates)
@@ -104,14 +97,12 @@ export const useDashboardPreferences = () => {
         .single();
 
       if (error) throw error;
-      
+
       // Update with real data
       setPreferences(data);
-      
-      console.log('Dashboard preferences updated successfully');
+
       return true;
-    } catch (error: any) {
-      console.error('Error updating dashboard preferences:', error);
+    } catch (error: unknown) {
       // Rollback optimistic update
       setPreferences(preferences);
       toast.error('Failed to update dashboard preferences');
@@ -119,7 +110,7 @@ export const useDashboardPreferences = () => {
     }
   };
 
-  const updateWidgetPosition = async (widgetId: string, position: any) => {
+  const updateWidgetPosition = async (widgetId: string, position: unknown) => {
     if (!preferences) return false;
 
     const newPositions = {
