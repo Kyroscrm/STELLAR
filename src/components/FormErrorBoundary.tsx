@@ -1,8 +1,8 @@
 
-import React from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import React from 'react';
 import { toast } from 'sonner';
 
 interface FormErrorBoundaryState {
@@ -26,7 +26,7 @@ export class FormErrorBoundary extends React.Component<FormErrorBoundaryProps, F
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Form error caught:', error, errorInfo);
+    // Form error is caught and handled by the error boundary state
     toast.error('Form submission failed', {
       description: error.message,
       duration: 5000,
@@ -46,9 +46,9 @@ export class FormErrorBoundary extends React.Component<FormErrorBoundaryProps, F
           <AlertTitle>Form Error</AlertTitle>
           <AlertDescription className="mt-2">
             <p className="mb-3">{this.state.error?.message || 'An error occurred while processing the form'}</p>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={this.retry}
               className="border-red-200 text-red-700 hover:bg-red-50"
             >

@@ -1,25 +1,24 @@
 
-import React, { useState, useEffect } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Activity, 
-  Search, 
-  Filter, 
-  Download,
-  Eye,
-  Edit,
-  Trash2,
-  Plus,
-  User,
-  Clock
-} from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import {
+    Activity,
+    Clock,
+    Download,
+    Edit,
+    Eye,
+    Plus,
+    Search,
+    Trash2,
+    User
+} from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface ActivityLog {
   id: string;
@@ -57,9 +56,12 @@ const ActivityLogViewer: React.FC = () => {
 
       if (error) throw error;
       setLogs(data || []);
-    } catch (error: any) {
-      console.error('Error loading activity logs:', error);
-      toast.error('Failed to load activity logs');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(`Failed to load activity logs: ${error.message}`);
+      } else {
+        toast.error('Failed to load activity logs');
+      }
     } finally {
       setLoading(false);
     }
@@ -70,7 +72,7 @@ const ActivityLogViewer: React.FC = () => {
                          log.entity_type.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesAction = filterAction === 'all' || log.action === filterAction;
     const matchesEntity = filterEntity === 'all' || log.entity_type === filterEntity;
-    
+
     return matchesSearch && matchesAction && matchesEntity;
   });
 
@@ -222,10 +224,10 @@ const ActivityLogViewer: React.FC = () => {
               </div>
             </div>
           ))}
-          
+
           {filteredLogs.length === 0 && (
             <div className="text-center py-8 text-gray-500">
-              {searchTerm || filterAction !== 'all' || filterEntity !== 'all' 
+              {searchTerm || filterAction !== 'all' || filterEntity !== 'all'
                 ? 'No activity logs match your filters'
                 : 'No activity logs found'
               }

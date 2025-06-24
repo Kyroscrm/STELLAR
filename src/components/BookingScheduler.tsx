@@ -1,6 +1,4 @@
 
-import React, { useState } from 'react';
-import { Calendar, Clock, User, Phone, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,6 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { Calendar, Clock } from 'lucide-react';
+import { useState } from 'react';
 
 const BookingScheduler = () => {
   const [selectedDate, setSelectedDate] = useState('');
@@ -27,24 +27,24 @@ const BookingScheduler = () => {
   const getAvailableDates = () => {
     const dates = [];
     const today = new Date();
-    
+
     for (let i = 1; i <= 21; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
-      
+
       // Skip Sundays (0)
       if (date.getDay() !== 0) {
         dates.push({
           value: date.toISOString().split('T')[0],
-          label: date.toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            month: 'long', 
-            day: 'numeric' 
+          label: date.toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric'
           })
         });
       }
     }
-    
+
     return dates;
   };
 
@@ -72,11 +72,7 @@ const BookingScheduler = () => {
     }
 
     // In a real app, this would integrate with calendar system and CRM
-    console.log('Appointment scheduled:', {
-      date: selectedDate,
-      time: selectedTime,
-      ...formData
-    });
+    // Appointment data would be sent to backend for processing
 
     toast({
       title: "Appointment Scheduled!",
@@ -211,7 +207,7 @@ const BookingScheduler = () => {
           />
         </div>
 
-        <Button 
+        <Button
           onClick={handleSubmit}
           className="w-full bg-primary text-white hover:bg-primary/90 font-semibold py-3"
         >

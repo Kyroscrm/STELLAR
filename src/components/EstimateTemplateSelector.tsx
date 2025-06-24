@@ -1,9 +1,9 @@
 
-import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { EstimateTemplate, useEstimateTemplates } from '@/hooks/useEstimateTemplates';
 import { FileText, Plus } from 'lucide-react';
-import { useEstimateTemplates, EstimateTemplate } from '@/hooks/useEstimateTemplates';
+import React from 'react';
 
 interface EstimateTemplateSelectorProps {
   onSelectTemplate: (template: EstimateTemplate) => void;
@@ -34,15 +34,12 @@ const EstimateTemplateSelector: React.FC<EstimateTemplateSelectorProps> = ({
   }
 
   const handleSelectTemplate = (template: EstimateTemplate) => {
-    console.log('Selected template:', template);
-    console.log('Template line items:', template.line_items);
-    
     // Ensure line_items is properly parsed
     const templateWithValidLineItems = {
       ...template,
       line_items: Array.isArray(template.line_items) ? template.line_items : []
     };
-    
+
     onSelectTemplate(templateWithValidLineItems);
   };
 
@@ -60,7 +57,7 @@ const EstimateTemplateSelector: React.FC<EstimateTemplateSelectorProps> = ({
         {templates.map((template) => {
           // Ensure line_items is an array for display
           const lineItems = Array.isArray(template.line_items) ? template.line_items : [];
-          
+
           return (
             <Card key={template.id} className="cursor-pointer hover:shadow-md transition-shadow">
               <CardHeader>
@@ -77,7 +74,7 @@ const EstimateTemplateSelector: React.FC<EstimateTemplateSelectorProps> = ({
                     <div className="mt-2">
                       <p className="font-medium text-xs text-gray-500 mb-1">Sample items:</p>
                       <ul className="text-xs space-y-1">
-                        {lineItems.slice(0, 3).map((item: any, index: number) => (
+                        {lineItems.slice(0, 3).map((item: { description: string; unit_price: number }, index: number) => (
                           <li key={index} className="truncate">
                             • {item.description} - ${item.unit_price}
                           </li>
@@ -91,8 +88,8 @@ const EstimateTemplateSelector: React.FC<EstimateTemplateSelectorProps> = ({
                   {template.notes && <p>Notes: {template.notes}</p>}
                   {template.description && <p>Description: {template.description}</p>}
                 </div>
-                <Button 
-                  className="w-full mt-4" 
+                <Button
+                  className="w-full mt-4"
                   onClick={() => handleSelectTemplate(template)}
                 >
                   Use This Template

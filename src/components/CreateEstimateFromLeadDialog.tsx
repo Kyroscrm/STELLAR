@@ -1,15 +1,15 @@
 
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Plus } from 'lucide-react';
-import { Lead } from '@/hooks/useLeads';
+import { Textarea } from '@/components/ui/textarea';
 import { useEstimates } from '@/hooks/useEstimates';
 import { useEstimateTemplates } from '@/hooks/useEstimateTemplates';
+import { Lead } from '@/hooks/useLeads';
+import { FileText } from 'lucide-react';
+import React, { useState } from 'react';
 import { toast } from 'sonner';
 
 interface CreateEstimateFromLeadDialogProps {
@@ -20,18 +20,18 @@ interface CreateEstimateFromLeadDialogProps {
   onSuccess?: () => void;
 }
 
-const CreateEstimateFromLeadDialog: React.FC<CreateEstimateFromLeadDialogProps> = ({ 
-  lead, 
-  trigger, 
+const CreateEstimateFromLeadDialog: React.FC<CreateEstimateFromLeadDialogProps> = ({
+  lead,
+  trigger,
   open: controlledOpen,
   onOpenChange,
-  onSuccess 
+  onSuccess
 }) => {
   const { createEstimate } = useEstimates();
   const { templates } = useEstimateTemplates();
   const [loading, setLoading] = useState(false);
   const [internalOpen, setInternalOpen] = useState(false);
-  
+
   const isControlled = controlledOpen !== undefined;
   const isOpen = isControlled ? controlledOpen : internalOpen;
   const setOpen = isControlled ? (onOpenChange || (() => {})) : setInternalOpen;
@@ -54,7 +54,7 @@ const CreateEstimateFromLeadDialog: React.FC<CreateEstimateFromLeadDialogProps> 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.title.trim()) {
       toast.error('Estimate title is required');
       return;
@@ -63,7 +63,7 @@ const CreateEstimateFromLeadDialog: React.FC<CreateEstimateFromLeadDialogProps> 
     setLoading(true);
     try {
       const selectedTemplate = templates.find(t => t.id === formData.template_id);
-      
+
       const estimateData = {
         title: formData.title,
         description: formData.description,
@@ -76,16 +76,19 @@ const CreateEstimateFromLeadDialog: React.FC<CreateEstimateFromLeadDialogProps> 
       };
 
       const result = await createEstimate(estimateData);
-      
+
       if (result) {
         toast.success('Estimate created successfully from lead');
         setOpen(false);
         resetForm();
         onSuccess?.();
       }
-    } catch (error) {
-      console.error('Error creating estimate from lead:', error);
-      toast.error('Failed to create estimate');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(`Failed to create estimate: ${error.message}`);
+      } else {
+        toast.error('Failed to create estimate');
+      }
     } finally {
       setLoading(false);
     }
@@ -104,7 +107,7 @@ const CreateEstimateFromLeadDialog: React.FC<CreateEstimateFromLeadDialogProps> 
 
   const handleTemplateChange = (templateId: string) => {
     setFormData(prev => ({ ...prev, template_id: templateId }));
-    
+
     const selectedTemplate = templates.find(t => t.id === templateId);
     if (selectedTemplate) {
       setFormData(prev => ({
@@ -127,7 +130,7 @@ const CreateEstimateFromLeadDialog: React.FC<CreateEstimateFromLeadDialogProps> 
         <DialogHeader>
           <DialogTitle>Create Estimate from Lead</DialogTitle>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Lead Info Display */}
           <div className="bg-blue-50 p-4 rounded-lg">

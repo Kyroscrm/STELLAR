@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { User, Settings, Save } from 'lucide-react';
-import LoadingSpinner from './LoadingSpinner';
+import { supabase } from '@/integrations/supabase/client';
+import { Save, User } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import FormFieldError from './FormFieldError';
+import LoadingSpinner from './LoadingSpinner';
 
 interface ProfileData {
   first_name: string;
@@ -56,13 +56,20 @@ const UserProfile = () => {
           company_name: data.company_name || ''
         });
       }
-    } catch (error) {
-      console.error('Error loading profile:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load profile information",
-        variant: "destructive"
-      });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast({
+          title: "Error",
+          description: `Failed to load profile information: ${error.message}`,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to load profile information",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -89,7 +96,7 @@ const UserProfile = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -112,13 +119,20 @@ const UserProfile = () => {
         title: "Profile Updated",
         description: "Your profile has been successfully updated."
       });
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update profile",
-        variant: "destructive"
-      });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast({
+          title: "Error",
+          description: `Failed to update profile: ${error.message}`,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update profile",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsSaving(false);
     }

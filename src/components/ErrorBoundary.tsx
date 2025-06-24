@@ -1,8 +1,8 @@
 
-import React from 'react';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AlertTriangle, Home, RefreshCw } from 'lucide-react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface ErrorBoundaryState {
@@ -27,7 +27,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Error Boundary caught an error:', error, errorInfo);
+    // Error is caught and handled by the error boundary state
     this.setState({ errorInfo });
   }
 

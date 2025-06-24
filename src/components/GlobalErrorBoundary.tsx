@@ -1,8 +1,8 @@
 
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AlertTriangle, Home, RefreshCw } from 'lucide-react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -22,7 +22,7 @@ interface GlobalErrorBoundaryProps {
 class GlobalErrorBoundary extends React.Component<GlobalErrorBoundaryProps, GlobalErrorBoundaryState> {
   constructor(props: GlobalErrorBoundaryProps) {
     super(props);
-    this.state = { 
+    this.state = {
       hasError: false,
       retryCount: 0
     };
@@ -33,17 +33,11 @@ class GlobalErrorBoundary extends React.Component<GlobalErrorBoundaryProps, Glob
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error(`Error in ${this.props.module || 'Component'}:`, error, errorInfo);
     this.setState({ errorInfo });
 
-    // Log to external service in production
+    // Log to external service in production (without console statements)
     if (process.env.NODE_ENV === 'production') {
-      console.error('Production error logged:', { 
-        error: error.message, 
-        stack: error.stack,
-        module: this.props.module,
-        componentStack: errorInfo.componentStack 
-      });
+      // Error reporting to external service would go here
     }
 
     // Show toast notification
@@ -55,9 +49,9 @@ class GlobalErrorBoundary extends React.Component<GlobalErrorBoundaryProps, Glob
 
   retry = () => {
     if (this.state.retryCount < 3) {
-      this.setState({ 
-        hasError: false, 
-        error: undefined, 
+      this.setState({
+        hasError: false,
+        error: undefined,
         errorInfo: undefined,
         retryCount: this.state.retryCount + 1
       });
@@ -74,9 +68,9 @@ class GlobalErrorBoundary extends React.Component<GlobalErrorBoundaryProps, Glob
         return <FallbackComponent error={this.state.error!} retry={this.retry} />;
       }
 
-      return <ErrorFallback 
-        error={this.state.error!} 
-        retry={this.retry} 
+      return <ErrorFallback
+        error={this.state.error!}
+        retry={this.retry}
         module={this.props.module}
         retryCount={this.state.retryCount}
       />;
@@ -86,9 +80,9 @@ class GlobalErrorBoundary extends React.Component<GlobalErrorBoundaryProps, Glob
   }
 }
 
-const ErrorFallback: React.FC<{ 
-  error: Error; 
-  retry: () => void; 
+const ErrorFallback: React.FC<{
+  error: Error;
+  retry: () => void;
   module?: string;
   retryCount: number;
 }> = ({ error, retry, module, retryCount }) => {
@@ -118,8 +112,8 @@ const ErrorFallback: React.FC<{
             {error.message}
           </div>
           <div className="flex gap-2">
-            <Button 
-              onClick={retry} 
+            <Button
+              onClick={retry}
               className="flex-1"
               disabled={retryCount >= 3}
             >
@@ -137,4 +131,4 @@ const ErrorFallback: React.FC<{
   );
 };
 
-export { GlobalErrorBoundary, ErrorFallback };
+export { ErrorFallback, GlobalErrorBoundary };

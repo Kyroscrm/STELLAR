@@ -1,30 +1,30 @@
 
-import React, { useState, useEffect } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { supabase } from '@/integrations/supabase/client';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTasks } from '@/hooks/useTasks';
 import { useJobs } from '@/hooks/useJobs';
-import { 
-  Plus, 
-  Clock, 
-  MapPin, 
-  User, 
-  Calendar as CalendarIcon,
-  Eye,
-  Edit,
-  Trash2
-} from 'lucide-react';
-import { toast } from 'sonner';
+import { useTasks } from '@/hooks/useTasks';
+import { supabase } from '@/integrations/supabase/client';
 import { format, isSameDay, parseISO } from 'date-fns';
+import {
+    Calendar as CalendarIcon,
+    Clock,
+    Edit,
+    Eye,
+    MapPin,
+    Plus,
+    Trash2,
+    User
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface CalendarEvent {
   id: string;
@@ -68,7 +68,7 @@ const CalendarScheduler = () => {
 
   const fetchEvents = async () => {
     if (!user) return;
-    
+
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -79,9 +79,12 @@ const CalendarScheduler = () => {
 
       if (error) throw error;
       setEvents(data || []);
-    } catch (error: any) {
-      console.error('Error fetching events:', error);
-      toast.error('Failed to fetch calendar events');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(`Failed to fetch calendar events: ${error.message}`);
+      } else {
+        toast.error('Failed to fetch calendar events');
+      }
     } finally {
       setLoading(false);
     }
@@ -94,7 +97,7 @@ const CalendarScheduler = () => {
       const eventData = {
         ...newEvent,
         user_id: user.id,
-        start_time: newEvent.all_day 
+        start_time: newEvent.all_day
           ? `${format(selectedDate, 'yyyy-MM-dd')}T00:00:00`
           : `${format(selectedDate, 'yyyy-MM-dd')}T${newEvent.start_time}:00`,
         end_time: newEvent.all_day
@@ -125,9 +128,12 @@ const CalendarScheduler = () => {
         task_id: '',
         all_day: false
       });
-    } catch (error: any) {
-      console.error('Error creating event:', error);
-      toast.error('Failed to create event');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(`Failed to create event: ${error.message}`);
+      } else {
+        toast.error('Failed to create event');
+      }
     }
   };
 
@@ -143,14 +149,17 @@ const CalendarScheduler = () => {
       setEvents(prev => prev.filter(e => e.id !== eventId));
       toast.success('Event deleted successfully');
       setIsViewModalOpen(false);
-    } catch (error: any) {
-      console.error('Error deleting event:', error);
-      toast.error('Failed to delete event');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(`Failed to delete event: ${error.message}`);
+      } else {
+        toast.error('Failed to delete event');
+      }
     }
   };
 
   const getEventsForDate = (date: Date) => {
-    return events.filter(event => 
+    return events.filter(event =>
       isSameDay(parseISO(event.start_time), date)
     );
   };
@@ -260,8 +269,8 @@ const CalendarScheduler = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="job_id">Related Job</Label>
-                      <Select 
-                        value={newEvent.job_id} 
+                      <Select
+                        value={newEvent.job_id}
                         onValueChange={(value) => setNewEvent(prev => ({ ...prev, job_id: value }))}
                       >
                         <SelectTrigger>
@@ -280,8 +289,8 @@ const CalendarScheduler = () => {
 
                     <div>
                       <Label htmlFor="task_id">Related Task</Label>
-                      <Select 
-                        value={newEvent.task_id} 
+                      <Select
+                        value={newEvent.task_id}
                         onValueChange={(value) => setNewEvent(prev => ({ ...prev, task_id: value }))}
                       >
                         <SelectTrigger>
@@ -401,7 +410,7 @@ const CalendarScheduler = () => {
                 {!selectedEvent.all_day ? (
                   <div className="flex items-center text-sm">
                     <Clock className="h-4 w-4 mr-2" />
-                    {format(parseISO(selectedEvent.start_time), 'MMMM d, yyyy h:mm a')} - 
+                    {format(parseISO(selectedEvent.start_time), 'MMMM d, yyyy h:mm a')} -
                     {format(parseISO(selectedEvent.end_time), 'h:mm a')}
                   </div>
                 ) : (
@@ -438,7 +447,7 @@ const CalendarScheduler = () => {
                   <Edit className="h-4 w-4 mr-2" />
                   Edit
                 </Button>
-                <Button 
+                <Button
                   variant="destructive"
                   onClick={() => deleteEvent(selectedEvent.id)}
                 >

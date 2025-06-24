@@ -1,18 +1,17 @@
-import React, { useState } from 'react';
-import { useTasks } from '@/hooks/useTasks';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Plus, MoreHorizontal, Calendar, Clock, User, Edit, Trash2, Eye, Search, Filter, List as ListIcon, BarChart3, CheckCircle2, AlertCircle, PlayCircle } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import TaskFormDialog from '@/components/TaskFormDialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import ViewTaskDialog from '@/components/ViewTaskDialog';
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCorners, DragOverEvent } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { useSortable } from '@dnd-kit/sortable';
+import { useTasks } from '@/hooks/useTasks';
+import { closestCorners, DndContext, DragEndEvent, DragOverEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { AlertCircle, BarChart3, Calendar, CheckCircle2, Clock, Edit, Eye, Filter, List as ListIcon, MoreHorizontal, Plus, Search, Trash2, User } from 'lucide-react';
+import React, { useState } from 'react';
 import { toast } from 'sonner';
 
 // Define valid task statuses that match Supabase enum
@@ -69,7 +68,7 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({
           {column.title} ({taskCount})
         </h3>
       </div>
-      
+
       <div className="space-y-3 min-h-[400px] transition-colors rounded-lg p-2" style={{
       backgroundColor: isOver ? 'rgba(59, 130, 246, 0.05)' : 'transparent'
     }}>
@@ -188,13 +187,13 @@ const SortableTaskCard: React.FC<SortableTaskCardProps> = ({
           {task.description && <p className="text-xs text-gray-600 mb-3 line-clamp-2">
               {task.description}
             </p>}
-          
+
           <div className="space-y-2">
             {task.estimated_hours && <div className="flex items-center text-xs text-gray-500">
                 <Clock className="h-3 w-3 mr-1" />
                 {task.estimated_hours}h estimated
               </div>}
-            
+
             {task.due_date && <div className="flex items-center text-xs text-gray-500">
                 <Calendar className="h-3 w-3 mr-1" />
                 {new Date(task.due_date).toLocaleDateString()}
@@ -284,9 +283,12 @@ const TaskKanbanBoard = () => {
       } else {
         toast.error('Failed to update task status');
       }
-    } catch (error) {
-      console.error('Error updating task status:', error);
-      toast.error('Failed to update task status');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(`Failed to update task status: ${error.message}`);
+      } else {
+        toast.error('Failed to update task status');
+      }
     }
   };
   const handleDragOver = (event: DragOverEvent) => {
@@ -298,9 +300,12 @@ const TaskKanbanBoard = () => {
       await deleteTask(deleteTaskId);
       setDeleteTaskId(null);
       toast.success('Task deleted successfully');
-    } catch (error) {
-      console.error('Error deleting task:', error);
-      toast.error('Failed to delete task');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(`Failed to delete task: ${error.message}`);
+      } else {
+        toast.error('Failed to delete task');
+      }
     }
   };
   const handleTaskSuccess = () => {
@@ -339,13 +344,13 @@ const TaskKanbanBoard = () => {
             <Plus className="h-4 w-4 mr-2" />
             New Task
           </Button>
-          
+
           <div className="flex gap-4 items-center">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search tasks by title, description, status..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10 w-80" />
             </div>
-            
+
             <div className="flex gap-2">
               <Button variant="default" size="sm" className="bg-blue-600 hover:bg-blue-700">
                 <BarChart3 className="h-4 w-4 mr-2" />

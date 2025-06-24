@@ -1,15 +1,15 @@
 
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useJobs, JobWithCustomer } from '@/hooks/useJobs';
+import { Textarea } from '@/components/ui/textarea';
 import { useCustomers } from '@/hooks/useCustomers';
-import { toast } from 'sonner';
+import { JobWithCustomer, useJobs } from '@/hooks/useJobs';
 import { JobStatus } from '@/types/supabase-enums';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface JobFormProps {
   open: boolean;
@@ -107,9 +107,12 @@ const JobForm: React.FC<JobFormProps> = ({
           onSuccess?.();
         }
       }
-    } catch (error) {
-      console.error('Error saving job:', error);
-      toast.error('Failed to save job');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(`Failed to save job: ${error.message}`);
+      } else {
+        toast.error('Failed to save job');
+      }
     } finally {
       setLoading(false);
     }

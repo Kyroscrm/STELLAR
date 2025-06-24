@@ -1,18 +1,18 @@
 
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Edit } from 'lucide-react';
-import { format } from 'date-fns';
-import { useTasks, Task } from '@/hooks/useTasks';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { useJobs } from '@/hooks/useJobs';
-import { TaskStatus, TaskPriority } from '@/types/supabase-enums';
+import { Task, useTasks } from '@/hooks/useTasks';
+import { TaskPriority, TaskStatus } from '@/types/supabase-enums';
+import { format } from 'date-fns';
+import { CalendarIcon, Edit } from 'lucide-react';
+import React, { useState } from 'react';
 import { toast } from 'sonner';
 
 interface EditTaskDialogProps {
@@ -20,9 +20,9 @@ interface EditTaskDialogProps {
   trigger?: React.ReactNode;
 }
 
-const EditTaskDialog: React.FC<EditTaskDialogProps> = ({ 
-  task, 
-  trigger 
+const EditTaskDialog: React.FC<EditTaskDialogProps> = ({
+  task,
+  trigger
 }) => {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,7 +49,7 @@ const EditTaskDialog: React.FC<EditTaskDialogProps> = ({
     }
 
     setIsSubmitting(true);
-    
+
     const taskData = {
       ...formData,
       due_date: formData.due_date ? format(formData.due_date, 'yyyy-MM-dd') : null,
@@ -62,8 +62,12 @@ const EditTaskDialog: React.FC<EditTaskDialogProps> = ({
       if (success) {
         setOpen(false);
       }
-    } catch (error) {
-      console.error('Error updating task:', error);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(`Failed to update task: ${error.message}`);
+      } else {
+        toast.error('Failed to update task');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -86,7 +90,7 @@ const EditTaskDialog: React.FC<EditTaskDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Edit Task</DialogTitle>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="title">Title *</Label>
