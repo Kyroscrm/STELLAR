@@ -65,7 +65,15 @@ TASK.md: Deep To-Do List Based on Missing or Broken Items
 
 2.1 Typed Hooks 🔄 IN PROGRESS
 
-Create useLeads, useCustomers, useJobs, useEstimates, useInvoices, useTasks, useActivityLogs.
+- ✅ Standardized pattern established for hooks with proper typing, error handling, and RLS-safe operations
+- ✅ Implemented useActivityLogs with TypeScript interfaces, proper error handling, and optimistic updates
+- ✅ Refactored useEstimateLineItems with type safety and RLS policies
+- ✅ Enhanced useFileWorkflow with comprehensive error handling and user validation
+- ✅ Refactored useNotifications with proper error handling and optimistic updates
+- ✅ Improved useDashboardMetrics with strong typing and standardized error handling
+- ✅ Reviewed useLeads hook - already implemented with proper patterns
+- ✅ Updated useCustomers hook to use useErrorHandler and useOptimisticUpdate
+- 🔄 Still needed: Complete refactoring of remaining hooks (useJobs, useEstimates, useInvoices, useTasks)
 
 Move inline supabase.* calls into hooks; handle loading, error, and data states.
 
