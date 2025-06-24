@@ -1,7 +1,6 @@
-
-import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface UserNotification {
@@ -16,7 +15,7 @@ export interface UserNotification {
   read: boolean;
   dismissed: boolean;
   action_url?: string;
-  metadata: any;
+  metadata: unknown;
   created_at: string;
   read_at?: string;
   dismissed_at?: string;
@@ -28,12 +27,15 @@ const isValidPriority = (priority: string): priority is 'low' | 'medium' | 'high
 };
 
 // Safe conversion functions
-const convertToUserNotification = (dbData: any): UserNotification => ({
-  ...dbData,
-  priority: isValidPriority(dbData.priority) ? dbData.priority : 'medium'
-});
+const convertToUserNotification = (dbData: unknown): UserNotification => {
+  const data = dbData as any;
+  return {
+    ...data,
+    priority: isValidPriority(data.priority) ? data.priority : 'medium'
+  };
+};
 
-const convertToUserNotificationArray = (dbDataArray: any[]): UserNotification[] => {
+const convertToUserNotificationArray = (dbDataArray: unknown[]): UserNotification[] => {
   return dbDataArray.map(convertToUserNotification);
 };
 
@@ -56,8 +58,6 @@ export const useNotifications = () => {
 
     setLoading(true);
     try {
-      console.log('Fetching notifications for user:', user.id);
-      
       const { data, error } = await supabase
         .from('user_notifications')
         .select('*')
@@ -69,10 +69,12 @@ export const useNotifications = () => {
       const convertedNotifications = convertToUserNotificationArray(data || []);
       setNotifications(convertedNotifications);
       setUnreadCount(convertedNotifications.filter(n => !n.read).length);
-      console.log(`Successfully fetched ${convertedNotifications.length} notifications`);
-    } catch (error: any) {
-      console.error('Error fetching notifications:', error);
-      toast.error('Failed to fetch notifications');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error('Failed to fetch notifications');
+      } else {
+        toast.error('Failed to fetch notifications');
+      }
     } finally {
       setLoading(false);
     }
@@ -97,8 +99,6 @@ export const useNotifications = () => {
     }
 
     try {
-      console.log('Creating notification:', notificationData);
-      
       const { data, error } = await supabase
         .from('user_notifications')
         .insert({
@@ -111,14 +111,12 @@ export const useNotifications = () => {
       if (error) throw error;
 
       const convertedNotification = convertToUserNotification(data);
-      
+
       // Replace optimistic with real data
       setNotifications(prev => prev.map(n => n.id === optimisticNotification.id ? convertedNotification : n));
-      
-      console.log('Notification created successfully:', convertedNotification);
+
       return convertedNotification;
-    } catch (error: any) {
-      console.error('Error creating notification:', error);
+    } catch (error: unknown) {
       // Rollback optimistic update
       setNotifications(prev => prev.filter(n => n.id !== optimisticNotification.id));
       if (!optimisticNotification.read) {
@@ -146,11 +144,9 @@ export const useNotifications = () => {
     setUnreadCount(prev => Math.max(0, prev - 1));
 
     try {
-      console.log('Marking notification as read:', id);
-      
       const { data, error } = await supabase
         .from('user_notifications')
-        .update({ 
+        .update({
           read: true,
           read_at: new Date().toISOString()
         })
@@ -162,14 +158,12 @@ export const useNotifications = () => {
       if (error) throw error;
 
       const convertedNotification = convertToUserNotification(data);
-      
+
       // Update with real data
       setNotifications(prev => prev.map(n => n.id === id ? convertedNotification : n));
-      
-      console.log('Notification marked as read successfully');
+
       return true;
-    } catch (error: any) {
-      console.error('Error marking notification as read:', error);
+    } catch (error: unknown) {
       // Rollback optimistic update
       setNotifications(prev => prev.map(n => n.id === id ? originalNotification : n));
       setUnreadCount(prev => prev + 1);
@@ -185,17 +179,15 @@ export const useNotifications = () => {
 
     // Optimistic update
     const timestamp = new Date().toISOString();
-    setNotifications(prev => prev.map(n => 
+    setNotifications(prev => prev.map(n =>
       !n.read ? { ...n, read: true, read_at: timestamp } : n
     ));
     setUnreadCount(0);
 
     try {
-      console.log('Marking all notifications as read');
-      
       const { data, error } = await supabase
         .from('user_notifications')
-        .update({ 
+        .update({
           read: true,
           read_at: timestamp
         })
@@ -205,10 +197,8 @@ export const useNotifications = () => {
 
       if (error) throw error;
 
-      console.log('All notifications marked as read successfully');
       return true;
-    } catch (error: any) {
-      console.error('Error marking all notifications as read:', error);
+    } catch (error: unknown) {
       // Rollback optimistic update
       setNotifications(prev => prev.map(n => {
         const original = unreadNotifications.find(un => un.id === n.id);
@@ -234,11 +224,9 @@ export const useNotifications = () => {
     setNotifications(prev => prev.map(n => n.id === id ? optimisticNotification : n));
 
     try {
-      console.log('Dismissing notification:', id);
-      
       const { data, error } = await supabase
         .from('user_notifications')
-        .update({ 
+        .update({
           dismissed: true,
           dismissed_at: new Date().toISOString()
         })
@@ -250,14 +238,12 @@ export const useNotifications = () => {
       if (error) throw error;
 
       const convertedNotification = convertToUserNotification(data);
-      
+
       // Update with real data
       setNotifications(prev => prev.map(n => n.id === id ? convertedNotification : n));
-      
-      console.log('Notification dismissed successfully');
+
       return true;
-    } catch (error: any) {
-      console.error('Error dismissing notification:', error);
+    } catch (error: unknown) {
       // Rollback optimistic update
       setNotifications(prev => prev.map(n => n.id === id ? originalNotification : n));
       return false;
@@ -281,8 +267,6 @@ export const useNotifications = () => {
     }
 
     try {
-      console.log('Deleting notification:', id);
-      
       const { error } = await supabase
         .from('user_notifications')
         .delete()
@@ -291,11 +275,9 @@ export const useNotifications = () => {
 
       if (error) throw error;
 
-      console.log('Notification deleted successfully');
-    } catch (error: any) {
-      console.error('Error deleting notification:', error);
+    } catch (error: unknown) {
       // Rollback optimistic update
-      setNotifications(prev => [...prev, originalNotification].sort((a, b) => 
+      setNotifications(prev => [...prev, originalNotification].sort((a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       ));
       if (!originalNotification.read) {

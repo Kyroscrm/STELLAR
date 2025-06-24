@@ -1,7 +1,6 @@
-
-import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface LogoSettings {
@@ -41,8 +40,6 @@ export const useLogoSettings = () => {
 
     setLoading(true);
     try {
-      console.log('Fetching logo settings for user:', user.id);
-      
       const { data, error } = await supabase
         .from('logo_settings')
         .select('*')
@@ -56,13 +53,15 @@ export const useLogoSettings = () => {
           ...data,
           logo_position: safeLogoPosition(data.logo_position)
         });
-        console.log('Logo settings fetched successfully');
       } else {
         await createDefaultSettings();
       }
-    } catch (error: any) {
-      console.error('Error fetching logo settings:', error);
-      toast.error('Failed to fetch logo settings');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error('Failed to fetch logo settings');
+      } else {
+        toast.error('Failed to fetch logo settings');
+      }
     } finally {
       setLoading(false);
     }
@@ -72,8 +71,6 @@ export const useLogoSettings = () => {
     if (!validateUserAndSession()) return;
 
     try {
-      console.log('Creating default logo settings');
-      
       const { data, error } = await supabase
         .from('logo_settings')
         .insert({
@@ -89,15 +86,13 @@ export const useLogoSettings = () => {
         .single();
 
       if (error) throw error;
-      
+
       setSettings({
         ...data,
         logo_position: safeLogoPosition(data.logo_position)
       });
-      console.log('Default logo settings created successfully');
       return data;
-    } catch (error: any) {
-      console.error('Error creating default logo settings:', error);
+    } catch (error: unknown) {
       return null;
     }
   };
@@ -110,8 +105,6 @@ export const useLogoSettings = () => {
     setSettings(optimisticSettings);
 
     try {
-      console.log('Updating logo settings:', updates);
-      
       const { data, error } = await supabase
         .from('logo_settings')
         .update(updates)
@@ -120,17 +113,15 @@ export const useLogoSettings = () => {
         .single();
 
       if (error) throw error;
-      
+
       // Update with real data
       setSettings({
         ...data,
         logo_position: safeLogoPosition(data.logo_position)
       });
-      
-      console.log('Logo settings updated successfully');
+
       return true;
-    } catch (error: any) {
-      console.error('Error updating logo settings:', error);
+    } catch (error: unknown) {
       // Rollback optimistic update
       setSettings(settings);
       toast.error('Failed to update logo settings');
@@ -142,12 +133,10 @@ export const useLogoSettings = () => {
     if (!validateUserAndSession()) return null;
 
     try {
-      console.log('Uploading logo file:', file.name);
-      
       // Create unique filename
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/logo.${fileExt}`;
-      
+
       const { data, error } = await supabase.storage
         .from('logos')
         .upload(fileName, file, { upsert: true });
@@ -160,16 +149,18 @@ export const useLogoSettings = () => {
         .getPublicUrl(fileName);
 
       const logoUrl = urlData.publicUrl;
-      
+
       // Update settings with new logo URL
       await updateSettings({ logo_url: logoUrl });
-      
+
       toast.success('Logo uploaded successfully');
-      console.log('Logo uploaded successfully:', logoUrl);
       return logoUrl;
-    } catch (error: any) {
-      console.error('Error uploading logo:', error);
-      toast.error('Failed to upload logo');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error('Failed to upload logo');
+      } else {
+        toast.error('Failed to upload logo');
+      }
       return null;
     }
   };
