@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { useOptimisticUpdate } from './useOptimisticUpdate';
 import { useErrorHandler } from './useErrorHandler';
+import { useOptimisticUpdate } from './useOptimisticUpdate';
 
 export type Job = Tables<'jobs'>;
 export type JobWithCustomer = Job & {
@@ -36,12 +36,10 @@ export const useJobs = () => {
 
   const fetchJobs = async () => {
     if (!validateUserAndSession()) return;
-    
+
     setLoading(true);
     setError(null);
     try {
-      console.log('Fetching jobs for user:', user.id);
-      
       const { data, error } = await supabase
         .from('jobs')
         .select('*')
@@ -49,13 +47,12 @@ export const useJobs = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       setJobs(data || []);
-      console.log(`Successfully fetched ${data?.length || 0} jobs`);
-    } catch (error: any) {
-      console.error('Error fetching jobs:', error);
-      setError(error);
-      handleError(error, { title: 'Failed to fetch jobs' });
+    } catch (error: unknown) {
+      const jobError = error instanceof Error ? error : new Error('Failed to fetch jobs');
+      setError(jobError);
+      handleError(jobError, { title: 'Failed to fetch jobs' });
       setJobs([]);
     } finally {
       setLoading(false);
@@ -77,10 +74,8 @@ export const useJobs = () => {
       return await executeUpdate(
         // Optimistic update
         () => setJobs(prev => [optimisticJob, ...prev]),
-        // Actual update
+                // Actual update
         async () => {
-          console.log('Creating job:', jobData);
-          
           const { data, error } = await supabase
             .from('jobs')
             .insert({ ...jobData, user_id: user.id })
@@ -88,10 +83,10 @@ export const useJobs = () => {
             .single();
 
           if (error) throw error;
-          
+
           // Replace optimistic with real data
           setJobs(prev => prev.map(j => j.id === optimisticJob.id ? data : j));
-          
+
           // Log activity
           await supabase.from('activity_logs').insert({
             user_id: user.id,
@@ -101,7 +96,6 @@ export const useJobs = () => {
             description: `Job created: ${data.title}`
           });
 
-          console.log('Job created successfully:', data);
           return data;
         },
         // Rollback
@@ -111,8 +105,7 @@ export const useJobs = () => {
           errorMessage: 'Failed to create job'
         }
       );
-    } catch (error: any) {
-      console.error('Error creating job:', error);
+    } catch (error: unknown) {
       return null;
     }
   };
@@ -133,10 +126,8 @@ export const useJobs = () => {
       return await executeUpdate(
         // Optimistic update
         () => setJobs(prev => prev.map(j => j.id === id ? optimisticJob : j)),
-        // Actual update
+                // Actual update
         async () => {
-          console.log('Updating job:', id, updates);
-          
           const { data, error } = await supabase
             .from('jobs')
             .update(updates)
@@ -146,10 +137,10 @@ export const useJobs = () => {
             .single();
 
           if (error) throw error;
-          
+
           // Update with real data
           setJobs(prev => prev.map(j => j.id === id ? data : j));
-          
+
           // Log activity
           await supabase.from('activity_logs').insert({
             user_id: user.id,
@@ -159,7 +150,6 @@ export const useJobs = () => {
             description: `Job updated: ${data.title}`
           });
 
-          console.log('Job updated successfully:', data);
           return true;
         },
         // Rollback
@@ -169,8 +159,7 @@ export const useJobs = () => {
           errorMessage: 'Failed to update job'
         }
       );
-    } catch (error: any) {
-      console.error('Error updating job:', error);
+    } catch (error: unknown) {
       return false;
     }
   };
@@ -189,10 +178,8 @@ export const useJobs = () => {
       await executeUpdate(
         // Optimistic update
         () => setJobs(prev => prev.filter(j => j.id !== id)),
-        // Actual update
+                // Actual update
         async () => {
-          console.log('Deleting job:', id);
-          
           const { error } = await supabase
             .from('jobs')
             .delete()
@@ -200,7 +187,7 @@ export const useJobs = () => {
             .eq('user_id', user.id);
 
           if (error) throw error;
-          
+
           // Log activity
           await supabase.from('activity_logs').insert({
             user_id: user.id,
@@ -210,11 +197,10 @@ export const useJobs = () => {
             description: `Job deleted: ${originalJob.title}`
           });
 
-          console.log('Job deleted successfully');
           return true;
         },
         // Rollback
-        () => setJobs(prev => [...prev, originalJob].sort((a, b) => 
+        () => setJobs(prev => [...prev, originalJob].sort((a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         )),
         {
@@ -222,8 +208,8 @@ export const useJobs = () => {
           errorMessage: 'Failed to delete job'
         }
       );
-    } catch (error: any) {
-      console.error('Error deleting job:', error);
+    } catch (error: unknown) {
+      // Error handling is managed by executeUpdate
     }
   };
 
