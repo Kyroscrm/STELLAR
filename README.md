@@ -1,103 +1,110 @@
-# Welcome to your Lovable project
+# Final Roofing & Retro-Fit CRM
 
-## Project info
+## Project Overview
 
-**URL**: https://lovable.dev/projects/55ff8d46-a5e9-46e2-8d6e-fbd7ba3165d7
+The Final Roofing & Retro-Fit CRM is a comprehensive customer relationship management system designed specifically for roofing contractors. It streamlines lead management, customer tracking, estimate creation, job scheduling, invoicing, and payment processing—all within a secure, role-based access system with complete audit logging and optimistic UI updates for a seamless user experience.
 
-## How can I edit this code?
+## Tech Stack
 
-There are several ways of editing your application.
+- **Frontend**: React 18 + TypeScript
+- **Build Tool**: Vite
+- **Backend**: Supabase (PostgreSQL, Auth, Storage, Edge Functions)
+- **Styling**: Tailwind CSS + shadcn/ui components
+- **State Management**: React Context + TanStack Query
+- **Form Handling**: React Hook Form + Zod validation
+- **Testing**: Jest, React Testing Library, MSW
+- **Development**: Cursor AI Pro
 
-**Use Lovable**
+## Setup Instructions
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/55ff8d46-a5e9-46e2-8d6e-fbd7ba3165d7) and start prompting.
+1. Clone the repository
+   ```bash
+   git clone https://github.com/your-org/final-roofing-crm.git
+   cd final-roofing-crm
+   ```
 
-Changes made via Lovable will be committed automatically to this repo.
+2. Copy the environment variables template and fill in your Supabase credentials
+   ```bash
+   cp .env.example .env.local
+   # Edit .env.local with your Supabase URL and anon key
+   ```
 
-**Use your preferred IDE**
+3. Install dependencies and start the development server
+   ```bash
+   npm ci
+   npm run dev
+   ```
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+4. Run database migrations and seed data
+   ```bash
+   npm run migrate
+   npm run seed
+   ```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+5. Run tests to verify setup
+   ```bash
+   npm test
+   ```
 
-Follow these steps:
+## Folder Structure
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- **`/src`**: Main application code
+  - **`/components`**: Reusable UI components
+  - **`/contexts`**: React context providers
+  - **`/hooks`**: Custom React hooks for data fetching and state management
+  - **`/integrations`**: Integration with external services (Supabase)
+  - **`/lib`**: Utility functions and shared logic
+  - **`/pages`**: Page components and routes
+  - **`/types`**: TypeScript type definitions
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+- **`/supabase`**: Supabase configuration
+  - **`/migrations`**: Database migration scripts
+  - **`/storage`**: Storage bucket configurations
+  - **`/tests`**: Database tests
 
-# Step 3: Install the necessary dependencies.
-npm i
+- **`/tests`**: Frontend tests
+  - **`/unit`**: Unit tests for components and hooks
+  - **`/integration`**: Integration tests for workflows
+  - **`/__mocks__`**: Mock data and services
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+## Development Workflow
 
-**Edit a file directly in GitHub**
+1. **Development**:
+   - Create a feature branch from `main`
+   - Implement changes following project conventions
+   - Ensure all tests pass locally
+   - Submit a pull request
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+2. **CI/CD Pipeline**:
+   - Automated checks run on every PR:
+     - Linting (`npm run lint`)
+     - Type checking (`npm run type-check`)
+     - Unit and integration tests (`npm test`)
+     - Build verification (`npm run build`)
 
-**Use GitHub Codespaces**
+3. **Database Migrations**:
+   - Create new migrations in `supabase/migrations/`
+   - Apply migrations with `npm run migrate`
+   - Seed test data with `npm run seed`
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+4. **Deployment**:
+   - Merges to `main` trigger automatic deployment
+   - Production builds include optimizations and minification
 
-## CI/CD Pipeline
+## Key Features
 
-This project uses GitHub Actions for continuous integration and deployment:
+- **Role-Based Access Control**: Secure, permission-based access to features
+- **Audit Logging**: Comprehensive activity tracking with field-level change history
+- **Optimistic UI Updates**: Immediate feedback with automatic rollback on errors
+- **Real-time Notifications**: Instant updates when data changes
+- **Responsive Design**: Works on desktop, tablet, and mobile devices
 
-### CI Workflow
+## Documentation
 
-The CI workflow runs on every pull request and push to the main branch:
+- [CONTRIBUTING.md](./CONTRIBUTING.md): Contribution guidelines
+- [ARCHITECTURE.md](./ARCHITECTURE.md): System architecture and design decisions
+- [PLANNING.md](./PLANNING.md): Project planning and roadmap
 
-- **Linting**: Ensures code follows style guidelines
-- **Type Checking**: Verifies TypeScript types
-- **Testing**: Runs unit and integration tests
-- **Building**: Builds the application to verify it compiles correctly
+## License
 
-### CD Workflow
-
-The CD workflow runs on every push to the main branch:
-
-- Builds the application for production
-- Deploys to Vercel automatically
-
-### Required Secrets
-
-For deployment to work, add these secrets to your GitHub repository:
-
-- `VERCEL_TOKEN`: Your Vercel API token
-- `VERCEL_ORG_ID`: Your Vercel organization ID
-- `VERCEL_PROJECT_ID`: Your Vercel project ID
-- `VITE_SUPABASE_URL`: Your Supabase URL
-- `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous key
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/55ff8d46-a5e9-46e2-8d6e-fbd7ba3165d7) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Copyright © 2023-2024 Final Roofing & Retro-Fit. All rights reserved.
