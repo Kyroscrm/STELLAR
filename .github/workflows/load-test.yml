@@ -1,0 +1,123 @@
+name: Load Testing
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to test (staging/production)'
+        required: true
+        default: 'staging'
+      test_type:
+        description: 'Type of test to run (smoke/peak/stress)'
+        required: true
+        default: 'smoke'
+  schedule:
+    - cron: '0 4 * * 1' # Run every Monday at 4 AM UTC
+
+jobs:
+  k6_load_test:
+    name: Run k6 Load Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install k6
+        run: |
+          curl -L https://github.com/grafana/k6/releases/download/v0.47.0/k6-v0.47.0-linux-amd64.tar.gz -o k6.tar.gz
+          tar xzf k6.tar.gz
+          sudo cp k6-v0.47.0-linux-amd64/k6 /usr/local/bin/k6
+
+      - name: Run k6 test
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+        run: |
+          TEST_TYPE="${{ github.event.inputs.test_type || 'smoke' }}"
+
+          # Set test duration based on type
+          case $TEST_TYPE in
+            smoke)
+              SCENARIO="smoke_test"
+              ;;
+            peak)
+              SCENARIO="peak_load"
+              ;;
+            stress)
+              SCENARIO="stress_test"
+              ;;
+            *)
+              echo "Invalid test type"
+              exit 1
+              ;;
+          esac
+
+          # Run k6 test with HTML report
+          k6 run \
+            --out json=load-tests/results.json \
+            --out html=load-tests/report.html \
+            --tag testType=$TEST_TYPE \
+            --tag environment="${{ github.event.inputs.environment }}" \
+            --scenario $SCENARIO \
+            load-tests/k6/script.js
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: k6-results
+          path: |
+            load-tests/results.json
+            load-tests/report.html
+
+      - name: Create issue on failure
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const results = JSON.parse(fs.readFileSync('load-tests/results.json', 'utf8'));
+
+            const env = process.env.GITHUB_EVENT_NAME === 'workflow_dispatch'
+              ? context.payload.inputs.environment
+              : 'staging';
+            const testType = process.env.GITHUB_EVENT_NAME === 'workflow_dispatch'
+              ? context.payload.inputs.test_type
+              : 'smoke';
+
+            const summary = {
+              totalRequests: results.metrics.http_reqs.values.count,
+              failedRequests: results.metrics.http_req_failed.values.count,
+              p95Duration: results.metrics.http_req_duration.values.p95,
+              errorRate: results.metrics.api_errors.values.rate
+            };
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 Load Test Failed - ${testType} test on ${env}`,
+              body: `Load test failure in ${env} environment.
+
+              **Test Configuration:**
+              - Type: ${testType}
+              - Environment: ${env}
+              - Run ID: ${context.runId}
+
+              **Summary:**
+              - Total Requests: ${summary.totalRequests}
+              - Failed Requests: ${summary.failedRequests}
+              - P95 Duration: ${summary.p95Duration}ms
+              - API Error Rate: ${summary.errorRate}%
+
+              **Thresholds Violated:**
+              ${Object.entries(results.thresholds)
+                .filter(([_, v]) => !v.ok)
+                .map(([k, v]) => `- ${k}: ${v.message}`)
+                .join('\n')}
+
+              Please check the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for full details.
+
+              cc: @${context.repo.owner}`
+            });

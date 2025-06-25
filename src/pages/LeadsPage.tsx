@@ -14,6 +14,8 @@ import ErrorMessage from '@/components/ui/error-message';
 import { LEAD_STATUS_COLORS } from '@/types/supabase-enums';
 import { useTour } from '@/contexts/TourContext';
 import { useLocation } from 'react-router-dom';
+import { FixedSizeGrid as Grid } from 'react-window';
+import AutoSizer from 'react-virtualized-auto-sizer';
 import {
   Search,
   Filter,
@@ -31,6 +33,132 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+
+const getStatusColor = (status: string) => {
+  return LEAD_STATUS_COLORS[status as keyof typeof LEAD_STATUS_COLORS] || 'bg-gray-100 text-gray-800';
+};
+
+const getSourceColor = (source: string) => {
+  switch (source) {
+    case 'website': return 'bg-purple-100 text-purple-800';
+    case 'referral': return 'bg-orange-100 text-orange-800';
+    case 'google_ads': return 'bg-indigo-100 text-indigo-800';
+    case 'facebook': return 'bg-blue-100 text-blue-800';
+    case 'direct_mail': return 'bg-yellow-100 text-yellow-800';
+    case 'cold_call': return 'bg-red-100 text-red-800';
+    case 'trade_show': return 'bg-green-100 text-green-800';
+    default: return 'bg-gray-100 text-gray-800';
+  }
+};
+
+interface LeadCardProps {
+  lead: Lead;
+  onConvert: (lead: Lead) => void;
+  onDelete: (id: string) => void;
+  onEditSuccess: () => void;
+  onFetchLeads: () => void;
+}
+
+const LeadCard = React.memo(({ lead, onConvert, onDelete, onEditSuccess, onFetchLeads }: LeadCardProps) => {
+  return (
+    <Card className="hover:shadow-lg transition-shadow h-full">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <CardTitle className="text-lg">
+              {lead.first_name} {lead.last_name}
+            </CardTitle>
+            <div className="flex gap-2 mt-2">
+              <Badge className={getStatusColor(lead.status || 'new')}>
+                {lead.status}
+              </Badge>
+              <Badge className={getSourceColor(lead.source || 'website')}>
+                {lead.source}
+              </Badge>
+            </div>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <ViewLeadDialog
+                  lead={lead}
+                  trigger={<span className="w-full cursor-pointer">View Details</span>}
+                />
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <EditLeadDialog
+                  lead={lead}
+                  onSuccess={onEditSuccess}
+                  trigger={<span className="w-full cursor-pointer">Edit Lead</span>}
+                />
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <CreateEstimateFromLeadDialog
+                  lead={lead}
+                  onSuccess={onFetchLeads}
+                  trigger={<span className="w-full cursor-pointer">Create Estimate</span>}
+                />
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onConvert(lead)}>
+                Convert to Customer
+              </DropdownMenuItem>
+              <DropdownMenuItem className="text-red-600" onClick={() => onDelete(lead.id)}>
+                Delete Lead
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {lead.email && (
+            <div className="flex items-center text-sm text-gray-600">
+              <Mail className="h-4 w-4 mr-2" />
+              {lead.email}
+            </div>
+          )}
+          {lead.phone && (
+            <div className="flex items-center text-sm text-gray-600">
+              <Phone className="h-4 w-4 mr-2" />
+              {lead.phone}
+            </div>
+          )}
+          {lead.address && (
+            <div className="flex items-center text-sm text-gray-600">
+              <MapPin className="h-4 w-4 mr-2" />
+              {lead.address}
+              {lead.city && `, ${lead.city}`}
+              {lead.state && `, ${lead.state}`}
+            </div>
+          )}
+          {lead.created_at && (
+            <div className="flex items-center text-sm text-gray-600">
+              <Calendar className="h-4 w-4 mr-2" />
+              Added {new Date(lead.created_at).toLocaleDateString()}
+            </div>
+          )}
+          {lead.estimated_value > 0 && (
+            <div className="flex items-center text-sm text-gray-600">
+              <DollarSign className="h-4 w-4 mr-2" />
+              Est. Value: ${lead.estimated_value.toLocaleString()}
+            </div>
+          )}
+          {lead.notes && (
+            <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded mt-2">
+              {lead.notes.substring(0, 100)}
+              {lead.notes.length > 100 && '...'}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+});
 
 const LeadsPage = () => {
   const { leads, loading, error, updateLead, deleteLead, fetchLeads } = useLeads();
@@ -50,23 +178,6 @@ const LeadsPage = () => {
       }, 1000);
     }
   }, [location.pathname, isFirstVisit, startTour]);
-
-  const getStatusColor = (status: string) => {
-    return LEAD_STATUS_COLORS[status as keyof typeof LEAD_STATUS_COLORS] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getSourceColor = (source: string) => {
-    switch (source) {
-      case 'website': return 'bg-purple-100 text-purple-800';
-      case 'referral': return 'bg-orange-100 text-orange-800';
-      case 'google_ads': return 'bg-indigo-100 text-indigo-800';
-      case 'facebook': return 'bg-blue-100 text-blue-800';
-      case 'direct_mail': return 'bg-yellow-100 text-yellow-800';
-      case 'cold_call': return 'bg-red-100 text-red-800';
-      case 'trade_show': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = !searchTerm ||
@@ -112,6 +223,32 @@ const LeadsPage = () => {
     setConvertLeadDialogOpen(false);
     setSelectedLead(null);
     fetchLeads();
+  };
+
+  const COLUMN_COUNT = window.innerWidth >= 1280 ? 3 : window.innerWidth >= 768 ? 2 : 1;
+  const CARD_WIDTH = Math.floor((window.innerWidth - 48 - (COLUMN_COUNT + 1) * 24) / COLUMN_COUNT);
+  const CARD_HEIGHT = 400; // Adjust based on your card's content
+
+  const Cell = ({ columnIndex, rowIndex, style }: { columnIndex: number; rowIndex: number; style: React.CSSProperties }) => {
+    const index = rowIndex * COLUMN_COUNT + columnIndex;
+    const lead = filteredLeads[index];
+
+    if (!lead) return null;
+
+    return (
+      <div style={{
+        ...style,
+        padding: '12px',
+      }}>
+        <LeadCard
+          lead={lead}
+          onConvert={handleConvertLead}
+          onDelete={handleDeleteLead}
+          onEditSuccess={handleEditSuccess}
+          onFetchLeads={fetchLeads}
+        />
+      </div>
+    );
   };
 
   if (error) {
@@ -241,105 +378,21 @@ const LeadsPage = () => {
           <p className="text-gray-500">No leads found matching your criteria.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 leads-grid">
-          {filteredLeads.map((lead) => (
-            <Card key={lead.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">
-                      {lead.first_name} {lead.last_name}
-                    </CardTitle>
-                    <div className="flex gap-2 mt-2">
-                      <Badge className={getStatusColor(lead.status || 'new')}>
-                        {lead.status}
-                      </Badge>
-                      <Badge className={getSourceColor(lead.source || 'website')}>
-                        {lead.source}
-                      </Badge>
-                    </div>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem asChild>
-                        <ViewLeadDialog
-                          lead={lead}
-                          trigger={<span className="w-full cursor-pointer">View Details</span>}
-                        />
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <EditLeadDialog
-                          lead={lead}
-                          onSuccess={handleEditSuccess}
-                          trigger={<span className="w-full cursor-pointer">Edit Lead</span>}
-                        />
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <CreateEstimateFromLeadDialog
-                          lead={lead}
-                          onSuccess={fetchLeads}
-                          trigger={<span className="w-full cursor-pointer">Create Estimate</span>}
-                        />
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleConvertLead(lead)}>
-                        Convert to Customer
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteLead(lead.id)}>
-                        Delete Lead
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {lead.email && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Mail className="h-4 w-4 mr-2" />
-                      {lead.email}
-                    </div>
-                  )}
-                  {lead.phone && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Phone className="h-4 w-4 mr-2" />
-                      {lead.phone}
-                    </div>
-                  )}
-                  {lead.address && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <MapPin className="h-4 w-4 mr-2" />
-                      {lead.address}
-                      {lead.city && `, ${lead.city}`}
-                      {lead.state && `, ${lead.state}`}
-                    </div>
-                  )}
-                  {lead.created_at && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Added {new Date(lead.created_at).toLocaleDateString()}
-                    </div>
-                  )}
-                  {lead.estimated_value > 0 && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <DollarSign className="h-4 w-4 mr-2" />
-                      Est. Value: ${lead.estimated_value.toLocaleString()}
-                    </div>
-                  )}
-                  {lead.notes && (
-                    <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded mt-2">
-                      {lead.notes.substring(0, 100)}
-                      {lead.notes.length > 100 && '...'}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="h-[calc(100vh-400px)] w-full leads-grid">
+          <AutoSizer>
+            {({ height, width }) => (
+              <Grid
+                columnCount={COLUMN_COUNT}
+                columnWidth={CARD_WIDTH}
+                height={height}
+                rowCount={Math.ceil(filteredLeads.length / COLUMN_COUNT)}
+                rowHeight={CARD_HEIGHT}
+                width={width}
+              >
+                {Cell}
+              </Grid>
+            )}
+          </AutoSizer>
         </div>
       )}
 

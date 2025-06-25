@@ -1,4 +1,3 @@
-
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +18,8 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { FixedSizeList as List } from 'react-window';
+import AutoSizer from 'react-virtualized-auto-sizer';
 
 interface ActivityLog {
   id: string;
@@ -27,8 +28,11 @@ interface ActivityLog {
   entity_id: string;
   action: string;
   description: string;
-  metadata?: Record<string, unknown>;
+  metadata: Record<string, unknown>;
   created_at: string;
+  old_data?: Record<string, unknown>;
+  new_data?: Record<string, unknown>;
+  risk_score?: number;
 }
 
 const ActivityLogViewer: React.FC = () => {
@@ -55,7 +59,7 @@ const ActivityLogViewer: React.FC = () => {
         .limit(100);
 
       if (error) throw error;
-      setLogs(data || []);
+      setLogs(data as ActivityLog[] || []);
     } catch (error: unknown) {
       if (error instanceof Error) {
         toast.error(`Failed to load activity logs: ${error.message}`);
@@ -119,6 +123,42 @@ const ActivityLogViewer: React.FC = () => {
 
   const uniqueActions = [...new Set(logs.map(log => log.action))];
   const uniqueEntities = [...new Set(logs.map(log => log.entity_type))];
+
+  const LogRow = React.memo(({ index, style }: { index: number; style: React.CSSProperties }) => {
+    const log = filteredLogs[index];
+    if (!log) return null;
+
+    return (
+      <div style={style}>
+        <div className="flex items-start gap-3 p-3 border rounded-lg hover:bg-gray-50 mx-2">
+          <div className={`p-2 rounded-full ${getActionColor(log.action)}`}>
+            {getActionIcon(log.action)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <Badge variant="outline" className="capitalize">
+                {log.action}
+              </Badge>
+              <Badge variant="secondary">
+                {log.entity_type}
+              </Badge>
+            </div>
+            <p className="text-sm font-medium">{log.description}</p>
+            <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {new Date(log.created_at).toLocaleString()}
+              </span>
+              <span className="flex items-center gap-1">
+                <User className="h-3 w-3" />
+                User
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  });
 
   if (loading) {
     return (
@@ -195,37 +235,21 @@ const ActivityLogViewer: React.FC = () => {
         </div>
 
         {/* Activity Log List */}
-        <div className="space-y-2 max-h-96 overflow-y-auto">
-          {filteredLogs.map((log) => (
-            <div key={log.id} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-gray-50">
-              <div className={`p-2 rounded-full ${getActionColor(log.action)}`}>
-                {getActionIcon(log.action)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <Badge variant="outline" className="capitalize">
-                    {log.action}
-                  </Badge>
-                  <Badge variant="secondary">
-                    {log.entity_type}
-                  </Badge>
-                </div>
-                <p className="text-sm font-medium">{log.description}</p>
-                <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {new Date(log.created_at).toLocaleString()}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <User className="h-3 w-3" />
-                    User
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {filteredLogs.length === 0 && (
+        <div className="h-96">
+          {filteredLogs.length > 0 ? (
+            <AutoSizer>
+              {({ height, width }) => (
+                <List
+                  height={height}
+                  itemCount={filteredLogs.length}
+                  itemSize={120}
+                  width={width}
+                >
+                  {LogRow}
+                </List>
+              )}
+            </AutoSizer>
+          ) : (
             <div className="text-center py-8 text-gray-500">
               {searchTerm || filterAction !== 'all' || filterEntity !== 'all'
                 ? 'No activity logs match your filters'

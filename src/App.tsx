@@ -10,27 +10,31 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminLayout from "@/components/AdminLayout";
 import { useRealTimeNotifications } from "@/hooks/useRealTimeNotifications";
 import { useRealTimePresence } from "@/hooks/useRealTimePresence";
-import Index from "./pages/Index";
-import ServicesPage from "./pages/ServicesPage";
-import GalleryPage from "./pages/GalleryPage";
-import ReviewsPage from "./pages/ReviewsPage";
-import AboutPage from "./pages/AboutPage";
-import ContactPage from "./pages/ContactPage";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import PasswordReset from "./pages/PasswordReset";
-import ProfilePage from "./pages/ProfilePage";
-import AdminDashboard from "./pages/AdminDashboard";
-import ClientDashboard from "./pages/ClientDashboard";
-import LeadsPage from "./pages/LeadsPage";
-import CustomersPage from "./pages/CustomersPage";
-import JobsPage from "./pages/JobsPage";
-import TasksPage from "./pages/TasksPage";
-import EstimatesPage from "./pages/EstimatesPage";
-import InvoicesPage from "./pages/InvoicesPage";
-import SettingsPage from "./pages/SettingsPage";
-import IntegrationsPage from "./pages/IntegrationsPage";
-import NotFound from "./pages/NotFound";
+import { lazy, Suspense } from "react";
+import SuspenseLoader from "@/components/SuspenseLoader";
+
+// Lazy load all pages
+const Index = lazy(() => import("./pages/Index"));
+const ServicesPage = lazy(() => import("./pages/ServicesPage"));
+const GalleryPage = lazy(() => import("./pages/GalleryPage"));
+const ReviewsPage = lazy(() => import("./pages/ReviewsPage"));
+const AboutPage = lazy(() => import("./pages/AboutPage"));
+const ContactPage = lazy(() => import("./pages/ContactPage"));
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const PasswordReset = lazy(() => import("./pages/PasswordReset"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const ClientDashboard = lazy(() => import("./pages/ClientDashboard"));
+const LeadsPage = lazy(() => import("./pages/LeadsPage"));
+const CustomersPage = lazy(() => import("./pages/CustomersPage"));
+const JobsPage = lazy(() => import("./pages/JobsPage"));
+const TasksPage = lazy(() => import("./pages/TasksPage"));
+const EstimatesPage = lazy(() => import("./pages/EstimatesPage"));
+const InvoicesPage = lazy(() => import("./pages/InvoicesPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const IntegrationsPage = lazy(() => import("./pages/IntegrationsPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -67,21 +71,23 @@ function App() {
                 <TourProvider>
                   <Routes>
                     {/* Public Pages */}
-                    <Route path="/" element={<Index />} />
-                    <Route path="/services" element={<ServicesPage />} />
-                    <Route path="/gallery" element={<GalleryPage />} />
-                    <Route path="/reviews" element={<ReviewsPage />} />
-                    <Route path="/about" element={<AboutPage />} />
-                    <Route path="/contact" element={<ContactPage />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route path="/password-reset" element={<PasswordReset />} />
+                    <Route path="/" element={<Suspense fallback={<SuspenseLoader />}><Index /></Suspense>} />
+                    <Route path="/services" element={<Suspense fallback={<SuspenseLoader />}><ServicesPage /></Suspense>} />
+                    <Route path="/gallery" element={<Suspense fallback={<SuspenseLoader />}><GalleryPage /></Suspense>} />
+                    <Route path="/reviews" element={<Suspense fallback={<SuspenseLoader />}><ReviewsPage /></Suspense>} />
+                    <Route path="/about" element={<Suspense fallback={<SuspenseLoader />}><AboutPage /></Suspense>} />
+                    <Route path="/contact" element={<Suspense fallback={<SuspenseLoader />}><ContactPage /></Suspense>} />
+                    <Route path="/login" element={<Suspense fallback={<SuspenseLoader />}><Login /></Suspense>} />
+                    <Route path="/register" element={<Suspense fallback={<SuspenseLoader />}><Register /></Suspense>} />
+                    <Route path="/password-reset" element={<Suspense fallback={<SuspenseLoader />}><PasswordReset /></Suspense>} />
 
                     {/* Protected Profile Route */}
                     <Route path="/profile" element={
                       <GlobalErrorBoundary module="Profile">
                         <ProtectedRoute>
-                          <ProfilePage />
+                          <Suspense fallback={<SuspenseLoader />}>
+                            <ProfilePage />
+                          </Suspense>
                         </ProtectedRoute>
                       </GlobalErrorBoundary>
                     } />
@@ -94,45 +100,65 @@ function App() {
                         </ProtectedRoute>
                       </GlobalErrorBoundary>
                     }>
-                      <Route index element={<AdminDashboard />} />
+                      <Route index element={
+                        <Suspense fallback={<SuspenseLoader />}>
+                          <AdminDashboard />
+                        </Suspense>
+                      } />
                       <Route path="leads" element={
                         <GlobalErrorBoundary module="Leads">
-                          <LeadsPage />
+                          <Suspense fallback={<SuspenseLoader />}>
+                            <LeadsPage />
+                          </Suspense>
                         </GlobalErrorBoundary>
                       } />
                       <Route path="customers" element={
                         <GlobalErrorBoundary module="Customers">
-                          <CustomersPage />
+                          <Suspense fallback={<SuspenseLoader />}>
+                            <CustomersPage />
+                          </Suspense>
                         </GlobalErrorBoundary>
                       } />
                       <Route path="jobs" element={
                         <GlobalErrorBoundary module="Jobs">
-                          <JobsPage />
+                          <Suspense fallback={<SuspenseLoader />}>
+                            <JobsPage />
+                          </Suspense>
                         </GlobalErrorBoundary>
                       } />
                       <Route path="tasks" element={
                         <GlobalErrorBoundary module="Tasks">
-                          <TasksPage />
+                          <Suspense fallback={<SuspenseLoader />}>
+                            <TasksPage />
+                          </Suspense>
                         </GlobalErrorBoundary>
                       } />
                       <Route path="estimates" element={
                         <GlobalErrorBoundary module="Estimates">
-                          <EstimatesPage />
+                          <Suspense fallback={<SuspenseLoader />}>
+                            <EstimatesPage />
+                          </Suspense>
                         </GlobalErrorBoundary>
                       } />
                       <Route path="invoices" element={
                         <GlobalErrorBoundary module="Invoices">
-                          <InvoicesPage />
+                          <Suspense fallback={<SuspenseLoader />}>
+                            <InvoicesPage />
+                          </Suspense>
                         </GlobalErrorBoundary>
                       } />
                       <Route path="integrations" element={
                         <GlobalErrorBoundary module="Integrations">
-                          <IntegrationsPage />
+                          <Suspense fallback={<SuspenseLoader />}>
+                            <IntegrationsPage />
+                          </Suspense>
                         </GlobalErrorBoundary>
                       } />
                       <Route path="settings" element={
                         <GlobalErrorBoundary module="Settings">
-                          <SettingsPage />
+                          <Suspense fallback={<SuspenseLoader />}>
+                            <SettingsPage />
+                          </Suspense>
                         </GlobalErrorBoundary>
                       } />
                     </Route>
@@ -141,13 +167,19 @@ function App() {
                     <Route path="/client" element={
                       <GlobalErrorBoundary module="Client Dashboard">
                         <ProtectedRoute allowedRoles={['client']}>
-                          <ClientDashboard />
+                          <Suspense fallback={<SuspenseLoader />}>
+                            <ClientDashboard />
+                          </Suspense>
                         </ProtectedRoute>
                       </GlobalErrorBoundary>
                     } />
 
                     {/* Catch all route */}
-                    <Route path="*" element={<NotFound />} />
+                    <Route path="*" element={
+                      <Suspense fallback={<SuspenseLoader />}>
+                        <NotFound />
+                      </Suspense>
+                    } />
                   </Routes>
                 </TourProvider>
               </BrowserRouter>

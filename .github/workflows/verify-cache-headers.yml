@@ -1,0 +1,62 @@
+name: Verify Cache Headers
+
+on:
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to check (e.g., production, staging)'
+        required: true
+        default: 'production'
+
+jobs:
+  verify:
+    name: Verify Cache Headers
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'deployment_status' &&
+       github.event.deployment_status.state == 'success')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify cache headers
+        env:
+          VERIFY_URL: ${{ github.event.deployment_status.environment_url || format('https://{0}.your-domain.com', github.event.inputs.environment) }}
+        run: node scripts/verify-cache-headers.js
+
+      - name: Create issue on failure
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const env = '${{ github.event.deployment_status.environment || github.event.inputs.environment }}';
+            const url = process.env.VERIFY_URL;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 Cache Headers Verification Failed - ${env}`,
+              body: `Cache headers verification failed for ${env} environment (${url}).
+
+              Please check the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.
+
+              Common issues to check:
+              - CDN configuration
+              - Server response headers
+              - Deployment configuration
+              - Build settings
+
+              cc: @${context.repo.owner}`
+            });

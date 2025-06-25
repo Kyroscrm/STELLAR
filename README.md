@@ -99,6 +99,37 @@ The Final Roofing & Retro-Fit CRM is a comprehensive customer relationship manag
 - **Real-time Notifications**: Instant updates when data changes
 - **Responsive Design**: Works on desktop, tablet, and mobile devices
 
+## Database Backups
+
+### Point-in-Time Recovery (PITR)
+We use Supabase's Point-in-Time Recovery (PITR) to continuously archive WAL logs. To verify or enable:
+1. Go to Supabase dashboard → Settings → Backups
+2. Ensure **PITR** is ON
+3. WAL logs retention period is set to at least 7 days
+
+### Backup Verification
+- PITR status should be checked weekly
+- Test recovery process quarterly using a staging environment
+- Document any recovery operations in the project's incident log
+
+### Quarterly Restore Test
+1. In the Supabase CLI: `supabase db restore --from <timestamp>`
+2. Run `npm run migrate` and `npm test` against the restored database
+3. Confirm data integrity and app functionality
+4. Document test results in project's incident log
+
+Test Schedule:
+- Runs automatically every quarter (1st day of Jan/Apr/Jul/Oct)
+- Triggered via GitHub Actions workflow
+- Notifications sent to team on completion/failure
+- Results stored in project documentation
+
+### Backup Best Practices
+- Keep PITR enabled at all times
+- Monitor WAL archive size in Supabase dashboard
+- Maintain backup documentation up-to-date
+- Test backup restoration procedures regularly
+
 ## Documentation
 
 - [CONTRIBUTING.md](./CONTRIBUTING.md): Contribution guidelines

@@ -213,3 +213,66 @@ Our testing approach ensures high quality and reliability:
 - **Tailwind CSS**: Utility-first CSS framework for consistent styling
 - **shadcn/ui**: High-quality, accessible UI components
 - **Cursor AI Pro**: AI-assisted development for faster coding and documentation
+
+## Monitoring & Alerting
+
+### APM Integration
+- Frontend: Sentry for React error tracking and performance monitoring
+  - Error tracking with source maps
+  - Performance monitoring with custom sampling rates
+  - Real user monitoring (RUM) for frontend performance
+- Edge Functions: Sentry for serverless monitoring
+  - Error tracking and performance monitoring
+  - Custom transaction sampling based on endpoint type
+
+### Health Checks
+- `/health` endpoint in Edge Functions providing:
+  - Service uptime
+  - Memory usage metrics
+  - Basic health status
+- Automated health checks every 5 minutes via GitHub Actions
+
+### Alert Thresholds
+- Error Rate:
+  - Trigger if >1% of requests error in 5 minutes
+  - Monitored via Sentry error tracking
+- Latency:
+  - API endpoints: Alert if p95 > 500ms
+  - Dashboard operations: Alert if p95 > 1000ms
+- Resource Usage:
+  - Memory: Alert if heap usage > 512MB or RSS > 1GB
+  - CPU: Monitored via Edge Function metrics
+
+### Notification Channels
+- Primary: Slack alerts via webhook
+- Secondary: Email notifications
+- Alert routing based on severity and type
+- Automated incident creation for critical alerts
+
+### Monitoring Dashboard
+- Real-time metrics:
+  - Error rates and trends
+  - Latency percentiles
+  - User session data
+  - Cache hit rates
+- Historical data retention: 30 days
+- Custom metric collection for business KPIs
+
+### CI/CD Integration
+- Deployment markers in APM
+- Automated performance regression detection
+- Release tracking in error reports
+
+### Critical Features
+
+#### Point-in-Time Recovery (PITR)
+PITR is a mission-critical feature for our database backup strategy:
+- Continuous WAL archiving for up to 7 days retention
+- Enables recovery to any point within the retention period
+- Integrated with health monitoring for status checks
+- See [Supabase PITR Documentation](https://supabase.com/docs/guides/platform/backups#point-in-time-recovery) for details
+
+Regular testing schedule:
+- Weekly automated PITR status checks
+- Quarterly restore tests in staging environment
+- Documented recovery procedures and test results

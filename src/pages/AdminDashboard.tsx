@@ -1,11 +1,13 @@
-
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
-import DashboardMetrics from '@/components/DashboardMetrics';
 import DashboardControls from '@/components/DashboardControls';
 import { Button } from '@/components/ui/button';
 import { Settings } from 'lucide-react';
+import SuspenseLoader from '@/components/SuspenseLoader';
+
+// Lazy load the DashboardMetrics component
+const DashboardMetrics = React.lazy(() => import('@/components/DashboardMetrics'));
 
 const AdminDashboard = () => {
   const { stats, loading } = useDashboardStats();
@@ -37,7 +39,9 @@ const AdminDashboard = () => {
       <DashboardControls />
 
       {/* All the dashboard metrics and analytics */}
-      <DashboardMetrics />
+      <Suspense fallback={<SuspenseLoader />}>
+        <DashboardMetrics />
+      </Suspense>
     </div>
   );
 };

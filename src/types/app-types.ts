@@ -360,3 +360,59 @@ export interface InvoiceLineItemData {
   total?: number;
   sort_order?: number;
 }
+
+export interface LogoSettings {
+  logo_url: string | null;
+  logo_width: number;
+  logo_height: number;
+  logo_position: 'top-center' | 'watermark' | 'both';
+  watermark_opacity: number;
+  show_on_drafts: boolean;
+  show_on_approved: boolean;
+}
+
+export interface LineItem {
+  description: string;
+  quantity: number;
+  unit_price: number;
+  total: number;
+}
+
+export interface Customer {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface BaseDocument {
+  id: string;
+  title: string;
+  description?: string;
+  created_at: string;
+  notes?: string;
+  subtotal: number;
+  tax_rate: number;
+  tax_amount: number;
+  total_amount: number;
+  customer_id: string;
+  job_id: string;
+  customer?: Customer;
+}
+
+export interface Estimate extends BaseDocument {
+  estimate_number: string;
+  valid_until?: string;
+  status: 'draft' | 'approved' | 'sent' | 'viewed' | 'rejected' | 'expired';
+  terms?: string;
+  line_items: LineItem[];
+}
+
+export interface Invoice extends BaseDocument {
+  invoice_number: string;
+  due_date?: string;
+  payment_terms?: string;
+  line_items: LineItem[];
+  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+}

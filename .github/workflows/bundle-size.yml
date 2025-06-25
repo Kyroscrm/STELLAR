@@ -1,0 +1,82 @@
+name: Bundle Size Check
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.ts'
+
+jobs:
+  check-bundle-size:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Check bundle size
+        run: npm run check-bundle-size
+
+      - name: Analyze bundle
+        run: npm run analyze
+        if: always() # Run even if bundle size check fails
+
+      - name: Comment PR with bundle analysis
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            // Get bundle analysis results
+            const distDir = path.join(process.cwd(), 'dist', 'assets');
+            const files = fs.readdirSync(distDir).filter(file => file.endsWith('.js'));
+
+            let totalSize = 0;
+            const largeFiles = [];
+
+            files.forEach(file => {
+              const stats = fs.statSync(path.join(distDir, file));
+              totalSize += stats.size;
+
+              if (stats.size > 300 * 1024) {
+                largeFiles.push({
+                  name: file,
+                  size: (stats.size / 1024 / 1024).toFixed(2) + 'MB'
+                });
+              }
+            });
+
+            // Create comment body
+            let body = '## Bundle Size Analysis\n\n';
+            body += `Total bundle size: ${(totalSize / 1024 / 1024).toFixed(2)}MB\n\n`;
+
+            if (largeFiles.length > 0) {
+              body += '### Large modules (>300KB):\n';
+              largeFiles.forEach(file => {
+                body += `- ${file.name}: ${file.size}\n`;
+              });
+            }
+
+            // Post comment
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });

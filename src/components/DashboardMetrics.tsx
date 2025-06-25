@@ -1,20 +1,22 @@
-
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
-  Users, 
-  ClipboardList, 
+import {
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  Users,
+  ClipboardList,
   Star,
   Calendar,
   Target
 } from 'lucide-react';
-import ConversionMetrics from '@/components/ConversionMetrics';
-import AdvancedAnalyticsDashboard from '@/components/AdvancedAnalyticsDashboard';
-import FollowUpReminders from '@/components/FollowUpReminders';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
+import SuspenseLoader from '@/components/SuspenseLoader';
+
+// Lazy load components
+const ConversionMetrics = React.lazy(() => import('@/components/ConversionMetrics'));
+const AdvancedAnalyticsDashboard = React.lazy(() => import('@/components/AdvancedAnalyticsDashboard'));
+const FollowUpReminders = React.lazy(() => import('@/components/FollowUpReminders'));
 
 interface MetricCardProps {
   title: string;
@@ -117,13 +119,19 @@ const DashboardMetrics: React.FC = () => {
       </div>
 
       {/* Advanced Analytics Dashboard */}
-      <AdvancedAnalyticsDashboard />
+      <Suspense fallback={<SuspenseLoader />}>
+        <AdvancedAnalyticsDashboard />
+      </Suspense>
 
       {/* Conversion Analytics Section */}
-      <ConversionMetrics />
+      <Suspense fallback={<SuspenseLoader />}>
+        <ConversionMetrics />
+      </Suspense>
 
       {/* Follow-up Reminders */}
-      <FollowUpReminders />
+      <Suspense fallback={<SuspenseLoader />}>
+        <FollowUpReminders />
+      </Suspense>
 
       {/* Additional Insights */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -176,8 +184,8 @@ const DashboardMetrics: React.FC = () => {
                   <span className="text-sm text-gray-600">$150,000</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-green-500 h-2 rounded-full" 
+                  <div
+                    className="bg-green-500 h-2 rounded-full"
                     style={{ width: `${Math.min((stats.totalRevenue / 150000) * 100, 100)}%` }}
                   ></div>
                 </div>
@@ -185,15 +193,15 @@ const DashboardMetrics: React.FC = () => {
                   {Math.round((stats.totalRevenue / 150000) * 100)}% completed (${stats.totalRevenue.toLocaleString()})
                 </p>
               </div>
-              
+
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-medium">New Customers</span>
                   <span className="text-sm text-gray-600">25</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-500 h-2 rounded-full" 
+                  <div
+                    className="bg-blue-500 h-2 rounded-full"
                     style={{ width: `${Math.min((stats.totalCustomers / 25) * 100, 100)}%` }}
                   ></div>
                 </div>
@@ -201,15 +209,15 @@ const DashboardMetrics: React.FC = () => {
                   {Math.round((stats.totalCustomers / 25) * 100)}% completed ({stats.totalCustomers} customers)
                 </p>
               </div>
-              
+
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-medium">Project Completion</span>
                   <span className="text-sm text-gray-600">30</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-purple-500 h-2 rounded-full" 
+                  <div
+                    className="bg-purple-500 h-2 rounded-full"
                     style={{ width: `${Math.min((stats.totalJobs / 30) * 100, 100)}%` }}
                   ></div>
                 </div>
