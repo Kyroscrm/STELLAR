@@ -1,0 +1,65 @@
+name: Security Checks
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * 0' # Weekly on Sundays at midnight
+
+jobs:
+  security-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: |
+          npm audit --audit-level=moderate
+          if [ $? -eq 1 ]; then
+            echo "Moderate or higher severity vulnerabilities found"
+            exit 1
+          fi
+
+      - name: OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'STELLAR'
+          path: '.'
+          format: 'HTML'
+          args: >
+            --failOnCVSS 7
+            --enableRetired
+
+      - name: Upload dependency check report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: reports
+
+      - name: Run ESLint security checks
+        run: npx eslint . --config eslint.config.js
+
+  zap-scan:
+    needs: security-checks
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' # Only run ZAP scan on scheduled events
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ZAP Scan
+        uses: zaproxy/action-full-scan@v0.9.0
+        with:
+          target: 'https://your-staging-url.com' # Replace with your staging URL
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'

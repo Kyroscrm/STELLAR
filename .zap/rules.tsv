@@ -1,0 +1,12 @@
+10016	IGNORE	cookie without secure flag
+10020	IGNORE	X-Frame-Options Header
+10021	IGNORE	X-Content-Type-Options Header
+10038	IGNORE	Content Security Policy Header Not Set
+10063	IGNORE	Feature Policy Header Not Set
+40025	IGNORE	Proxy Disclosure
+90022	IGNORE	Application Error Disclosure
+10202	WARN	Absence of Anti-CSRF Tokens
+40012	WARN	Cross Site Scripting (Reflected)
+40014	WARN	Cross Site Scripting (Persistent)
+40018	WARN	SQL Injection
+90033	WARN	Loosely Scoped Cookie

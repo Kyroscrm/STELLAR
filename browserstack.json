@@ -1,0 +1,46 @@
+{
+  "auth": {
+    "username": "${BROWSERSTACK_USERNAME}",
+    "access_key": "${BROWSERSTACK_ACCESS_KEY}"
+  },
+  "browsers": [
+    {
+      "browser": "safari",
+      "os": "ios",
+      "device": "iPhone 12",
+      "os_version": "14"
+    },
+    {
+      "browser": "safari",
+      "os": "ios",
+      "device": "iPhone 8",
+      "os_version": "13"
+    },
+    {
+      "browser": "chrome",
+      "os": "android",
+      "device": "Google Pixel 4",
+      "os_version": "11.0"
+    },
+    {
+      "browser": "chrome",
+      "os": "android",
+      "device": "Samsung Galaxy A10",
+      "os_version": "9.0"
+    }
+  ],
+  "run_settings": {
+    "cypress_config_file": "./cypress.config.ts",
+    "project_name": "STELLAR CRM",
+    "build_name": "Mobile Stress Test",
+    "parallels": 1,
+    "npm_dependencies": {
+      "cypress": "^12.0.0",
+      "cypress-axe": "^1.4.0"
+    }
+  },
+  "connection_settings": {
+    "local": false,
+    "local_identifier": null
+  }
+}
