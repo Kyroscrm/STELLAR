@@ -78,79 +78,43 @@ export const useOptimizedDashboardStats = () => {
   const { user } = useAuth();
   const { handleError } = useErrorHandler();
 
-  const refreshMaterializedView = async (viewName: string) => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase.rpc('refresh_specific_materialized_view', {
-        view_name: viewName
-      });
-
-      if (error) throw error;
-
-      return data;
-    } catch (error: unknown) {
-      handleError(error as Error, {
-        title: `Failed to refresh materialized view: ${viewName}`,
-        showToast: false
-      });
-      return null;
-    }
-  };
-
   const fetchDashboardSummary = async () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('mv_dashboard_summary')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+      // Fetch basic counts from actual tables
+      const [customersResult, leadsResult, jobsResult, estimatesResult, invoicesResult, tasksResult] = await Promise.all([
+        supabase.from('customers').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('leads').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('estimates').select('id, total_amount, status', { count: 'exact' }).eq('user_id', user.id),
+        supabase.from('invoices').select('id, total_amount, status', { count: 'exact' }).eq('user_id', user.id),
+        supabase.from('tasks').select('id, status', { count: 'exact' }).eq('user_id', user.id)
+      ]);
 
-      if (error) {
-        // If no data found, try refreshing the view
-        if (error.code === 'PGRST116') {
-          await refreshMaterializedView('mv_dashboard_summary');
-          // Try fetching again
-          const retryResult = await supabase
-            .from('mv_dashboard_summary')
-            .select('*')
-            .eq('user_id', user.id)
-            .single();
+      const estimates = estimatesResult.data || [];
+      const invoices = invoicesResult.data || [];
+      const tasks = tasksResult.data || [];
 
-          if (retryResult.error) throw retryResult.error;
-          if (retryResult.data) {
-            setStats({
-              totalCustomers: retryResult.data.total_customers || 0,
-              totalLeads: retryResult.data.total_leads || 0,
-              totalJobs: retryResult.data.total_jobs || 0,
-              totalEstimates: retryResult.data.total_estimates || 0,
-              totalInvoices: retryResult.data.total_invoices || 0,
-              totalTasks: retryResult.data.total_tasks || 0,
-              pendingTasks: retryResult.data.pending_tasks || 0,
-              draftEstimates: retryResult.data.draft_estimates || 0,
-              paidInvoices: retryResult.data.paid_invoices || 0,
-              totalRevenue: retryResult.data.total_revenue || 0
-            });
-          }
-        } else {
-          throw error;
-        }
-      } else if (data) {
-        setStats({
-          totalCustomers: data.total_customers || 0,
-          totalLeads: data.total_leads || 0,
-          totalJobs: data.total_jobs || 0,
-          totalEstimates: data.total_estimates || 0,
-          totalInvoices: data.total_invoices || 0,
-          totalTasks: data.total_tasks || 0,
-          pendingTasks: data.pending_tasks || 0,
-          draftEstimates: data.draft_estimates || 0,
-          paidInvoices: data.paid_invoices || 0,
-          totalRevenue: data.total_revenue || 0
-        });
-      }
+      const draftEstimates = estimates.filter(e => e.status === 'draft').length;
+      const paidInvoices = invoices.filter(i => i.status === 'paid').length;
+      const pendingTasks = tasks.filter(t => t.status === 'pending' || t.status === 'in_progress').length;
+      const totalRevenue = invoices
+        .filter(i => i.status === 'paid')
+        .reduce((sum, i) => sum + (i.total_amount || 0), 0);
+
+      setStats({
+        totalCustomers: customersResult.count || 0,
+        totalLeads: leadsResult.count || 0,
+        totalJobs: jobsResult.count || 0,
+        totalEstimates: estimatesResult.count || 0,
+        totalInvoices: invoicesResult.count || 0,
+        totalTasks: tasksResult.count || 0,
+        pendingTasks,
+        draftEstimates,
+        paidInvoices,
+        totalRevenue
+      });
     } catch (error: unknown) {
       handleError(error as Error, {
         title: 'Failed to fetch dashboard summary',
@@ -163,50 +127,28 @@ export const useOptimizedDashboardStats = () => {
     if (!user) return;
 
     try {
-      // Get the most recent month's data
-      const { data, error } = await supabase
-        .from('mv_lead_conversion_metrics')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('month', { ascending: false })
-        .limit(1);
+      const { data: leads, error } = await supabase
+        .from('leads')
+        .select('id, status, estimated_value')
+        .eq('user_id', user.id);
 
-      if (error) {
-        // If no data found, try refreshing the view
-        if (error.code === 'PGRST116') {
-          await refreshMaterializedView('mv_lead_conversion_metrics');
-          // Try fetching again
-          const retryResult = await supabase
-            .from('mv_lead_conversion_metrics')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('month', { ascending: false })
-            .limit(1);
+      if (error) throw error;
 
-          if (retryResult.error) throw retryResult.error;
-          if (retryResult.data && retryResult.data.length > 0) {
-            setLeadMetrics({
-              totalLeads: retryResult.data[0].total_leads || 0,
-              convertedLeads: retryResult.data[0].converted_leads || 0,
-              conversionRate: retryResult.data[0].conversion_rate || 0,
-              totalPipelineValue: retryResult.data[0].total_pipeline_value || 0,
-              wonPipelineValue: retryResult.data[0].won_pipeline_value || 0,
-              averageLeadValue: retryResult.data[0].average_lead_value || 0
-            });
-          }
-        } else {
-          throw error;
-        }
-      } else if (data && data.length > 0) {
-        setLeadMetrics({
-          totalLeads: data[0].total_leads || 0,
-          convertedLeads: data[0].converted_leads || 0,
-          conversionRate: data[0].conversion_rate || 0,
-          totalPipelineValue: data[0].total_pipeline_value || 0,
-          wonPipelineValue: data[0].won_pipeline_value || 0,
-          averageLeadValue: data[0].average_lead_value || 0
-        });
-      }
+      const totalLeads = leads?.length || 0;
+      const convertedLeads = leads?.filter(l => l.status === 'won').length || 0;
+      const conversionRate = totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0;
+      const totalPipelineValue = leads?.reduce((sum, l) => sum + (l.estimated_value || 0), 0) || 0;
+      const wonPipelineValue = leads?.filter(l => l.status === 'won').reduce((sum, l) => sum + (l.estimated_value || 0), 0) || 0;
+      const averageLeadValue = totalLeads > 0 ? totalPipelineValue / totalLeads : 0;
+
+      setLeadMetrics({
+        totalLeads,
+        convertedLeads,
+        conversionRate,
+        totalPipelineValue,
+        wonPipelineValue,
+        averageLeadValue
+      });
     } catch (error: unknown) {
       handleError(error as Error, {
         title: 'Failed to fetch lead conversion metrics',
@@ -219,50 +161,28 @@ export const useOptimizedDashboardStats = () => {
     if (!user) return;
 
     try {
-      // Get the most recent month's data
-      const { data, error } = await supabase
-        .from('mv_estimate_metrics')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('month', { ascending: false })
-        .limit(1);
+      const { data: estimates, error } = await supabase
+        .from('estimates')
+        .select('id, status, total_amount, customer_id')
+        .eq('user_id', user.id);
 
-      if (error) {
-        // If no data found, try refreshing the view
-        if (error.code === 'PGRST116') {
-          await refreshMaterializedView('mv_estimate_metrics');
-          // Try fetching again
-          const retryResult = await supabase
-            .from('mv_estimate_metrics')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('month', { ascending: false })
-            .limit(1);
+      if (error) throw error;
 
-          if (retryResult.error) throw retryResult.error;
-          if (retryResult.data && retryResult.data.length > 0) {
-            setEstimateMetrics({
-              totalEstimates: retryResult.data[0].total_estimates || 0,
-              approvedEstimates: retryResult.data[0].approved_estimates || 0,
-              approvalRate: retryResult.data[0].approval_rate || 0,
-              totalEstimateValue: retryResult.data[0].total_estimate_value || 0,
-              approvedEstimateValue: retryResult.data[0].approved_estimate_value || 0,
-              uniqueCustomers: retryResult.data[0].unique_customers || 0
-            });
-          }
-        } else {
-          throw error;
-        }
-      } else if (data && data.length > 0) {
-        setEstimateMetrics({
-          totalEstimates: data[0].total_estimates || 0,
-          approvedEstimates: data[0].approved_estimates || 0,
-          approvalRate: data[0].approval_rate || 0,
-          totalEstimateValue: data[0].total_estimate_value || 0,
-          approvedEstimateValue: data[0].approved_estimate_value || 0,
-          uniqueCustomers: data[0].unique_customers || 0
-        });
-      }
+      const totalEstimates = estimates?.length || 0;
+      const approvedEstimates = estimates?.filter(e => e.status === 'approved').length || 0;
+      const approvalRate = totalEstimates > 0 ? (approvedEstimates / totalEstimates) * 100 : 0;
+      const totalEstimateValue = estimates?.reduce((sum, e) => sum + (e.total_amount || 0), 0) || 0;
+      const approvedEstimateValue = estimates?.filter(e => e.status === 'approved').reduce((sum, e) => sum + (e.total_amount || 0), 0) || 0;
+      const uniqueCustomers = new Set(estimates?.map(e => e.customer_id).filter(Boolean)).size;
+
+      setEstimateMetrics({
+        totalEstimates,
+        approvedEstimates,
+        approvalRate,
+        totalEstimateValue,
+        approvedEstimateValue,
+        uniqueCustomers
+      });
     } catch (error: unknown) {
       handleError(error as Error, {
         title: 'Failed to fetch estimate metrics',
@@ -275,48 +195,47 @@ export const useOptimizedDashboardStats = () => {
     if (!user) return;
 
     try {
-      // Get the last 12 months of revenue data
-      const { data, error } = await supabase
-        .from('mv_monthly_revenue')
-        .select('*')
+      const { data: invoices, error } = await supabase
+        .from('invoices')
+        .select('id, total_amount, status, created_at')
         .eq('user_id', user.id)
-        .order('month', { ascending: false })
-        .limit(12);
+        .gte('created_at', new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString());
 
-      if (error) {
-        // If no data found, try refreshing the view
-        if (error.code === 'PGRST116') {
-          await refreshMaterializedView('mv_monthly_revenue');
-          // Try fetching again
-          const retryResult = await supabase
-            .from('mv_monthly_revenue')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('month', { ascending: false })
-            .limit(12);
+      if (error) throw error;
 
-          if (retryResult.error) throw retryResult.error;
-          if (retryResult.data) {
-            setMonthlyRevenue(retryResult.data.map(item => ({
-              month: item.month,
-              totalRevenue: item.total_revenue || 0,
-              invoiceCount: item.invoice_count || 0,
-              paidRevenue: item.paid_revenue || 0,
-              paidInvoiceCount: item.paid_invoice_count || 0
-            })));
-          }
-        } else {
-          throw error;
+      // Group by month
+      const monthlyData: Record<string, MonthlyRevenue> = {};
+
+      invoices?.forEach(invoice => {
+        if (!invoice.created_at) return;
+
+        const date = new Date(invoice.created_at);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+        if (!monthlyData[monthKey]) {
+          monthlyData[monthKey] = {
+            month: monthKey,
+            totalRevenue: 0,
+            invoiceCount: 0,
+            paidRevenue: 0,
+            paidInvoiceCount: 0
+          };
         }
-      } else if (data) {
-        setMonthlyRevenue(data.map(item => ({
-          month: item.month,
-          totalRevenue: item.total_revenue || 0,
-          invoiceCount: item.invoice_count || 0,
-          paidRevenue: item.paid_revenue || 0,
-          paidInvoiceCount: item.paid_invoice_count || 0
-        })));
-      }
+
+        monthlyData[monthKey].totalRevenue += invoice.total_amount || 0;
+        monthlyData[monthKey].invoiceCount += 1;
+
+        if (invoice.status === 'paid') {
+          monthlyData[monthKey].paidRevenue += invoice.total_amount || 0;
+          monthlyData[monthKey].paidInvoiceCount += 1;
+        }
+      });
+
+      const sortedMonthlyRevenue = Object.values(monthlyData)
+        .sort((a, b) => b.month.localeCompare(a.month))
+        .slice(0, 12);
+
+      setMonthlyRevenue(sortedMonthlyRevenue);
     } catch (error: unknown) {
       handleError(error as Error, {
         title: 'Failed to fetch monthly revenue',
@@ -357,14 +276,8 @@ export const useOptimizedDashboardStats = () => {
     toast.loading('Refreshing dashboard stats...');
 
     try {
-      // Refresh all materialized views
-      const { data, error } = await supabase.rpc('scheduled_refresh_materialized_views');
-
-      if (error) throw error;
-
       // Fetch the updated stats
       await fetchStats();
-
       toast.success('Dashboard stats refreshed successfully');
     } catch (error: unknown) {
       handleError(error as Error, {

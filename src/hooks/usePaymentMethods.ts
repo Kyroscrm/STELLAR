@@ -1,21 +1,8 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import type { Database } from '@/integrations/supabase/types';
+import type { PaymentMethod } from '@/types/app-types';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-
-type PaymentMethodsRow = Database['public']['Tables']['payment_methods']['Row'];
-
-export interface PaymentMethod {
-  id: string;
-  user_id: string;
-  type: 'stripe' | 'paypal' | 'ach' | 'credit_card';
-  provider_id: string | null;
-  is_default: boolean;
-  metadata: Record<string, any>;
-  created_at: string;
-  updated_at: string;
-}
 
 export const usePaymentMethods = () => {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -35,10 +22,10 @@ export const usePaymentMethods = () => {
 
       if (error) throw error;
 
-      // Transform the data to match our interface
-      const transformedData: PaymentMethod[] = (data || []).map((item: PaymentMethodsRow) => ({
+      // Transform the data to handle null values properly
+      const transformedData: PaymentMethod[] = (data || []).map((item) => ({
         ...item,
-        type: item.type as 'stripe' | 'paypal' | 'ach' | 'credit_card',
+        is_default: item.is_default ?? false, // Convert null to false
         metadata: (item.metadata as Record<string, any>) || {}
       }));
 
@@ -64,7 +51,7 @@ export const usePaymentMethods = () => {
 
       const transformedData: PaymentMethod = {
         ...data,
-        type: data.type as 'stripe' | 'paypal' | 'ach' | 'credit_card',
+        is_default: data.is_default ?? false, // Convert null to false
         metadata: (data.metadata as Record<string, any>) || {}
       };
 
@@ -90,7 +77,7 @@ export const usePaymentMethods = () => {
 
       const transformedData: PaymentMethod = {
         ...data,
-        type: data.type as 'stripe' | 'paypal' | 'ach' | 'credit_card',
+        is_default: data.is_default ?? false, // Convert null to false
         metadata: (data.metadata as Record<string, any>) || {}
       };
 

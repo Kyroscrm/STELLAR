@@ -165,7 +165,7 @@ const LeadsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
-  const [convertLeadDialogOpen, setConvertLeadDialogOpen] = useState(false);
+  const [convertDialogOpen, setConvertDialogOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const { startTour, isFirstVisit } = useTour();
   const location = useLocation();
@@ -216,11 +216,11 @@ const LeadsPage = () => {
 
   const handleConvertLead = (lead: Lead) => {
     setSelectedLead(lead);
-    setConvertLeadDialogOpen(true);
+    setConvertDialogOpen(true);
   };
 
   const handleConvertSuccess = () => {
-    setConvertLeadDialogOpen(false);
+    setConvertDialogOpen(false);
     setSelectedLead(null);
     fetchLeads();
   };
@@ -399,10 +399,21 @@ const LeadsPage = () => {
       {/* Convert Lead Dialog */}
       {selectedLead && (
         <ConvertLeadDialog
-          lead={selectedLead}
-          open={convertLeadDialogOpen}
-          onOpenChange={setConvertLeadDialogOpen}
-          onSuccess={handleConvertSuccess}
+          open={convertDialogOpen}
+          onOpenChange={setConvertDialogOpen}
+          lead={selectedLead ? {
+            id: selectedLead.id,
+            first_name: selectedLead.first_name,
+            last_name: selectedLead.last_name,
+            email: selectedLead.email || undefined,
+            phone: selectedLead.phone || undefined,
+            estimated_value: selectedLead.estimated_value || undefined,
+            source: selectedLead.source || undefined,
+          } : null}
+          onSuccess={() => {
+            setSelectedLead(null);
+            fetchLeads();
+          }}
         />
       )}
     </div>

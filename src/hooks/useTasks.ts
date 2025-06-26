@@ -41,7 +41,7 @@ export const useTasks = (): UseTasksReturn => {
   };
 
   const fetchTasks = async () => {
-    if (!validateUserAndSession()) return;
+    if (!validateUserAndSession() || !user) return;
 
     setLoading(true);
     setError(null);
@@ -74,7 +74,7 @@ export const useTasks = (): UseTasksReturn => {
   };
 
   const createTask = async (taskData: TaskInsert) => {
-    if (!validateUserAndSession()) return null;
+    if (!validateUserAndSession() || !user) return null;
 
     const optimisticTask: Task = {
       id: `temp-${Date.now()}`,
@@ -131,7 +131,7 @@ export const useTasks = (): UseTasksReturn => {
   };
 
   const updateTask = async (id: string, updates: TaskUpdate) => {
-    if (!validateUserAndSession()) return false;
+    if (!validateUserAndSession() || !user) return false;
 
     // Store original for rollback
     const originalTask = tasks.find(t => t.id === id);
@@ -191,7 +191,7 @@ export const useTasks = (): UseTasksReturn => {
   };
 
   const deleteTask = async (id: string) => {
-    if (!validateUserAndSession()) return;
+    if (!validateUserAndSession() || !user) return;
 
     // Store original for rollback
     const originalTask = tasks.find(t => t.id === id);
@@ -229,10 +229,12 @@ export const useTasks = (): UseTasksReturn => {
 
           return true;
         },
-        // Rollback
-        () => setTasks(prev => [...prev, originalTask].sort((a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        )),
+        // Rollback - Add null checks for date handling
+        () => setTasks(prev => [...prev, originalTask].sort((a, b) => {
+          const aDate = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const bDate = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return bDate - aDate;
+        })),
         {
           successMessage: 'Task deleted successfully',
           errorMessage: 'Failed to delete task'

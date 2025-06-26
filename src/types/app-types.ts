@@ -67,6 +67,14 @@ export type SavedSearch = Database['public']['Tables']['saved_searches']['Row'];
 export type SavedSearchInsert = Database['public']['Tables']['saved_searches']['Insert'];
 export type SavedSearchUpdate = Database['public']['Tables']['saved_searches']['Update'];
 
+export type PaymentMethod = Database['public']['Tables']['payment_methods']['Row'];
+export type PaymentMethodInsert = Database['public']['Tables']['payment_methods']['Insert'];
+export type PaymentMethodUpdate = Database['public']['Tables']['payment_methods']['Update'];
+
+export type LogoSettings = Database['public']['Tables']['logo_settings']['Row'];
+export type LogoSettingsInsert = Database['public']['Tables']['logo_settings']['Insert'];
+export type LogoSettingsUpdate = Database['public']['Tables']['logo_settings']['Update'];
+
 // Note: security_events table not found in current schema, using custom type
 export interface SecurityEvent {
   id: string;
@@ -342,6 +350,7 @@ export interface CrudOperations<T, TInsert = Partial<T>, TUpdate = Partial<T>> {
   list: (filters?: FilterOptions) => Promise<T[]>;
 }
 
+// Extended types with relations
 export interface InvoiceWithRelations extends Invoice {
   invoice_line_items: InvoiceLineItem[];
   customers?: {
@@ -353,6 +362,10 @@ export interface InvoiceWithRelations extends Invoice {
   };
 }
 
+export interface EstimateWithLineItems extends Estimate {
+  estimate_line_items: EstimateLineItem[];
+}
+
 export interface InvoiceLineItemData {
   description: string;
   quantity: number;
@@ -361,58 +374,13 @@ export interface InvoiceLineItemData {
   sort_order?: number;
 }
 
-export interface LogoSettings {
-  logo_url: string | null;
-  logo_width: number;
-  logo_height: number;
-  logo_position: 'top-center' | 'watermark' | 'both';
-  watermark_opacity: number;
-  show_on_drafts: boolean;
-  show_on_approved: boolean;
-}
-
-export interface LineItem {
-  description: string;
-  quantity: number;
-  unit_price: number;
-  total: number;
-}
-
-export interface Customer {
+// Convert lead dialog props
+export interface ConvertLeadDialogLead {
   id: string;
   first_name: string;
   last_name: string;
-  email?: string;
-  phone?: string;
-}
-
-export interface BaseDocument {
-  id: string;
-  title: string;
-  description?: string;
-  created_at: string;
-  notes?: string;
-  subtotal: number;
-  tax_rate: number;
-  tax_amount: number;
-  total_amount: number;
-  customer_id: string;
-  job_id: string;
-  customer?: Customer;
-}
-
-export interface Estimate extends BaseDocument {
-  estimate_number: string;
-  valid_until?: string;
-  status: 'draft' | 'approved' | 'sent' | 'viewed' | 'rejected' | 'expired';
-  terms?: string;
-  line_items: LineItem[];
-}
-
-export interface Invoice extends BaseDocument {
-  invoice_number: string;
-  due_date?: string;
-  payment_terms?: string;
-  line_items: LineItem[];
-  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+  email?: string | undefined;
+  phone?: string | undefined;
+  estimated_value?: number | undefined;
+  source?: string | undefined;
 }

@@ -36,7 +36,7 @@ const isSupabaseError = (error: unknown): error is ApiError => {
 export const useProfile = (): UseProfileReturn => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error] = useState<string | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(false);
   const { user, session } = useAuth();
@@ -50,7 +50,7 @@ export const useProfile = (): UseProfileReturn => {
   };
 
   const fetchProfile = async (): Promise<void> => {
-    if (!validateUserAndSession()) return;
+    if (!validateUserAndSession() || !user) return;
 
     setLoading(true);
     try {
@@ -76,13 +76,13 @@ export const useProfile = (): UseProfileReturn => {
   };
 
   const updateProfile = async (updates: ProfileUpdate): Promise<Profile | null> => {
-    if (!validateUserAndSession()) return null;
+    if (!validateUserAndSession() || !user) return null;
 
     try {
       // Ensure we have the required email field for upsert
       const profileData = {
         id: user.id,
-        email: user.email, // Use email from auth user
+        email: user.email || '', // Use email from auth user with fallback
         ...updates
       };
 
@@ -111,13 +111,13 @@ export const useProfile = (): UseProfileReturn => {
   };
 
   const createProfile = async (profileData: Omit<Profile, 'id' | 'created_at' | 'updated_at'>): Promise<Profile | null> => {
-    if (!validateUserAndSession()) return null;
+    if (!validateUserAndSession() || !user) return null;
 
     try {
       // Ensure we have all required fields for insert
       const completeProfileData = {
         id: user.id,
-        email: user.email, // Use email from auth user
+        email: user.email || '', // Use email from auth user with fallback
         ...profileData
       };
 
