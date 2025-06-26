@@ -513,6 +513,12 @@ CREATE POLICY "themes_all_policy" ON public.themes
       WHERE id = themes.company_id 
       AND owner_id = auth.uid()
     )
+  ) WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.companies 
+      WHERE id = themes.company_id 
+      AND owner_id = auth.uid()
+    )
   );
 
 CREATE POLICY "reports_all_policy" ON public.reports
