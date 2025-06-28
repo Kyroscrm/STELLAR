@@ -2730,6 +2730,40 @@ export type Database = {
         }
         Returns: boolean
       }
+      execute_sql: {
+        Args: {
+          sql_statement: string
+        }
+        Returns: Json
+      }
+      create_table_rpc: {
+        Args: {
+          table_name: string
+          column_definitions: string
+        }
+        Returns: void
+      }
+      drop_table_rpc: {
+        Args: {
+          table_name: string
+        }
+        Returns: void
+      }
+      create_policy_rpc: {
+        Args: {
+          table_name: string
+          policy_name: string
+          policy_definition: string
+        }
+        Returns: void
+      }
+      drop_policy_rpc: {
+        Args: {
+          table_name: string
+          policy_name: string
+        }
+        Returns: void
+      }
     }
     Enums: {
       backup_status: "pending" | "completed" | "failed"
