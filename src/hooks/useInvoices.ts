@@ -193,6 +193,20 @@ export const useInvoices = (): UseInvoicesReturn => {
                 .insert(lineItemsToInsert);
 
               if (lineItemsError) throw lineItemsError;
+
+              // Fetch the complete invoice with line items after inserting them
+              const { data: completeInvoice, error: fetchError } = await supabase
+                .from('invoices')
+                .select(`
+                  *,
+                  invoice_line_items(*),
+                  customers(id, first_name, last_name, email, phone)
+                `)
+                .eq('id', invoice.id)
+                .single();
+
+              if (fetchError) throw fetchError;
+              return completeInvoice;
             }
 
             // Log activity
@@ -205,6 +219,13 @@ export const useInvoices = (): UseInvoicesReturn => {
             });
 
             return invoice;
+          });
+
+          // CRITICAL FIX: Replace the optimistic invoice with real data
+          setInvoices(prev => {
+            // Remove the temporary invoice and add the real one at the beginning
+            const filtered = prev.filter(i => i.id !== optimisticInvoice.id);
+            return [invoice, ...filtered];
           });
 
           return invoice;

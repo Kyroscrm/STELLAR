@@ -97,15 +97,19 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
   }, []);
 
   const handleSubmit = async (data: InvoiceFormData) => {
+    console.log('🔥 INVOICE FORM SUBMIT STARTED', { data, lineItems });
+
     try {
       // Additional validation
       if (!data.customer_id || data.customer_id.trim() === '') {
+        console.log('❌ VALIDATION FAILED: No customer selected');
         toast.error('Please select a customer for this invoice');
         return;
       }
 
       // Only require line items for non-draft invoices
       if (lineItems.length === 0 && data.status !== 'draft') {
+        console.log('❌ VALIDATION FAILED: No line items for non-draft invoice');
         toast.error('Please add at least one line item before marking invoice as non-draft');
         return;
       }
@@ -120,8 +124,11 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
         }))
       };
 
+      console.log('✅ VALIDATION PASSED - Calling onSubmit with:', formData);
       await onSubmit(formData);
+      console.log('✅ INVOICE SUBMISSION COMPLETED');
     } catch (error) {
+      console.error('❌ INVOICE SUBMISSION ERROR:', error);
       toast.error('Failed to submit invoice: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };

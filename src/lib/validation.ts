@@ -93,9 +93,15 @@ export const invoiceSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title must be less than 100 characters'),
   description: z.string().max(1000, 'Description must be less than 1000 characters').optional(),
   invoice_number: z.string().min(1, 'Invoice number is required').max(50, 'Invoice number must be less than 50 characters'),
-  customer_id: z.string().uuid('Invalid customer ID').optional(),
-  job_id: z.string().uuid('Invalid job ID').optional(),
-  estimate_id: z.string().uuid('Invalid estimate ID').optional(),
+  customer_id: z.string().refine((val) => !val || val === '' || z.string().uuid().safeParse(val).success, {
+    message: 'Invalid customer ID format'
+  }).optional(),
+  job_id: z.string().refine((val) => !val || val === '' || z.string().uuid().safeParse(val).success, {
+    message: 'Invalid job ID format'
+  }).optional(),
+  estimate_id: z.string().refine((val) => !val || val === '' || z.string().uuid().safeParse(val).success, {
+    message: 'Invalid estimate ID format'
+  }).optional(),
   due_date: z.string().optional(),
   tax_rate: z.number().min(0, 'Tax rate must be non-negative').max(1, 'Tax rate must be less than or equal to 100%').optional(),
   status: z.enum(['draft', 'sent', 'paid', 'overdue', 'cancelled', 'viewed']).optional(),

@@ -43,6 +43,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -178,6 +179,9 @@ const InvoicesPage = () => {
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Invoice</DialogTitle>
+              <DialogDescription>
+                Fill out the invoice details, add line items, and set the status for your new invoice.
+              </DialogDescription>
             </DialogHeader>
             <FormErrorBoundary onRetry={() => setIsCreateModalOpen(false)}>
               <InvoiceForm
@@ -374,6 +378,9 @@ const InvoicesPage = () => {
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Invoice Details</DialogTitle>
+            <DialogDescription>
+              View complete invoice information including line items, customer details, and payment status.
+            </DialogDescription>
           </DialogHeader>
           {selectedInvoice && (
             <div className="space-y-6">

@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { FormErrorBoundary } from '@/components/ui/form-error-boundary';
 import { Input } from '@/components/ui/input';
@@ -148,7 +148,9 @@ const EditInvoiceDialog: React.FC<EditInvoiceDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger ? (
-        <div onClick={() => setOpen(true)}>{trigger}</div>
+        React.cloneElement(trigger as React.ReactElement, {
+          onClick: () => setOpen(true)
+        })
       ) : (
         <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
           <Edit className="h-4 w-4" />
@@ -157,6 +159,9 @@ const EditInvoiceDialog: React.FC<EditInvoiceDialogProps> = ({
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Invoice - {invoice.invoice_number}</DialogTitle>
+          <DialogDescription>
+            Update the invoice details, line items, and other information below.
+          </DialogDescription>
         </DialogHeader>
 
         <FormErrorBoundary onRetry={() => setOpen(false)}>
