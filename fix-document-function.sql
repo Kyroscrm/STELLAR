@@ -1,4 +1,6 @@
--- Create the missing generate_document_number function
+-- Fix for missing generate_document_number function
+-- This function is required for invoice creation
+
 CREATE OR REPLACE FUNCTION public.generate_document_number()
 RETURNS text
 LANGUAGE plpgsql
@@ -10,6 +12,10 @@ BEGIN
 END;
 $$;
 
--- Grant execute permission to all authenticated users
+-- Grant execute permissions
 GRANT EXECUTE ON FUNCTION public.generate_document_number() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.generate_document_number() TO anon;
+GRANT EXECUTE ON FUNCTION public.generate_document_number() TO public;
+
+-- Test the function
+SELECT generate_document_number() as test_result;
