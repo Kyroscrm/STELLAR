@@ -49,27 +49,35 @@ export const useRealTimeNotifications = (): UseRealTimeNotificationsReturn => {
                notification.priority === 'high' ? 6000 : 4000
     });
 
-    // Store in database for persistence
-    createNotification({
-      type: notification.type,
-      title: notification.title,
-      message: notification.message,
-      priority: notification.priority,
-      entity_type: notification.entity_type,
-      entity_id: notification.entity_id,
-      action_url: notification.action_url,
-      read: false,
-      dismissed: notification.auto_dismiss || false,
-      metadata: {
-        source: 'real_time',
-        timestamp: new Date().toISOString()
+    // Store in database for persistence (only if createNotification is available)
+    if (createNotification) {
+      try {
+        createNotification({
+          type: notification.type,
+          title: notification.title,
+          message: notification.message,
+          priority: notification.priority,
+          entity_type: notification.entity_type,
+          entity_id: notification.entity_id,
+          action_url: notification.action_url,
+          read: false,
+          dismissed: notification.auto_dismiss || false,
+          metadata: {
+            source: 'real_time',
+            timestamp: new Date().toISOString()
+          }
+        });
+      } catch (error) {
+        // Silently fail - notification still shown as toast
       }
-    });
-  }, [createNotification]);
+    }
+  }, []); // Remove dependency to prevent constant recreation
 
   // Listen for system-generated notifications
   useEffect(() => {
     if (!user) return;
+
+    let isSubscribed = true;
 
     const channel = supabase
       .channel(`user_notifications_${user.id}`)
@@ -82,6 +90,8 @@ export const useRealTimeNotifications = (): UseRealTimeNotificationsReturn => {
           filter: `user_id=eq.${user.id}`
         },
         (payload: RealtimePostgresChangesPayload<UserNotificationRecord>) => {
+          if (!isSubscribed) return;
+
           const notification = payload.new as UserNotificationRecord | null;
           if (notification && !notification.dismissed) {
             showNotification({
@@ -99,31 +109,32 @@ export const useRealTimeNotifications = (): UseRealTimeNotificationsReturn => {
         }
       )
       .subscribe((status) => {
-        setConnected(status === 'SUBSCRIBED');
+        if (isSubscribed) {
+          setConnected(status === 'SUBSCRIBED');
+        }
       });
 
     return () => {
+      isSubscribed = false;
       supabase.removeChannel(channel);
       setConnected(false);
     };
-  }, [user, showNotification]);
+  }, [user?.id]); // Only depend on user.id, not the whole user object or showNotification
 
-  // Activity-based smart notifications
+  // Disable activity-based notifications to reduce WebSocket spam
+  // TODO: Re-enable when optimized for production
+  /*
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
+
+    let isSubscribed = true;
 
     const channel = supabase
       .channel(`activity_notifications_${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'leads',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload: RealtimePostgresChangesPayload<LeadRecord>) => {
-          const newLead = payload.new as LeadRecord | null;
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'leads', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          if (!isSubscribed) return;
+          const newLead = payload.new;
           if (newLead) {
             showNotification({
               id: `lead_${newLead.id}`,
@@ -136,89 +147,15 @@ export const useRealTimeNotifications = (): UseRealTimeNotificationsReturn => {
               action_url: '/admin/leads'
             });
           }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'jobs',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload: RealtimePostgresChangesPayload<JobRecord>) => {
-          const oldJob = payload.old as JobRecord | null;
-          const newJob = payload.new as JobRecord | null;
-          if (oldJob && newJob && oldJob.status !== newJob.status) {
-            showNotification({
-              id: `job_${newJob.id}`,
-              type: 'success',
-              title: 'Job Status Updated',
-              message: `Job "${newJob.title}" status changed to ${newJob.status}`,
-              priority: 'medium',
-              entity_type: 'job',
-              entity_id: newJob.id,
-              action_url: '/admin/jobs'
-            });
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'tasks',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload: RealtimePostgresChangesPayload<TaskRecord>) => {
-          const oldTask = payload.old as TaskRecord | null;
-          const newTask = payload.new as TaskRecord | null;
-          if (oldTask && newTask && oldTask.status !== 'completed' && newTask.status === 'completed') {
-            showNotification({
-              id: `task_${newTask.id}`,
-              type: 'success',
-              title: 'Task Completed',
-              message: `Task "${newTask.title}" has been completed`,
-              priority: 'low',
-              entity_type: 'task',
-              entity_id: newTask.id,
-              action_url: '/admin/tasks'
-            });
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'invoices',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload: RealtimePostgresChangesPayload<InvoiceRecord>) => {
-          const oldInvoice = payload.old as InvoiceRecord | null;
-          const newInvoice = payload.new as InvoiceRecord | null;
-          if (oldInvoice && newInvoice && oldInvoice.status !== 'paid' && newInvoice.status === 'paid') {
-            showNotification({
-              id: `invoice_${newInvoice.id}`,
-              type: 'success',
-              title: 'Payment Received',
-              message: `Invoice #${newInvoice.invoice_number} has been paid`,
-              priority: 'high',
-              entity_type: 'invoice',
-              entity_id: newInvoice.id,
-              action_url: '/admin/invoices'
-            });
-          }
-        }
-      )
+        })
       .subscribe();
 
     return () => {
+      isSubscribed = false;
       supabase.removeChannel(channel);
     };
-  }, [user, showNotification]);
+  }, [user?.id]);
+  */
 
   return {
     connected,

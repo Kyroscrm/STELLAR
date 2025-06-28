@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useErrorHandler } from './useErrorHandler';
 import { useOptimisticUpdate } from './useOptimisticUpdate';
+import { useRBAC } from './useRBAC';
+import { useEnhancedActivityLogs } from './useEnhancedActivityLogs';
 import { EstimateStatus, ApiError } from '@/types/app-types';
 import { enforcePolicy, SecurityError, handleSupabaseError } from '@/lib/security';
 
@@ -16,6 +18,8 @@ export type EstimateWithLineItems = Estimate & {
   customers?: {
     first_name: string;
     last_name: string;
+    email: string;
+    phone: string;
   };
 };
 
@@ -38,6 +42,9 @@ interface UseEstimatesReturn {
   createEstimate: (estimateData: EstimateInsert & { lineItems?: EstimateLineItemData[] }) => Promise<EstimateWithLineItems | null>;
   updateEstimate: (id: string, updates: EstimateUpdate) => Promise<boolean>;
   deleteEstimate: (id: string) => Promise<boolean>;
+  approveEstimate: (id: string) => Promise<boolean>;
+  sendEstimate: (id: string) => Promise<boolean>;
+  convertToInvoice: (id: string) => Promise<EstimateWithLineItems | null>;
 }
 
 export const useEstimates = (): UseEstimatesReturn => {
@@ -47,6 +54,8 @@ export const useEstimates = (): UseEstimatesReturn => {
   const { user, session } = useAuth();
   const { executeUpdate } = useOptimisticUpdate();
   const { handleError } = useErrorHandler();
+  const { hasPermission } = useRBAC();
+  const { logEntityChange } = useEnhancedActivityLogs();
 
   const validateUserAndSession = (): boolean => {
     if (!user || !session) {
@@ -58,8 +67,17 @@ export const useEstimates = (): UseEstimatesReturn => {
     return true;
   };
 
+  const validatePermission = (action: 'read' | 'write' | 'delete'): boolean => {
+    const permission = `estimates:${action}`;
+    if (!hasPermission(permission)) {
+      toast.error(`You don't have permission to ${action} estimates`);
+      return false;
+    }
+    return true;
+  };
+
   const fetchEstimates = async (): Promise<void> => {
-    if (!validateUserAndSession()) return;
+    if (!validateUserAndSession() || !validatePermission('read')) return;
 
     setLoading(true);
     setError(null);
@@ -72,7 +90,9 @@ export const useEstimates = (): UseEstimatesReturn => {
             estimate_line_items (*),
             customers (
               first_name,
-              last_name
+              last_name,
+              email,
+              phone
             )
           `)
           .eq('user_id', user.id)
@@ -99,7 +119,7 @@ export const useEstimates = (): UseEstimatesReturn => {
   };
 
   const createEstimate = async (estimateData: EstimateInsert & { lineItems?: EstimateLineItemData[] }): Promise<EstimateWithLineItems | null> => {
-    if (!validateUserAndSession()) return null;
+    if (!validateUserAndSession() || !validatePermission('write')) return null;
 
     const { lineItems, ...estimateFields } = estimateData;
 
@@ -161,7 +181,9 @@ export const useEstimates = (): UseEstimatesReturn => {
                 estimate_line_items (*),
                 customers (
                   first_name,
-                  last_name
+                  last_name,
+                  email,
+                  phone
                 )
               `)
               .eq('id', data.id)
@@ -170,13 +192,14 @@ export const useEstimates = (): UseEstimatesReturn => {
             if (fetchError) throw fetchError;
 
             // Log activity
-            await supabase.from('activity_logs').insert({
-              user_id: user.id,
-              entity_type: 'estimate',
-              entity_id: data.id,
-              action: 'created',
-              description: `Estimate created: ${data.title}`
-            });
+            await logEntityChange(
+              'estimate',
+              data.id,
+              'created',
+              null,
+              data,
+              `Estimate created: ${data.title}`
+            );
 
             return completeEstimate;
           });
@@ -203,9 +226,9 @@ export const useEstimates = (): UseEstimatesReturn => {
   };
 
   const updateEstimate = async (id: string, updates: EstimateUpdate): Promise<boolean> => {
-    if (!validateUserAndSession()) return false;
+    if (!validateUserAndSession() || !validatePermission('write')) return false;
 
-    // Store original for rollback
+    // Store original for rollback and change tracking
     const originalEstimate = estimates.find(e => e.id === id);
     if (!originalEstimate) {
       handleError(new Error('Estimate not found'), { title: 'Update Failed' });
@@ -245,7 +268,9 @@ export const useEstimates = (): UseEstimatesReturn => {
                 estimate_line_items (*),
                 customers (
                   first_name,
-                  last_name
+                  last_name,
+                  email,
+                  phone
                 )
               `)
               .eq('id', id)
@@ -254,13 +279,14 @@ export const useEstimates = (): UseEstimatesReturn => {
             if (fetchError) throw fetchError;
 
             // Log activity
-            await supabase.from('activity_logs').insert({
-              user_id: user.id,
-              entity_type: 'estimate',
-              entity_id: id,
-              action: 'updated',
-              description: `Estimate updated: ${data.title}`
-            });
+            await logEntityChange(
+              'estimate',
+              id,
+              'updated',
+              originalEstimate,
+              data,
+              `Estimate updated: ${data.title}`
+            );
 
             return completeEstimate;
           });
@@ -287,9 +313,9 @@ export const useEstimates = (): UseEstimatesReturn => {
   };
 
   const deleteEstimate = async (id: string): Promise<boolean> => {
-    if (!validateUserAndSession()) return false;
+    if (!validateUserAndSession() || !validatePermission('delete')) return false;
 
-    // Store original for rollback
+    // Store original for rollback and change tracking
     const originalEstimate = estimates.find(e => e.id === id);
     if (!originalEstimate) {
       handleError(new Error('Estimate not found'), { title: 'Delete Failed' });
@@ -321,13 +347,14 @@ export const useEstimates = (): UseEstimatesReturn => {
             if (error) throw error;
 
             // Log activity
-            await supabase.from('activity_logs').insert({
-              user_id: user.id,
-              entity_type: 'estimate',
-              entity_id: id,
-              action: 'deleted',
-              description: `Estimate deleted: ${originalEstimate.title}`
-            });
+            await logEntityChange(
+              'estimate',
+              id,
+              'deleted',
+              originalEstimate,
+              null,
+              `Estimate deleted: ${originalEstimate.title}`
+            );
 
             return true;
           });
@@ -353,6 +380,103 @@ export const useEstimates = (): UseEstimatesReturn => {
     }
   };
 
+  const approveEstimate = async (id: string): Promise<boolean> => {
+    return await updateEstimate(id, {
+      status: 'approved',
+      updated_at: new Date().toISOString()
+    });
+  };
+
+  const sendEstimate = async (id: string): Promise<boolean> => {
+    return await updateEstimate(id, {
+      status: 'sent',
+      updated_at: new Date().toISOString()
+    });
+  };
+
+  const convertToInvoice = async (id: string): Promise<EstimateWithLineItems | null> => {
+    if (!validateUserAndSession() || !validatePermission('write')) return null;
+
+    const estimate = estimates.find(e => e.id === id);
+    if (!estimate) {
+      toast.error('Estimate not found');
+      return null;
+    }
+
+    try {
+      // Create invoice from estimate data
+      const invoiceData = {
+        title: estimate.title,
+        description: estimate.description,
+        customer_id: estimate.customer_id,
+        estimate_id: estimate.id,
+        invoice_number: `INV-${Date.now()}`, // Generate unique invoice number
+        status: 'draft' as const,
+        total_amount: estimate.total_amount,
+        subtotal: estimate.subtotal,
+        tax_rate: estimate.tax_rate,
+        tax_amount: estimate.tax_amount,
+        due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+        user_id: user.id
+      };
+
+      const { data: invoice, error: invoiceError } = await supabase
+        .from('invoices')
+        .insert(invoiceData)
+        .select()
+        .single();
+
+      if (invoiceError) throw invoiceError;
+
+      // Copy line items from estimate to invoice
+      if (estimate.estimate_line_items && estimate.estimate_line_items.length > 0) {
+        const lineItemsData = estimate.estimate_line_items.map(item => ({
+          invoice_id: invoice.id,
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total: item.total,
+          sort_order: item.sort_order
+        }));
+
+        const { error: lineItemsError } = await supabase
+          .from('invoice_line_items')
+          .insert(lineItemsData);
+
+        if (lineItemsError) throw lineItemsError;
+      }
+
+      // Update estimate status
+      await updateEstimate(id, { status: 'approved' });
+
+      // Enhanced activity logging
+      await logEntityChange(
+        'estimate',
+        id,
+        'updated',
+        estimate,
+        { ...estimate, status: 'approved' },
+        `Estimate converted to invoice: ${estimate.title}`
+      );
+
+      await logEntityChange(
+        'invoice',
+        invoice.id,
+        'created',
+        null,
+        invoice,
+        `Invoice created from estimate: ${invoice.title}`
+      );
+
+      toast.success('Estimate successfully converted to invoice');
+      return { ...estimate, status: 'approved' };
+    } catch (error: unknown) {
+      const convertError = error instanceof Error ? error : new Error('Failed to convert estimate');
+      handleError(convertError, { title: 'Failed to convert estimate to invoice' });
+      return null;
+    }
+  };
+
   useEffect(() => {
     if (user && session) {
       fetchEstimates();
@@ -366,6 +490,9 @@ export const useEstimates = (): UseEstimatesReturn => {
     fetchEstimates,
     createEstimate,
     updateEstimate,
-    deleteEstimate
+    deleteEstimate,
+    approveEstimate,
+    sendEstimate,
+    convertToInvoice
   };
 };

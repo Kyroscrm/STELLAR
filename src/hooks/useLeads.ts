@@ -5,7 +5,8 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useErrorHandler } from './useErrorHandler';
 import { useOptimisticUpdate } from './useOptimisticUpdate';
-import { enforcePolicy, SecurityError, handleSupabaseError } from '@/lib/security';
+import { useRBAC } from './useRBAC';
+import { useEnhancedActivityLogs } from './useEnhancedActivityLogs';
 
 export type Lead = Tables<'leads'>;
 type LeadInsert = Omit<TablesInsert<'leads'>, 'user_id'>;
@@ -18,6 +19,8 @@ export const useLeads = () => {
   const { user, session } = useAuth();
   const { executeUpdate } = useOptimisticUpdate();
   const { handleError } = useErrorHandler();
+  const { hasPermission } = useRBAC();
+  const { logEntityChange } = useEnhancedActivityLogs();
 
   const validateUserAndSession = () => {
     if (!user || !session) {
@@ -29,33 +32,34 @@ export const useLeads = () => {
     return true;
   };
 
+  const validatePermission = (action: 'read' | 'write' | 'delete'): boolean => {
+    const permission = `leads:${action}`;
+    if (!hasPermission(permission)) {
+      toast.error(`You don't have permission to ${action} leads`);
+      return false;
+    }
+    return true;
+  };
+
   const fetchLeads = async () => {
-    if (!validateUserAndSession()) return;
+    if (!validateUserAndSession() || !validatePermission('read')) return;
 
     setLoading(true);
     setError(null);
     try {
-      const data = await enforcePolicy('leads:read', async () => {
-        const { data, error } = await supabase
-          .from('leads')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-        if (error) throw error;
-        return data || [];
-      });
+      if (error) throw error;
 
-      setLeads(data);
+      setLeads(data || []);
     } catch (error: unknown) {
-      if (error instanceof SecurityError) {
-        setError(error);
-        handleError(error, { title: 'Access Denied: You do not have permission to view leads.' });
-      } else {
-        const processedError = handleSupabaseError(error);
-        setError(processedError);
-        handleError(processedError, { title: 'Failed to fetch leads' });
-      }
+      const leadError = error instanceof Error ? error : new Error('Failed to fetch leads');
+      setError(leadError);
+      handleError(leadError, { title: 'Failed to fetch leads' });
       setLeads([]);
     } finally {
       setLoading(false);
@@ -63,7 +67,7 @@ export const useLeads = () => {
   };
 
   const createLead = async (leadData: LeadInsert) => {
-    if (!validateUserAndSession()) return null;
+    if (!validateUserAndSession() || !validatePermission('write')) return null;
 
     const optimisticLead: Lead = {
       id: `temp-${Date.now()}`,
@@ -79,29 +83,27 @@ export const useLeads = () => {
         () => setLeads(prev => [optimisticLead, ...prev]),
         // Actual update
         async () => {
-          const data = await enforcePolicy('leads:create', async () => {
-            const { data, error } = await supabase
-              .from('leads')
-              .insert({ ...leadData, user_id: user.id })
-              .select()
-              .single();
+          const { data, error } = await supabase
+            .from('leads')
+            .insert({ ...leadData, user_id: user.id })
+            .select()
+            .single();
 
-            if (error) throw error;
-
-            // Log activity
-            await supabase.from('activity_logs').insert({
-              user_id: user.id,
-              entity_type: 'lead',
-              entity_id: data.id,
-              action: 'created',
-              description: `Lead created: ${data.first_name} ${data.last_name}`
-            });
-
-            return data;
-          });
+          if (error) throw error;
 
           // Replace optimistic with real data
           setLeads(prev => prev.map(l => l.id === optimisticLead.id ? data : l));
+
+          // Enhanced activity logging
+          await logEntityChange(
+            'lead',
+            data.id,
+            'created',
+            null,
+            data,
+            `Lead created: ${data.first_name} ${data.last_name}`
+          );
+
           return data;
         },
         // Rollback
@@ -112,20 +114,17 @@ export const useLeads = () => {
         }
       );
     } catch (error: unknown) {
-      if (error instanceof SecurityError) {
-        handleError(error, { title: 'Access Denied: You do not have permission to create leads.' });
-      }
       return null;
     }
   };
 
   const updateLead = async (id: string, updates: LeadUpdate) => {
-    if (!validateUserAndSession()) return false;
+    if (!validateUserAndSession() || !validatePermission('write')) return false;
 
-    // Store original for rollback
+    // Store original for rollback and change tracking
     const originalLead = leads.find(l => l.id === id);
     if (!originalLead) {
-      handleError(new Error('Lead not found'), { title: 'Update Failed' });
+      toast.error('Lead not found');
       return false;
     }
 
@@ -137,31 +136,29 @@ export const useLeads = () => {
         () => setLeads(prev => prev.map(l => l.id === id ? optimisticLead : l)),
         // Actual update
         async () => {
-          const data = await enforcePolicy('leads:update', async () => {
-            const { data, error } = await supabase
-              .from('leads')
-              .update(updates)
-              .eq('id', id)
-              .eq('user_id', user.id)
-              .select()
-              .single();
+          const { data, error } = await supabase
+            .from('leads')
+            .update(updates)
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .select()
+            .single();
 
-            if (error) throw error;
-
-            // Log activity
-            await supabase.from('activity_logs').insert({
-              user_id: user.id,
-              entity_type: 'lead',
-              entity_id: id,
-              action: 'updated',
-              description: `Lead updated: ${data.first_name} ${data.last_name}`
-            });
-
-            return data;
-          });
+          if (error) throw error;
 
           // Update with real data
           setLeads(prev => prev.map(l => l.id === id ? data : l));
+
+          // Enhanced activity logging with change tracking
+          await logEntityChange(
+            'lead',
+            id,
+            'updated',
+            originalLead,
+            data,
+            `Lead updated: ${data.first_name} ${data.last_name}`
+          );
+
           return true;
         },
         // Rollback
@@ -172,20 +169,17 @@ export const useLeads = () => {
         }
       );
     } catch (error: unknown) {
-      if (error instanceof SecurityError) {
-        handleError(error, { title: 'Access Denied: You do not have permission to update leads.' });
-      }
       return false;
     }
   };
 
   const deleteLead = async (id: string) => {
-    if (!validateUserAndSession()) return;
+    if (!validateUserAndSession() || !validatePermission('delete')) return;
 
-    // Store original for rollback
+    // Store original for rollback and change tracking
     const originalLead = leads.find(l => l.id === id);
     if (!originalLead) {
-      handleError(new Error('Lead not found'), { title: 'Delete Failed' });
+      toast.error('Lead not found');
       return;
     }
 
@@ -195,26 +189,23 @@ export const useLeads = () => {
         () => setLeads(prev => prev.filter(l => l.id !== id)),
         // Actual update
         async () => {
-          await enforcePolicy('leads:delete', async () => {
-            const { error } = await supabase
-              .from('leads')
-              .delete()
-              .eq('id', id)
-              .eq('user_id', user.id);
+          const { error } = await supabase
+            .from('leads')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id);
 
-            if (error) throw error;
+          if (error) throw error;
 
-            // Log activity
-            await supabase.from('activity_logs').insert({
-              user_id: user.id,
-              entity_type: 'lead',
-              entity_id: id,
-              action: 'deleted',
-              description: `Lead deleted: ${originalLead.first_name} ${originalLead.last_name}`
-            });
-
-            return true;
-          });
+          // Enhanced activity logging
+          await logEntityChange(
+            'lead',
+            id,
+            'deleted',
+            originalLead,
+            null,
+            `Lead deleted: ${originalLead.first_name} ${originalLead.last_name}`
+          );
 
           return true;
         },
@@ -228,17 +219,76 @@ export const useLeads = () => {
         }
       );
     } catch (error: unknown) {
-      if (error instanceof SecurityError) {
-        handleError(error, { title: 'Access Denied: You do not have permission to delete leads.' });
-      }
-      // Other error handling is done within executeUpdate
+      // Error handling is managed by executeUpdate
+    }
+  };
+
+  const convertToCustomer = async (id: string) => {
+    if (!validateUserAndSession() || !validatePermission('write')) return null;
+
+    const lead = leads.find(l => l.id === id);
+    if (!lead) {
+      toast.error('Lead not found');
+      return null;
+    }
+
+    try {
+      // Create customer from lead data
+      const customerData = {
+        first_name: lead.first_name,
+        last_name: lead.last_name,
+        email: lead.email,
+        phone: lead.phone,
+        address: lead.address,
+        city: lead.city,
+        state: lead.state,
+        zip_code: lead.zip_code,
+        notes: lead.notes,
+        lead_id: lead.id,
+        user_id: user.id
+      };
+
+      const { data: customer, error: customerError } = await supabase
+        .from('customers')
+        .insert(customerData)
+        .select()
+        .single();
+
+      if (customerError) throw customerError;
+
+      // Update lead status to converted
+      await updateLead(id, { status: 'converted' });
+
+      // Enhanced activity logging
+      await logEntityChange(
+        'lead',
+        id,
+        'updated',
+        lead,
+        { ...lead, status: 'converted' },
+        `Lead converted to customer: ${lead.first_name} ${lead.last_name}`
+      );
+
+      await logEntityChange(
+        'customer',
+        customer.id,
+        'created',
+        null,
+        customer,
+        `Customer created from lead: ${customer.first_name} ${customer.last_name}`
+      );
+
+      toast.success('Lead successfully converted to customer');
+      return customer;
+    } catch (error: unknown) {
+      const convertError = error instanceof Error ? error : new Error('Failed to convert lead');
+      handleError(convertError, { title: 'Failed to convert lead to customer' });
+      return null;
     }
   };
 
   useEffect(() => {
-    if (user && session) {
-      fetchLeads();
-    }
+    fetchLeads();
   }, [user, session]);
 
   return {
@@ -248,6 +298,7 @@ export const useLeads = () => {
     fetchLeads,
     createLead,
     updateLead,
-    deleteLead
+    deleteLead,
+    convertToCustomer
   };
 };

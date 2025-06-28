@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -15,14 +14,14 @@ interface ViewJobDialogProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-const ViewJobDialog: React.FC<ViewJobDialogProps> = ({ 
-  job, 
-  trigger, 
+const ViewJobDialog: React.FC<ViewJobDialogProps> = ({
+  job,
+  trigger,
   open: controlledOpen,
-  onOpenChange 
+  onOpenChange
 }) => {
   const [internalOpen, setInternalOpen] = React.useState(false);
-  
+
   const isControlled = controlledOpen !== undefined;
   const isOpen = isControlled ? controlledOpen : internalOpen;
   const setOpen = isControlled ? (onOpenChange || (() => {})) : setInternalOpen;
@@ -45,7 +44,7 @@ const ViewJobDialog: React.FC<ViewJobDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Job Details</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-6">
           {/* Header Info */}
           <div className="flex items-start justify-between">
@@ -68,12 +67,6 @@ const ViewJobDialog: React.FC<ViewJobDialogProps> = ({
                   <User className="h-4 w-4 text-gray-500" />
                   <span>{job.customers.first_name} {job.customers.last_name}</span>
                 </div>
-                {job.customers.email && (
-                  <div className="text-sm text-gray-600 mt-1">{job.customers.email}</div>
-                )}
-                {job.customers.phone && (
-                  <div className="text-sm text-gray-600">{job.customers.phone}</div>
-                )}
               </CardContent>
             </Card>
           )}

@@ -5,12 +5,16 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useErrorHandler } from './useErrorHandler';
 import { useOptimisticUpdate } from './useOptimisticUpdate';
+import { useRBAC } from './useRBAC';
+import { useEnhancedActivityLogs } from './useEnhancedActivityLogs';
 
 export type Job = Tables<'jobs'>;
 export type JobWithCustomer = Job & {
   customers?: {
     first_name: string;
     last_name: string;
+    email: string;
+    phone: string;
   };
 };
 type JobInsert = Omit<TablesInsert<'jobs'>, 'user_id'>;
@@ -23,6 +27,8 @@ export const useJobs = () => {
   const { user, session } = useAuth();
   const { executeUpdate } = useOptimisticUpdate();
   const { handleError } = useErrorHandler();
+  const { hasPermission } = useRBAC();
+  const { logEntityChange } = useEnhancedActivityLogs();
 
   const validateUserAndSession = () => {
     if (!user || !session) {
@@ -34,15 +40,32 @@ export const useJobs = () => {
     return true;
   };
 
+  const validatePermission = (action: 'read' | 'write' | 'delete'): boolean => {
+    const permission = `jobs:${action}`;
+    if (!hasPermission(permission)) {
+      toast.error(`You don't have permission to ${action} jobs`);
+      return false;
+    }
+    return true;
+  };
+
   const fetchJobs = async () => {
-    if (!validateUserAndSession()) return;
+    if (!validateUserAndSession() || !validatePermission('read')) return;
 
     setLoading(true);
     setError(null);
     try {
       const { data, error } = await supabase
         .from('jobs')
-        .select('*')
+        .select(`
+          *,
+          customers (
+            first_name,
+            last_name,
+            email,
+            phone
+          )
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -60,7 +83,7 @@ export const useJobs = () => {
   };
 
   const createJob = async (jobData: JobInsert) => {
-    if (!validateUserAndSession()) return null;
+    if (!validateUserAndSession() || !validatePermission('write')) return null;
 
     const optimisticJob: Job = {
       id: `temp-${Date.now()}`,
@@ -74,7 +97,7 @@ export const useJobs = () => {
       return await executeUpdate(
         // Optimistic update
         () => setJobs(prev => [optimisticJob, ...prev]),
-                // Actual update
+        // Actual update
         async () => {
           const { data, error } = await supabase
             .from('jobs')
@@ -87,14 +110,15 @@ export const useJobs = () => {
           // Replace optimistic with real data
           setJobs(prev => prev.map(j => j.id === optimisticJob.id ? data : j));
 
-          // Log activity
-          await supabase.from('activity_logs').insert({
-            user_id: user.id,
-            entity_type: 'job',
-            entity_id: data.id,
-            action: 'created',
-            description: `Job created: ${data.title}`
-          });
+          // Enhanced activity logging
+          await logEntityChange(
+            'job',
+            data.id,
+            'created',
+            null,
+            data,
+            `Job created: ${data.title}`
+          );
 
           return data;
         },
@@ -111,9 +135,9 @@ export const useJobs = () => {
   };
 
   const updateJob = async (id: string, updates: JobUpdate) => {
-    if (!validateUserAndSession()) return false;
+    if (!validateUserAndSession() || !validatePermission('write')) return false;
 
-    // Store original for rollback
+    // Store original for rollback and change tracking
     const originalJob = jobs.find(j => j.id === id);
     if (!originalJob) {
       toast.error('Job not found');
@@ -126,7 +150,7 @@ export const useJobs = () => {
       return await executeUpdate(
         // Optimistic update
         () => setJobs(prev => prev.map(j => j.id === id ? optimisticJob : j)),
-                // Actual update
+        // Actual update
         async () => {
           const { data, error } = await supabase
             .from('jobs')
@@ -141,14 +165,15 @@ export const useJobs = () => {
           // Update with real data
           setJobs(prev => prev.map(j => j.id === id ? data : j));
 
-          // Log activity
-          await supabase.from('activity_logs').insert({
-            user_id: user.id,
-            entity_type: 'job',
-            entity_id: id,
-            action: 'updated',
-            description: `Job updated: ${data.title}`
-          });
+          // Enhanced activity logging with change tracking
+          await logEntityChange(
+            'job',
+            id,
+            'updated',
+            originalJob,
+            data,
+            `Job updated: ${data.title}`
+          );
 
           return true;
         },
@@ -165,9 +190,9 @@ export const useJobs = () => {
   };
 
   const deleteJob = async (id: string) => {
-    if (!validateUserAndSession()) return;
+    if (!validateUserAndSession() || !validatePermission('delete')) return;
 
-    // Store original for rollback
+    // Store original for rollback and change tracking
     const originalJob = jobs.find(j => j.id === id);
     if (!originalJob) {
       toast.error('Job not found');
@@ -178,7 +203,7 @@ export const useJobs = () => {
       await executeUpdate(
         // Optimistic update
         () => setJobs(prev => prev.filter(j => j.id !== id)),
-                // Actual update
+        // Actual update
         async () => {
           const { error } = await supabase
             .from('jobs')
@@ -188,14 +213,15 @@ export const useJobs = () => {
 
           if (error) throw error;
 
-          // Log activity
-          await supabase.from('activity_logs').insert({
-            user_id: user.id,
-            entity_type: 'job',
-            entity_id: id,
-            action: 'deleted',
-            description: `Job deleted: ${originalJob.title}`
-          });
+          // Enhanced activity logging
+          await logEntityChange(
+            'job',
+            id,
+            'deleted',
+            originalJob,
+            null,
+            `Job deleted: ${originalJob.title}`
+          );
 
           return true;
         },

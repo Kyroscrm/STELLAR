@@ -86,11 +86,9 @@ const ErrorFallback: React.FC<{
   module?: string;
   retryCount: number;
 }> = ({ error, retry, module, retryCount }) => {
-  const navigate = useNavigate();
-
   const handleGoHome = () => {
-    navigate('/admin');
-    retry();
+    // Simple fallback: reload the page to admin
+    window.location.href = '/admin';
   };
 
   return (
