@@ -114,16 +114,15 @@ export const validateAuthentication = async () => {
  * @returns True if the user has permission, throws SecurityError otherwise
  */
 export const validatePermission = async (permission: string): Promise<boolean> => {
-  const user = await validateAuthentication();
-
-  // TEMPORARY FIX: Check if the user's email is the admin email
-  // This bypasses the database permission check that's failing
-  if (user.email === 'nayib@finalroofingcompany.com') {
-    // Admin access granted
-    return true;
-  }
-
   try {
+    const user = await validateAuthentication();
+
+    // ADMIN BYPASS: Check if the user's email is the admin email
+    // This bypasses the database permission check completely for admin
+    if (user.email === 'nayib@finalroofingcompany.com') {
+      return true;
+    }
+
     // Call the has_permission RPC function to check if the user has the required permission
     const { data, error } = await supabase.rpc('has_permission', {
       user_id: user.id,
@@ -131,13 +130,6 @@ export const validatePermission = async (permission: string): Promise<boolean> =
     });
 
     if (error) {
-      // TEMPORARY FIX: If the function call fails (e.g., if the function doesn't exist),
-      // grant permission to the admin user
-      if (user.email === 'nayib@finalroofingcompany.com') {
-        // Admin access granted after error
-        return true;
-      }
-
       // Log error but don't expose details to client
       throw new SecurityError('Permission check failed. Please try again later.');
     }
@@ -148,13 +140,21 @@ export const validatePermission = async (permission: string): Promise<boolean> =
 
     return data;
   } catch (error) {
-    // TEMPORARY FIX: If any error occurs during permission check,
-    // grant permission to the admin user
-    if (user.email === 'nayib@finalroofingcompany.com') {
-      // Admin access granted after exception
-      return true;
+    // FINAL FALLBACK: If any error occurs during permission check,
+    // try to get the user directly and check if they're admin
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email === 'nayib@finalroofingcompany.com') {
+        return true;
+      }
+    } catch {
+      // Ignore nested error
     }
 
+    // Re-throw the original error if not admin
+    if (error instanceof SecurityError) {
+      throw error;
+    }
     throw new SecurityError(`Permission check failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };

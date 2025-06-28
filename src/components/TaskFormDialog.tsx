@@ -24,23 +24,23 @@ interface TaskFormDialogProps {
   onCancel?: () => void;
 }
 
-const TaskFormDialog: React.FC<TaskFormDialogProps> = ({ 
-  task, 
-  trigger, 
+const TaskFormDialog: React.FC<TaskFormDialogProps> = ({
+  task,
+  trigger,
   open: controlledOpen,
   onOpenChange,
   onSuccess,
   onCancel
 }) => {
-  const { addTask, updateTask } = useTasks();
+  const { createTask, updateTask } = useTasks();
   const { jobs } = useJobs();
   const [internalOpen, setInternalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
   const isControlled = controlledOpen !== undefined;
   const isOpen = isControlled ? controlledOpen : internalOpen;
   const setOpen = isControlled ? (onOpenChange || (() => {})) : setInternalOpen;
-  
+
   const [formData, setFormData] = useState({
     title: task?.title || '',
     description: task?.description || '',
@@ -61,7 +61,7 @@ const TaskFormDialog: React.FC<TaskFormDialogProps> = ({
     }
 
     setLoading(true);
-    
+
     const taskData = {
       ...formData,
       due_date: formData.due_date ? format(formData.due_date, 'yyyy-MM-dd') : null,
@@ -73,13 +73,13 @@ const TaskFormDialog: React.FC<TaskFormDialogProps> = ({
       if (task) {
         await updateTask(task.id, taskData);
       } else {
-        await addTask(taskData);
+        await createTask(taskData);
       }
       setOpen(false);
       resetForm();
       onSuccess?.();
     } catch (error) {
-      console.error('Error saving task:', error);
+      toast.error('Failed to save task: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -123,7 +123,7 @@ const TaskFormDialog: React.FC<TaskFormDialogProps> = ({
         <DialogHeader>
           <DialogTitle>{task ? 'Edit Task' : 'Create New Task'}</DialogTitle>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="title">Title *</Label>
