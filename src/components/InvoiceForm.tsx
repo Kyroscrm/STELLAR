@@ -54,7 +54,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
       due_date: initialData?.due_date || '',
       tax_rate: initialData?.tax_rate || 0,
       status: initialData?.status || 'draft',
-      payment_status: initialData?.payment_status || 'pending' as const,
+      payment_status: (initialData?.payment_status as 'completed' | 'failed' | 'pending' | 'refunded') || 'pending',
       notes: initialData?.notes || '',
       payment_terms: initialData?.payment_terms || '',
       line_items: [],
@@ -104,8 +104,9 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
         return;
       }
 
-      if (lineItems.length === 0) {
-        toast.error('Please add at least one line item to the invoice');
+      // Only require line items for non-draft invoices
+      if (lineItems.length === 0 && data.status !== 'draft') {
+        toast.error('Please add at least one line item before marking invoice as non-draft');
         return;
       }
 
