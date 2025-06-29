@@ -3,6 +3,8 @@ import EditJobDialog from '@/components/EditJobDialog';
 import FileWorkflowManager from '@/components/FileWorkflowManager';
 import JobKanbanBoard from '@/components/JobKanbanBoard';
 import NewJobDialog from '@/components/NewJobDialog';
+import TimeEntryForm from '@/components/TimeEntryForm';
+import TimeEntriesList from '@/components/TimeEntriesList';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,7 +41,7 @@ const JobsPage = () => {
   const { jobs, loading, updateJob, deleteJob, fetchJobs } = useJobs();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'files'>('kanban');
+  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'files' | 'time'>('kanban');
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -82,7 +84,7 @@ const JobsPage = () => {
   };
 
   const handleStatusChange = async (jobId: string, newStatus: string) => {
-    await updateJob(jobId, { status: newStatus as any });
+    await updateJob(jobId, { status: newStatus as 'quoted' | 'approved' | 'scheduled' | 'in_progress' | 'completed' | 'cancelled' });
   };
 
   const handleDeleteJob = async (jobId: string) => {
@@ -120,6 +122,9 @@ const JobsPage = () => {
           </Button>
           <Button variant="outline" size="sm" onClick={() => setViewMode('files')} className={viewMode === 'files' ? 'bg-primary text-white' : ''}>
             <Settings className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setViewMode('time')} className={viewMode === 'time' ? 'bg-primary text-white' : ''}>
+            <Clock className="h-4 w-4" />
           </Button>
           <NewJobDialog onSuccess={fetchJobs} />
         </div>
@@ -192,6 +197,29 @@ const JobsPage = () => {
       {viewMode === 'kanban' && <JobKanbanBoard />}
 
       {viewMode === 'files' && <FileWorkflowManager />}
+
+      {viewMode === 'time' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Time Entry Form */}
+            <TimeEntryForm
+              jobId=""
+              userId="current-user-id"
+              onSuccess={() => {
+                // Refresh time entries list
+              }}
+            />
+
+            {/* Time Entries List */}
+            <TimeEntriesList
+              showFilters={true}
+              onEntrySelect={(entry) => {
+                // Handle entry selection for editing
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {viewMode === 'list' && (
         <>
