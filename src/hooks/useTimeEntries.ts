@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAuditTrail } from '@/hooks/useAuditTrail';
 
 export interface TimeEntry {
   id: string;
@@ -49,84 +48,142 @@ export interface CreateTimeEntryData {
 
 export interface UpdateTimeEntryData {
   id: string;
+  job_id?: string;
+  crew_id?: string;
+  start_time?: string;
   end_time?: string;
   entry_type?: 'regular' | 'overtime' | 'travel' | 'break';
   hourly_rate?: number;
   description?: string;
   approved?: boolean;
+  approved_by?: string;
+  approved_at?: string;
 }
 
 export interface TimeEntryFilters {
   job_id?: string;
   user_id?: string;
   crew_id?: string;
-  start_date?: string;
-  end_date?: string;
   approved?: boolean;
   entry_type?: 'regular' | 'overtime' | 'travel' | 'break';
+  start_date?: string;
+  end_date?: string;
 }
+
+// Simple activity logging function to avoid dependency issues
+const logTimeEntryActivity = async (action: string, entityId: string, description: string) => {
+  try {
+    // Use simplified Supabase RPC call that matches our new function signature
+    await supabase.rpc('log_activity', {
+      p_action: action,
+      p_entity_type: 'time_entries',
+      p_entity_id: entityId,
+      p_description: description
+    });
+  } catch (error) {
+    // Silent fail for activity logging to not break main functionality
+    // Activity logging failures should not interrupt the main time entry operations
+  }
+};
 
 export function useTimeEntries() {
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const { toast } = useToast();
-  const { logActivity } = useAuditTrail();
 
   // Fetch time entries with optional filters
   const fetchTimeEntries = async (filters?: TimeEntryFilters) => {
+    // Prevent multiple simultaneous requests
+    if (loading) {
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      let query = supabase
+      // Build the query for time_entries table with error handling
+      // Use any cast since the table might not exist in types yet
+      const { data, error: fetchError } = await (supabase as any)
         .from('time_entries')
-        .select(`
-          *,
-          job:jobs(id, title, customer_id),
-          user:auth.users(id, email),
-          crew:crews(id, name)
-        `)
-        .order('start_time', { ascending: false });
-
-      // Apply filters
-      if (filters?.job_id) {
-        query = query.eq('job_id', filters.job_id);
-      }
-      if (filters?.user_id) {
-        query = query.eq('user_id', filters.user_id);
-      }
-      if (filters?.crew_id) {
-        query = query.eq('crew_id', filters.crew_id);
-      }
-      if (filters?.approved !== undefined) {
-        query = query.eq('approved', filters.approved);
-      }
-      if (filters?.entry_type) {
-        query = query.eq('entry_type', filters.entry_type);
-      }
-      if (filters?.start_date) {
-        query = query.gte('start_time', filters.start_date);
-      }
-      if (filters?.end_date) {
-        query = query.lte('start_time', filters.end_date);
-      }
-
-      const { data, error: fetchError } = await query;
+        .select('*')
+        .order('start_time', { ascending: false })
+        .limit(100);
 
       if (fetchError) {
+        // Check if it's a table doesn't exist error
+        if (fetchError.code === 'PGRST116' || fetchError.message.includes('does not exist') || fetchError.message.includes('relation') || fetchError.message.includes('table')) {
+          setError('Time entries table not found. Please contact administrator to set up the database.');
+          setTimeEntries([]);
+          setHasInitialized(true);
+          return;
+        }
         throw new Error(`Failed to fetch time entries: ${fetchError.message}`);
       }
 
-      setTimeEntries(data || []);
+      // Apply filters on the client side for now since we need to handle RLS properly
+      let filteredData = data || [];
+
+      if (filters?.job_id) {
+        filteredData = filteredData.filter((entry: any) => entry.job_id === filters.job_id);
+      }
+      if (filters?.user_id) {
+        filteredData = filteredData.filter((entry: any) => entry.user_id === filters.user_id);
+      }
+      if (filters?.crew_id) {
+        filteredData = filteredData.filter((entry: any) => entry.crew_id === filters.crew_id);
+      }
+      if (filters?.approved !== undefined) {
+        filteredData = filteredData.filter((entry: any) => entry.approved === filters.approved);
+      }
+      if (filters?.entry_type) {
+        filteredData = filteredData.filter((entry: any) => entry.entry_type === filters.entry_type);
+      }
+      if (filters?.start_date) {
+        filteredData = filteredData.filter((entry: any) => entry.start_time >= filters.start_date!);
+      }
+      if (filters?.end_date) {
+        filteredData = filteredData.filter((entry: any) => entry.start_time <= filters.end_date!);
+      }
+
+      // Transform the data to match our TimeEntry interface
+      const transformedData: TimeEntry[] = filteredData.map((entry: any) => ({
+        id: entry.id,
+        job_id: entry.job_id,
+        user_id: entry.user_id,
+        crew_id: entry.crew_id || undefined,
+        start_time: entry.start_time,
+        end_time: entry.end_time || undefined,
+        duration_hours: entry.duration_hours || 0,
+        entry_type: entry.entry_type || 'regular',
+        hourly_rate: entry.hourly_rate || undefined,
+        total_cost: entry.total_cost || 0,
+        description: entry.description || undefined,
+        approved: entry.approved || false,
+        approved_by: entry.approved_by || undefined,
+        approved_at: entry.approved_at || undefined,
+        created_at: entry.created_at || new Date().toISOString(),
+        updated_at: entry.updated_at || new Date().toISOString(),
+      }));
+
+      setTimeEntries(transformedData);
+      setHasInitialized(true);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch time entries';
       setError(errorMessage);
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      setTimeEntries([]); // Set empty array to prevent UI crashes
+      setHasInitialized(true);
+
+      // Only show toast for non-table-missing errors
+      if (!errorMessage.includes('table not found')) {
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -145,6 +202,7 @@ export function useTimeEntries() {
       const optimisticEntry: TimeEntry = {
         id: tempId,
         ...timeEntryData,
+        entry_type: timeEntryData.entry_type || 'regular',
         duration_hours: 0,
         total_cost: 0,
         approved: false,
@@ -157,12 +215,7 @@ export function useTimeEntries() {
       const { data, error: createError } = await supabase
         .from('time_entries')
         .insert([timeEntryData])
-        .select(`
-          *,
-          job:jobs(id, title, customer_id),
-          user:auth.users(id, email),
-          crew:crews(id, name)
-        `)
+        .select('*')
         .single();
 
       if (createError) {
@@ -171,18 +224,36 @@ export function useTimeEntries() {
         throw new Error(`Failed to create time entry: ${createError.message}`);
       }
 
+      // Transform the response data
+      const transformedData: TimeEntry = {
+        id: data.id,
+        job_id: data.job_id,
+        user_id: data.user_id,
+        crew_id: data.crew_id || undefined,
+        start_time: data.start_time,
+        end_time: data.end_time || undefined,
+        duration_hours: data.duration_hours || 0,
+        entry_type: data.entry_type || 'regular',
+        hourly_rate: data.hourly_rate || undefined,
+        total_cost: data.total_cost || 0,
+        description: data.description || undefined,
+        approved: data.approved || false,
+        approved_by: data.approved_by || undefined,
+        approved_at: data.approved_at || undefined,
+        created_at: data.created_at || new Date().toISOString(),
+        updated_at: data.updated_at || new Date().toISOString(),
+      };
+
       // Replace optimistic update with real data
       setTimeEntries(prev =>
-        prev.map(entry => entry.id === tempId ? data : entry)
+        prev.map(entry => entry.id === tempId ? transformedData : entry)
       );
 
       // Log activity
-      await logActivity(
+      await logTimeEntryActivity(
         'create',
-        'time_entry',
-        data.id,
-        `Time entry created for job ${timeEntryData.job_id}`,
-        { duration_hours: data.duration_hours, total_cost: data.total_cost }
+        transformedData.id,
+        `Time entry created for job ${timeEntryData.job_id}`
       );
 
       toast({
@@ -190,7 +261,7 @@ export function useTimeEntries() {
         description: "Time entry created successfully",
       });
 
-      return data;
+      return transformedData;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create time entry';
       setError(errorMessage);
@@ -243,12 +314,10 @@ export function useTimeEntries() {
       );
 
       // Log activity
-      await logActivity(
+      await logTimeEntryActivity(
         'update',
-        'time_entry',
         data.id,
-        `Time entry updated`,
-        { changes: updateData }
+        `Time entry updated`
       );
 
       toast({
@@ -296,12 +365,10 @@ export function useTimeEntries() {
       }
 
       // Log activity
-      await logActivity(
+      await logTimeEntryActivity(
         'delete',
-        'time_entry',
         id,
-        'Time entry deleted',
-        { deleted_entry: originalEntry }
+        'Time entry deleted'
       );
 
       toast({
@@ -375,16 +442,23 @@ export function useTimeEntries() {
     });
   };
 
-  // Initialize
-  useEffect(() => {
-    fetchTimeEntries();
-  }, []);
+  // Manual initialization to prevent automatic fetching
+  const initializeTimeEntries = () => {
+    if (!hasInitialized) {
+      fetchTimeEntries();
+    }
+  };
+
+  // Remove automatic useEffect to prevent infinite loops
+  // Components should call initializeTimeEntries manually when needed
 
   return {
     timeEntries,
     loading,
     error,
+    hasInitialized,
     fetchTimeEntries,
+    initializeTimeEntries,
     createTimeEntry,
     updateTimeEntry,
     deleteTimeEntry,

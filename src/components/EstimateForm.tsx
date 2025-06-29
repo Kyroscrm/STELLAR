@@ -11,12 +11,14 @@ import { useJobs } from '@/hooks/useJobs';
 import { useJobNumberGenerator } from '@/hooks/useJobNumberGenerator';
 import { EstimateWithLineItems } from '@/hooks/useEstimates';
 import { estimateSchema, EstimateFormData } from '@/lib/validation';
-import { RefreshCw, Plus, Trash2 } from 'lucide-react';
+import { RefreshCw, Plus, Trash2, GripVertical } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import EstimateTemplateSelector from './EstimateTemplateSelector';
 import { EstimateTemplate, EstimateTemplateLineItem } from '@/types/app-types';
 import { HelpTooltip } from '@/components/ui/help-tooltip';
 import { toast } from '@/components/ui/use-toast';
+import EstimateLineItemsManager from '@/components/EstimateLineItemsManager';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 
 interface EstimateFormProps {
   onSubmit: (data: EstimateFormData & { lineItems: LineItem[] }) => Promise<void>;
@@ -44,6 +46,10 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
 
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+
+  // Check if we're editing an existing estimate
+  const isEditing = !!(initialData?.id);
+  const [estimateTotal, setEstimateTotal] = useState(0);
 
   const form = useForm<EstimateFormData>({
     resolver: zodResolver(estimateSchema),
@@ -83,6 +89,21 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
 
   const removeLineItem = (index: number) => {
     setLineItems(lineItems.filter((_, i) => i !== index));
+  };
+
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+
+    const sourceIndex = result.source.index;
+    const destinationIndex = result.destination.index;
+
+    if (sourceIndex === destinationIndex) return;
+
+    const reorderedItems = Array.from(lineItems);
+    const [movedItem] = reorderedItems.splice(sourceIndex, 1);
+    reorderedItems.splice(destinationIndex, 0, movedItem);
+
+    setLineItems(reorderedItems);
   };
 
   const calculateSubtotal = () => {
@@ -341,98 +362,138 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
         />
 
         {/* Line Items */}
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-lg">
-                Line Items
-                <HelpTooltip content="Add individual products or services with their quantities and prices." />
-              </CardTitle>
-              <Button type="button" onClick={addLineItem} size="sm" variant="outline">
-                <Plus className="h-4 w-4 mr-1" />
-                Add Item
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {lineItems.length === 0 ? (
-              <div className="text-center py-4 text-gray-500">
-                No items added. Click "Add Item" to begin.
+        {isEditing && initialData?.id ? (
+          <EstimateLineItemsManager
+            estimateId={initialData.id}
+            onTotalChange={setEstimateTotal}
+          />
+        ) : (
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg">
+                  Line Items
+                  <HelpTooltip content="Add individual products or services with their quantities and prices." />
+                </CardTitle>
+                <Button type="button" onClick={addLineItem} size="sm" variant="outline">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Item
+                </Button>
               </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="grid grid-cols-12 gap-2 font-medium text-sm text-gray-600">
-                  <div className="col-span-6">Description</div>
-                  <div className="col-span-2">Quantity</div>
-                  <div className="col-span-2">Unit Price</div>
-                  <div className="col-span-1">Total</div>
-                  <div className="col-span-1"></div>
+            </CardHeader>
+            <CardContent>
+              {lineItems.length === 0 ? (
+                <div className="text-center py-4 text-gray-500">
+                  No items added. Click "Add Item" to begin.
                 </div>
-                {lineItems.map((item, index) => (
-                  <div key={index} className="grid grid-cols-12 gap-2 items-center">
-                    <div className="col-span-6">
-                      <Input
-                        value={item.description}
-                        onChange={(e) => updateLineItem(index, 'description', e.target.value)}
-                        placeholder="Item description"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <Input
-                        type="number"
-                        value={item.quantity}
-                        onChange={(e) => updateLineItem(index, 'quantity', parseFloat(e.target.value))}
-                        min="0"
-                        step="1"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <Input
-                        type="number"
-                        value={item.unit_price}
-                        onChange={(e) => updateLineItem(index, 'unit_price', parseFloat(e.target.value))}
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
-                    <div className="col-span-1 text-right font-medium">
-                      ${item.total.toFixed(2)}
-                    </div>
-                    <div className="col-span-1 text-right">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeLineItem(index)}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-12 gap-2 font-medium text-sm text-gray-600">
+                    <div className="col-span-1"></div>
+                    <div className="col-span-5">Description</div>
+                    <div className="col-span-2">Quantity</div>
+                    <div className="col-span-2">Unit Price</div>
+                    <div className="col-span-1">Total</div>
+                    <div className="col-span-1"></div>
                   </div>
-                ))}
 
-                <div className="flex justify-end pt-4 border-t">
-                  <div className="w-1/3 space-y-2">
-                    <div className="flex justify-between">
-                      <span className="font-medium">Subtotal:</span>
-                      <span>${calculateSubtotal().toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium">Tax ({form.watch('tax_rate')}%):</span>
-                      <span>${(calculateSubtotal() * (form.watch('tax_rate') / 100)).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-lg font-bold">
-                      <span>Total:</span>
-                      <span>
-                        ${(calculateSubtotal() * (1 + form.watch('tax_rate') / 100)).toFixed(2)}
-                      </span>
+                  <DragDropContext onDragEnd={handleDragEnd}>
+                    <Droppable droppableId="create-line-items">
+                      {(provided) => (
+                        <div
+                          {...provided.droppableProps}
+                          ref={provided.innerRef}
+                          className="space-y-2"
+                        >
+                          {lineItems.map((item, index) => (
+                            <Draggable key={`item-${index}`} draggableId={`item-${index}`} index={index}>
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  className={`grid grid-cols-12 gap-2 items-center p-2 border rounded-lg transition-colors ${
+                                    snapshot.isDragging
+                                      ? 'bg-blue-50 border-blue-300 shadow-lg'
+                                      : 'hover:bg-gray-50'
+                                  }`}
+                                >
+                                  <div
+                                    {...provided.dragHandleProps}
+                                    className="col-span-1 flex justify-center cursor-grab active:cursor-grabbing"
+                                  >
+                                    <GripVertical className="h-4 w-4 text-gray-400" />
+                                  </div>
+                                  <div className="col-span-5">
+                                    <Input
+                                      value={item.description}
+                                      onChange={(e) => updateLineItem(index, 'description', e.target.value)}
+                                      placeholder="Item description"
+                                    />
+                                  </div>
+                                  <div className="col-span-2">
+                                    <Input
+                                      type="number"
+                                      value={item.quantity}
+                                      onChange={(e) => updateLineItem(index, 'quantity', parseFloat(e.target.value))}
+                                      min="0"
+                                      step="1"
+                                    />
+                                  </div>
+                                  <div className="col-span-2">
+                                    <Input
+                                      type="number"
+                                      value={item.unit_price}
+                                      onChange={(e) => updateLineItem(index, 'unit_price', parseFloat(e.target.value))}
+                                      min="0"
+                                      step="0.01"
+                                    />
+                                  </div>
+                                  <div className="col-span-1 text-right font-medium">
+                                    ${item.total.toFixed(2)}
+                                  </div>
+                                  <div className="col-span-1 text-right">
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => removeLineItem(index)}
+                                    >
+                                      <Trash2 className="h-4 w-4 text-red-500" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
+
+                  <div className="flex justify-end pt-4 border-t">
+                    <div className="w-1/3 space-y-2">
+                      <div className="flex justify-between">
+                        <span className="font-medium">Subtotal:</span>
+                        <span>${calculateSubtotal().toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Tax ({form.watch('tax_rate')}%):</span>
+                        <span>${(calculateSubtotal() * (form.watch('tax_rate') / 100)).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-lg font-bold">
+                        <span>Total:</span>
+                        <span>
+                          ${(calculateSubtotal() * (1 + form.watch('tax_rate') / 100)).toFixed(2)}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <FormField
           control={form.control}

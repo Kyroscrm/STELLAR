@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Search, BarChart3, Shield, Activity, Settings } from 'lucide-react';
 import SecurityDashboard from '@/components/SecurityDashboard';
 import SecuritySettings from '@/components/SecuritySettings';
@@ -46,7 +46,7 @@ const DashboardControls: React.FC = () => {
             <span>Activity</span>
           </Button>
 
-          
+
         </div>
       </div>
 

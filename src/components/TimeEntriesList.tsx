@@ -62,7 +62,9 @@ const TimeEntriesList: React.FC<TimeEntriesListProps> = ({
   const {
     timeEntries,
     loading,
+    hasInitialized,
     fetchTimeEntries,
+    initializeTimeEntries,
     updateTimeEntry,
     deleteTimeEntry,
     clockOut,
@@ -80,10 +82,19 @@ const TimeEntriesList: React.FC<TimeEntriesListProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEntries, setSelectedEntries] = useState<string[]>([]);
 
-  // Apply filters when component mounts or filters change
+  // Initialize time entries manually to prevent infinite loops
   useEffect(() => {
-    fetchTimeEntries(filters);
-  }, [filters, fetchTimeEntries]);
+    if (!hasInitialized) {
+      initializeTimeEntries();
+    }
+  }, [hasInitialized, initializeTimeEntries]);
+
+  // Apply filters when filters change (but not on mount)
+  useEffect(() => {
+    if (hasInitialized) {
+      fetchTimeEntries(filters);
+    }
+  }, [filters, hasInitialized]);
 
   // Filter entries based on search term
   const filteredEntries = timeEntries.filter(entry =>
@@ -231,7 +242,7 @@ const TimeEntriesList: React.FC<TimeEntriesListProps> = ({
               <select
                 className="px-3 py-2 border border-gray-300 rounded-md"
                 value={filters.entry_type || ''}
-                onChange={(e) => handleFilterChange('entry_type', e.target.value as any)}
+                onChange={(e) => handleFilterChange('entry_type', e.target.value as 'regular' | 'overtime' | 'travel' | 'break' | '')}
               >
                 <option value="">All Types</option>
                 <option value="regular">Regular</option>

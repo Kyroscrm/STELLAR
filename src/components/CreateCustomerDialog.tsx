@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import NewCustomerForm from '@/components/NewCustomerForm';
@@ -10,7 +9,7 @@ interface CreateCustomerDialogProps {
   onSuccess?: () => void;
 }
 
-const CreateCustomerDialog: React.FC<CreateCustomerDialogProps> = ({ 
+const CreateCustomerDialog: React.FC<CreateCustomerDialogProps> = ({
   trigger,
   onSuccess
 }) => {
@@ -40,6 +39,9 @@ const CreateCustomerDialog: React.FC<CreateCustomerDialogProps> = ({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Customer</DialogTitle>
+          <DialogDescription>
+            Add a new customer to your database with contact and billing information.
+          </DialogDescription>
         </DialogHeader>
         <NewCustomerForm
           onSuccess={handleSuccess}

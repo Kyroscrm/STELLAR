@@ -1,12 +1,59 @@
 import jsPDF from 'jspdf';
-import type { LogoSettings, Estimate, Invoice, LineItem } from '@/types/app-types';
+import type { LogoSettings, Estimate, Invoice } from '@/types/app-types';
+
+// Define LineItem interface locally for PDF generation
+interface LineItem {
+  id?: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  total: number;
+  sort_order?: number;
+}
+
+// Define extended types for PDF generation
+interface EstimateWithLineItems extends Estimate {
+  estimate_line_items?: LineItem[];
+  line_items?: LineItem[];
+  customer?: {
+    first_name: string;
+    last_name: string;
+    email?: string;
+    phone?: string;
+  };
+}
+
+interface InvoiceWithLineItems extends Invoice {
+  invoice_line_items?: LineItem[];
+  line_items?: LineItem[];
+  customer?: {
+    first_name: string;
+    last_name: string;
+    email?: string;
+    phone?: string;
+  };
+}
 
 const loadImage = (url: string): Promise<HTMLImageElement> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.onload = () => resolve(img);
-    img.onerror = reject;
+
+    // Set a timeout to prevent hanging
+    const timeout = setTimeout(() => {
+      reject(new Error('Image loading timeout'));
+    }, 10000);
+
+    img.onload = () => {
+      clearTimeout(timeout);
+      resolve(img);
+    };
+
+    img.onerror = () => {
+      clearTimeout(timeout);
+      reject(new Error('Failed to load image'));
+    };
+
     img.src = url;
   });
 };
@@ -62,11 +109,12 @@ const addLogoToPDF = async (pdf: jsPDF, logoSettings: LogoSettings | null, estim
     }
 
   } catch (error: unknown) {
-    // Error handled - logo addition fails silently, PDF generation continues
+    // Logo addition fails silently, PDF generation continues
+    // This prevents the entire PDF generation from failing
   }
 };
 
-export const generateEstimatePDF = async (estimate: Estimate, logoSettings: LogoSettings | null) => {
+export const generateEstimatePDF = async (estimate: EstimateWithLineItems, logoSettings: LogoSettings | null) => {
   const pdf = new jsPDF();
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
@@ -162,8 +210,12 @@ export const generateEstimatePDF = async (estimate: Estimate, logoSettings: Logo
 
   // Line items
   pdf.setFont(undefined, 'normal');
-  if (estimate.line_items && estimate.line_items.length > 0) {
-    estimate.line_items.forEach((item: LineItem) => {
+
+  // Handle both possible field names for line items
+  const lineItems = estimate.estimate_line_items || estimate.line_items;
+
+  if (lineItems && lineItems.length > 0) {
+    lineItems.forEach((item: LineItem) => {
       const descriptionLines = pdf.splitTextToSize(item.description, 100);
       pdf.text(descriptionLines, 20, currentY);
       pdf.text(item.quantity.toString(), pageWidth - 120, currentY);
@@ -236,7 +288,7 @@ export const generateEstimatePDF = async (estimate: Estimate, logoSettings: Logo
   pdf.save(`estimate-${estimate.estimate_number}.pdf`);
 };
 
-export const generateInvoicePDF = async (invoice: Invoice, logoSettings: LogoSettings | null) => {
+export const generateInvoicePDF = async (invoice: InvoiceWithLineItems, logoSettings: LogoSettings | null) => {
   const pdf = new jsPDF();
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
@@ -332,8 +384,12 @@ export const generateInvoicePDF = async (invoice: Invoice, logoSettings: LogoSet
 
   // Line items
   pdf.setFont(undefined, 'normal');
-  if (invoice.line_items && invoice.line_items.length > 0) {
-    invoice.line_items.forEach((item: LineItem) => {
+
+  // Handle both possible field names for line items
+  const lineItems = invoice.invoice_line_items || invoice.line_items;
+
+  if (lineItems && lineItems.length > 0) {
+    lineItems.forEach((item: LineItem) => {
       const descriptionLines = pdf.splitTextToSize(item.description, 100);
       pdf.text(descriptionLines, 20, currentY);
       pdf.text(item.quantity.toString(), pageWidth - 120, currentY);

@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -33,7 +32,7 @@ interface NewTemplateDialogProps {
   onSuccess?: () => void;
 }
 
-const NewTemplateDialog: React.FC<NewTemplateDialogProps> = ({ 
+const NewTemplateDialog: React.FC<NewTemplateDialogProps> = ({
   trigger,
   onSuccess
 }) => {
@@ -75,7 +74,7 @@ const NewTemplateDialog: React.FC<NewTemplateDialogProps> = ({
     setIsSubmitting(true);
     try {
       // Validate line items
-      const validLineItems = lineItems.filter(item => 
+      const validLineItems = lineItems.filter(item =>
         item.description.trim() && item.quantity > 0 && item.unit_price >= 0
       ).map(item => ({
         description: item.description.trim(),
@@ -92,11 +91,11 @@ const NewTemplateDialog: React.FC<NewTemplateDialogProps> = ({
         notes: data.notes || null,
         line_items: validLineItems
       };
-      
+
       console.log('Creating template with data:', templateData);
-      
+
       const result = await createTemplate(templateData);
-      
+
       if (result) {
         setOpen(false);
         form.reset();
@@ -136,8 +135,11 @@ const NewTemplateDialog: React.FC<NewTemplateDialogProps> = ({
             <FileText className="h-5 w-5" />
             Create New Estimate Template
           </DialogTitle>
+          <DialogDescription>
+            Create a reusable template with predefined line items, terms, and pricing for faster estimate creation.
+          </DialogDescription>
         </DialogHeader>
-        
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -162,7 +164,7 @@ const NewTemplateDialog: React.FC<NewTemplateDialogProps> = ({
                   <FormItem>
                     <FormLabel>Default Tax Rate (%)</FormLabel>
                     <FormControl>
-                      <Input 
+                      <Input
                         type="number"
                         step="0.01"
                         min="0"
@@ -186,9 +188,9 @@ const NewTemplateDialog: React.FC<NewTemplateDialogProps> = ({
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea 
+                    <Textarea
                       placeholder="Brief description of this template"
-                      {...field} 
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
@@ -270,9 +272,9 @@ const NewTemplateDialog: React.FC<NewTemplateDialogProps> = ({
                   <FormItem>
                     <FormLabel>Default Terms & Conditions</FormLabel>
                     <FormControl>
-                      <Textarea 
+                      <Textarea
                         placeholder="e.g., Payment due within 30 days"
-                        {...field} 
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -287,9 +289,9 @@ const NewTemplateDialog: React.FC<NewTemplateDialogProps> = ({
                   <FormItem>
                     <FormLabel>Default Notes</FormLabel>
                     <FormControl>
-                      <Textarea 
+                      <Textarea
                         placeholder="e.g., All materials included in estimate"
-                        {...field} 
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />

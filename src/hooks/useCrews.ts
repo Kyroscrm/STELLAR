@@ -7,35 +7,30 @@ import { useOptimisticUpdate } from './useOptimisticUpdate';
 
 export interface Crew {
   id: string;
-  user_id: string;
   name: string;
-  crew_lead_name?: string;
-  crew_lead_phone?: string;
-  crew_lead_email?: string;
-  specialties?: string[];
-  capacity: number;
-  hourly_rate?: number;
-  is_active: boolean;
-  notes?: string;
+  description?: string;
+  lead_id?: string;
+  status: 'active' | 'inactive' | 'suspended';
   created_at: string;
   updated_at: string;
+  created_by?: string;
+  updated_by?: string;
 }
 
 export interface CrewMember {
   id: string;
   crew_id: string;
-  name: string;
-  role?: string;
-  phone?: string;
-  email?: string;
+  user_id: string;
+  role: 'lead' | 'member' | 'apprentice';
   hourly_rate?: number;
-  hire_date?: string;
+  joined_date?: string;
+  left_date?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
 }
 
-type CrewInsert = Omit<Crew, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
+type CrewInsert = Omit<Crew, 'id' | 'created_at' | 'updated_at' | 'created_by' | 'updated_by'>;
 type CrewUpdate = Partial<CrewInsert>;
 type CrewMemberInsert = Omit<CrewMember, 'id' | 'created_at' | 'updated_at'>;
 type CrewMemberUpdate = Partial<CrewMemberInsert>;
@@ -68,7 +63,7 @@ export const useCrews = () => {
       const { data, error } = await supabase
         .from('crews')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('created_by', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -91,9 +86,9 @@ export const useCrews = () => {
         .from('crew_members')
         .select(`
           *,
-          crews!inner(user_id)
+          crews!inner(created_by)
         `)
-        .eq('crews.user_id', user.id);
+        .eq('crews.created_by', user.id);
 
       if (crewId) {
         query = query.eq('crew_id', crewId);
@@ -116,7 +111,7 @@ export const useCrews = () => {
     const optimisticCrew: Crew = {
       id: `temp-${Date.now()}`,
       ...crewData,
-      user_id: user.id,
+      created_by: user.id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -129,7 +124,7 @@ export const useCrews = () => {
         async () => {
           const { data, error } = await supabase
             .from('crews')
-            .insert({ ...crewData, user_id: user.id })
+            .insert({ ...crewData, created_by: user.id })
             .select()
             .single();
 
@@ -172,7 +167,7 @@ export const useCrews = () => {
             .from('crews')
             .update(updates)
             .eq('id', id)
-            .eq('user_id', user.id)
+            .eq('created_by', user.id)
             .select()
             .single();
 
@@ -213,7 +208,7 @@ export const useCrews = () => {
             .from('crews')
             .delete()
             .eq('id', id)
-            .eq('user_id', user.id);
+            .eq('created_by', user.id);
 
           if (error) throw error;
           return true;

@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,12 +27,12 @@ const LoginAccessDialog: React.FC<LoginAccessDialogProps> = ({ isOpen, onClose }
     if (password === 'Final1234@') {
       // Store access in session storage
       sessionStorage.setItem('loginAccess', 'granted');
-      
+
       toast({
         title: "Access Granted",
         description: "Redirecting to login page..."
       });
-      
+
       // Close dialog and navigate to login
       onClose();
       setPassword('');
@@ -45,7 +44,7 @@ const LoginAccessDialog: React.FC<LoginAccessDialogProps> = ({ isOpen, onClose }
         variant: "destructive"
       });
     }
-    
+
     setIsLoading(false);
   };
 
@@ -62,8 +61,11 @@ const LoginAccessDialog: React.FC<LoginAccessDialogProps> = ({ isOpen, onClose }
             <Lock className="h-5 w-5 text-primary" />
             Access Required
           </DialogTitle>
+          <DialogDescription>
+            Enter the access password to proceed to the login page.
+          </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="access-password">Enter access password:</Label>

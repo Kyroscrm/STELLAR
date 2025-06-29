@@ -20,6 +20,7 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
 } from "@/components/ui/dialog";
 import {
     DropdownMenu,
@@ -42,6 +43,7 @@ import { useCustomers } from '@/hooks/useCustomers';
 import { useEstimates, EstimateWithLineItems } from '@/hooks/useEstimates';
 import { useEstimateTemplates } from '@/hooks/useEstimateTemplates';
 import { usePDFGeneration } from '@/hooks/usePDFGeneration';
+import { useEstimateLineItems } from '@/hooks/useEstimateLineItems';
 import {
     AlertTriangle,
     Check,
@@ -60,6 +62,7 @@ import {
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { EstimateFormData } from '@/types/app-types';
+import { generateEstimatePDF } from '@/lib/pdf-generator';
 
 // Define the LineItem interface to match what EstimateForm expects
 interface LineItem {
@@ -120,11 +123,16 @@ const EstimatesPage = () => {
       // Update the estimate with the formatted data
       await updateEstimate(selectedEstimate.id, estimateData);
 
+      // Note: Line items are managed separately by the EstimateLineItemsManager component
+      // when editing estimates. The form should use the EstimateLineItemsManager
+      // for real-time line item updates instead of local state management.
+
       setIsEditModalOpen(false);
       setSelectedEstimate(null);
       toast.success('Estimate updated successfully');
     } catch (error: unknown) {
-      toast.error('Failed to update estimate');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update estimate';
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -352,9 +360,12 @@ const EstimatesPage = () => {
 
       {/* View Estimate Modal */}
       <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Estimate Details</DialogTitle>
+            <DialogDescription>
+              View complete estimate information including line items, customer details, and totals.
+            </DialogDescription>
           </DialogHeader>
           {selectedEstimate && (
             <div className="space-y-6">
@@ -448,9 +459,12 @@ const EstimatesPage = () => {
 
       {/* Edit Estimate Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Estimate</DialogTitle>
+            <DialogDescription>
+              Update the estimate details and line items below. Line items are automatically saved as you edit them.
+            </DialogDescription>
           </DialogHeader>
           {selectedEstimate && (
             <EstimateForm

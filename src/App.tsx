@@ -8,6 +8,7 @@ import { TourProvider } from "@/contexts/TourContext";
 import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminLayout from "@/components/AdminLayout";
+import EmergencyStop from "@/components/EmergencyStop";
 import { useRealTimeNotifications } from "@/hooks/useRealTimeNotifications";
 import { useRealTimePresence } from "@/hooks/useRealTimePresence";
 import { lazy, Suspense } from "react";
@@ -67,6 +68,7 @@ function App() {
             <TooltipProvider>
               <Toaster />
               <Sonner />
+              <EmergencyStop />
               <BrowserRouter>
                 <TourProvider>
                   <Routes>

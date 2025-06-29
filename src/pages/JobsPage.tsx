@@ -1,4 +1,3 @@
-
 import EditJobDialog from '@/components/EditJobDialog';
 import FileWorkflowManager from '@/components/FileWorkflowManager';
 import JobKanbanBoard from '@/components/JobKanbanBoard';
@@ -17,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import ViewJobDialog from '@/components/ViewJobDialog';
 import { useJobs } from '@/hooks/useJobs';
+import { useAuth } from '@/contexts/AuthContext';
 import {
     AlertCircle,
     Briefcase,
@@ -39,9 +39,11 @@ import { useState } from 'react';
 
 const JobsPage = () => {
   const { jobs, loading, updateJob, deleteJob, fetchJobs } = useJobs();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'files' | 'time'>('kanban');
+  const [selectedJobId, setSelectedJobId] = useState<string>('');
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -123,7 +125,14 @@ const JobsPage = () => {
           <Button variant="outline" size="sm" onClick={() => setViewMode('files')} className={viewMode === 'files' ? 'bg-primary text-white' : ''}>
             <Settings className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setViewMode('time')} className={viewMode === 'time' ? 'bg-primary text-white' : ''}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setViewMode('time')}
+            className={viewMode === 'time' ? 'bg-primary text-white' : ''}
+            title="Time Tracking"
+            data-testid="time-tracking-button"
+          >
             <Clock className="h-4 w-4" />
           </Button>
           <NewJobDialog onSuccess={fetchJobs} />
@@ -200,24 +209,66 @@ const JobsPage = () => {
 
       {viewMode === 'time' && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Time Entry Form */}
-            <TimeEntryForm
-              jobId=""
-              userId="current-user-id"
-              onSuccess={() => {
-                // Refresh time entries list
-              }}
-            />
+          {/* Job Selection for Time Tracking */}
+          {!selectedJobId && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Select a Job for Time Tracking</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {jobs.filter(job => ['approved', 'scheduled', 'in_progress'].includes(job.status || '')).map((job) => (
+                    <Card
+                      key={job.id}
+                      className="cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => setSelectedJobId(job.id)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="font-medium">{job.title}</div>
+                        <div className="text-sm text-gray-600 mt-1">{job.address}</div>
+                        <Badge className={`mt-2 ${getStatusColor(job.status || 'quoted')}`}>
+                          {job.status}
+                        </Badge>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-            {/* Time Entries List */}
-            <TimeEntriesList
-              showFilters={true}
-              onEntrySelect={(entry) => {
-                // Handle entry selection for editing
-              }}
-            />
-          </div>
+          {selectedJobId && user && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium">
+                  Time Tracking: {jobs.find(j => j.id === selectedJobId)?.title}
+                </h3>
+                <Button variant="outline" onClick={() => setSelectedJobId('')}>
+                  Change Job
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Time Entry Form */}
+                <TimeEntryForm
+                  jobId={selectedJobId}
+                  userId={user.id}
+                  onSuccess={() => {
+                    // Refresh time entries list
+                  }}
+                />
+
+                {/* Time Entries List */}
+                <TimeEntriesList
+                  jobId={selectedJobId}
+                  showFilters={true}
+                  onEntrySelect={(entry) => {
+                    // Handle entry selection for editing
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       )}
 

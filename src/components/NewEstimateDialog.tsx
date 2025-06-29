@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import EstimateForm from '@/components/EstimateForm';
@@ -83,6 +82,9 @@ const NewEstimateDialog: React.FC<NewEstimateDialogProps> = ({
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Estimate</DialogTitle>
+          <DialogDescription>
+            Create a new estimate for a customer with line items and pricing details.
+          </DialogDescription>
         </DialogHeader>
         <EstimateForm
           onSubmit={handleSuccess}

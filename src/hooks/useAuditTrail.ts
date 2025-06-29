@@ -112,32 +112,24 @@ export const useAuditTrail = () => {
   ) => {
     try {
       validateUserAndSession();
-      setLoading(true);
 
+      // Try the simplified log_activity function first
       const { error } = await supabase.rpc('log_activity', {
         p_action: action,
         p_entity_type: entityType,
         p_entity_id: entityId,
-        p_description: description,
-        p_metadata: null,
-        p_old_data: null,
-        p_new_data: null,
-        p_changed_fields: null,
-        p_ip_address: null,
-        p_user_agent: null,
-        p_session_id: null,
-        p_compliance_level: 'standard',
-        p_risk_score: 0
+        p_description: description
       });
 
-      if (error) throw error;
+      if (error) {
+        // If RPC call fails, silently fail to not break main functionality
+        return false;
+      }
 
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Unknown error'));
+      // Silently fail for activity logging to not break main functionality
       return false;
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -310,11 +302,30 @@ export const useAuditTrail = () => {
     }
   };
 
+  /**
+   * Simple logActivity function for compatibility with useTimeEntries and other hooks
+   * @param action - Action performed
+   * @param entityType - Type of entity
+   * @param entityId - ID of the entity
+   * @param description - Description of the action
+   * @param metadata - Additional metadata
+   */
+  const logActivity = async (
+    action: string,
+    entityType: string,
+    entityId: string,
+    description?: string,
+    metadata?: unknown
+  ): Promise<boolean> => {
+    return await logCustomAuditEvent(action, entityType, entityId, description || `${action} ${entityType}`);
+  };
+
   return {
     loading,
     records,
     error,
     fetchAuditRecords,
+    logActivity,
     logCustomAuditEvent,
     exportAuditRecords,
     setRequestMetadata,

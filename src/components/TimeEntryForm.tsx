@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -30,8 +30,8 @@ const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   onSuccess,
   onCancel
 }) => {
-  const { createTimeEntry, clockIn, loading } = useTimeEntries();
-  const { crews } = useCrews();
+  const { createTimeEntry, clockIn, loading, initializeTimeEntries } = useTimeEntries();
+  const { crews, fetchCrews } = useCrews();
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -45,12 +45,37 @@ const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Initialize data when component mounts
+  useEffect(() => {
+    initializeTimeEntries();
+    fetchCrews();
+  }, [initializeTimeEntries, fetchCrews]);
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate required fields
+    if (!jobId) {
+      toast({
+        title: "Error",
+        description: "Job ID is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "User ID is required",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (!formData.start_time) {
       toast({
@@ -110,6 +135,25 @@ const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   };
 
   const handleQuickClockIn = async () => {
+    // Validate required fields
+    if (!jobId) {
+      toast({
+        title: "Error",
+        description: "Job ID is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "User ID is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -268,7 +312,7 @@ const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                     <SelectItem value="">No crew assignment</SelectItem>
                     {crews.map((crew) => (
                       <SelectItem key={crew.id} value={crew.id}>
-                        {crew.name} ({crew.crew_type})
+                        {crew.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

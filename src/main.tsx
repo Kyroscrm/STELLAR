@@ -37,7 +37,5 @@ if (import.meta.env.VITE_SENTRY_DSN_FRONTEND) {
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
+  <App />
 );
