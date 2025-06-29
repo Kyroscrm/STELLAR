@@ -52,8 +52,8 @@ const NewJobForm: React.FC<NewJobFormProps> = ({
       address: job?.address || '',
       start_date: job?.start_date || '',
       end_date: job?.end_date || '',
-      budget: job?.budget || undefined,
-      estimated_hours: job?.estimated_hours || undefined,
+      budget: job?.budget || 0,
+      estimated_hours: job?.estimated_hours || 0,
       status: job?.status || 'quoted',
       notes: job?.notes || '',
     },
@@ -90,8 +90,11 @@ const NewJobForm: React.FC<NewJobFormProps> = ({
         onClose?.();
       }
     } catch (error) {
-      console.error('Error saving job:', error);
-      toast.error('Failed to save job');
+      if (error instanceof Error) {
+        toast.error(`Failed to save job: ${error.message}`);
+      } else {
+        toast.error('Failed to save job');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -239,8 +242,8 @@ const NewJobForm: React.FC<NewJobFormProps> = ({
               <FormItem>
                 <FormLabel>Budget</FormLabel>
                 <FormControl>
-                  <Input 
-                    type="number" 
+                  <Input
+                    type="number"
                     step="0.01"
                     placeholder="0.00"
                     {...field}
@@ -259,8 +262,8 @@ const NewJobForm: React.FC<NewJobFormProps> = ({
               <FormItem>
                 <FormLabel>Estimated Hours</FormLabel>
                 <FormControl>
-                  <Input 
-                    type="number" 
+                  <Input
+                    type="number"
                     step="0.5"
                     placeholder="0"
                     {...field}

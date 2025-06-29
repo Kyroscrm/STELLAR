@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -54,9 +53,9 @@ const LeadForm: React.FC<LeadFormProps> = ({
       city: initialData?.city || '',
       state: initialData?.state || '',
       zip_code: initialData?.zip_code || '',
-      status: (initialData?.status as any) || 'new',
-      source: (initialData?.source as any) || 'website',
-      estimated_value: initialData?.estimated_value || undefined,
+      status: (initialData?.status as 'new' | 'contacted' | 'qualified' | 'proposal_sent' | 'won' | 'lost' | 'converted') || 'new',
+      source: (initialData?.source as 'website' | 'referral' | 'google_ads' | 'facebook' | 'direct_mail' | 'cold_call' | 'trade_show' | 'other') || 'website',
+      estimated_value: initialData?.estimated_value || 0,
       expected_close_date: initialData?.expected_close_date || '',
       score: initialData?.score || 0,
       notes: initialData?.notes || '',
@@ -67,7 +66,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
     try {
       await onSubmit(data);
     } catch (error) {
-      console.error('Error submitting lead form:', error);
+      // Error handling is done by the parent component
     }
   };
 
@@ -257,8 +256,8 @@ const LeadForm: React.FC<LeadFormProps> = ({
               <FormItem>
                 <FormLabel>Estimated Value</FormLabel>
                 <FormControl>
-                  <Input 
-                    type="number" 
+                  <Input
+                    type="number"
                     step="0.01"
                     placeholder="0.00"
                     {...field}
@@ -291,8 +290,8 @@ const LeadForm: React.FC<LeadFormProps> = ({
               <FormItem>
                 <FormLabel>Score (0-100)</FormLabel>
                 <FormControl>
-                  <Input 
-                    type="number" 
+                  <Input
+                    type="number"
                     min="0"
                     max="100"
                     placeholder="0"

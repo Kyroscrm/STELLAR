@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Edit } from 'lucide-react';
 import CustomerForm from '@/components/CustomerForm';
 import { useCustomers, Customer } from '@/hooks/useCustomers';
+import { CustomerFormData } from '@/types/app-types';
 
 interface EditCustomerDialogProps {
   customer: Customer;
@@ -12,11 +12,11 @@ interface EditCustomerDialogProps {
   onSuccess?: () => void;
 }
 
-const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
+const EditCustomerDialog = React.forwardRef<HTMLButtonElement, EditCustomerDialogProps>(({
   customer,
   trigger,
   onSuccess
-}) => {
+}, ref) => {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { updateCustomer } = useCustomers();
@@ -43,13 +43,16 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
       {trigger ? (
         <div onClick={() => setOpen(true)}>{trigger}</div>
       ) : (
-        <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
+        <Button ref={ref} variant="ghost" size="sm" onClick={() => setOpen(true)}>
           <Edit className="h-4 w-4" />
         </Button>
       )}
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Customer</DialogTitle>
+          <DialogDescription>
+            Update information for {customer.first_name} {customer.last_name}
+          </DialogDescription>
         </DialogHeader>
         <CustomerForm
           onSubmit={handleSubmit}
@@ -60,6 +63,8 @@ const EditCustomerDialog: React.FC<EditCustomerDialogProps> = ({
       </DialogContent>
     </Dialog>
   );
-};
+});
+
+EditCustomerDialog.displayName = 'EditCustomerDialog';
 
 export default EditCustomerDialog;

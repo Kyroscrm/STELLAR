@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Eye, Mail, Phone, MapPin, Calendar, DollarSign } from 'lucide-react';
@@ -11,7 +10,7 @@ interface ViewLeadDialogProps {
   trigger?: React.ReactNode;
 }
 
-const ViewLeadDialog: React.FC<ViewLeadDialogProps> = ({ lead, trigger }) => {
+const ViewLeadDialog = React.forwardRef<HTMLButtonElement, ViewLeadDialogProps>(({ lead, trigger }, ref) => {
   const [open, setOpen] = useState(false);
 
   const getStatusColor = (status: string) => {
@@ -43,7 +42,7 @@ const ViewLeadDialog: React.FC<ViewLeadDialogProps> = ({ lead, trigger }) => {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button variant="ghost" size="sm">
+          <Button ref={ref} variant="ghost" size="sm">
             <Eye className="h-4 w-4" />
           </Button>
         )}
@@ -51,8 +50,11 @@ const ViewLeadDialog: React.FC<ViewLeadDialogProps> = ({ lead, trigger }) => {
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Lead Details</DialogTitle>
+          <DialogDescription>
+            View detailed information for {lead.first_name} {lead.last_name}
+          </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-6">
           {/* Header */}
           <div className="flex items-start justify-between">
@@ -154,6 +156,8 @@ const ViewLeadDialog: React.FC<ViewLeadDialogProps> = ({ lead, trigger }) => {
       </DialogContent>
     </Dialog>
   );
-};
+});
+
+ViewLeadDialog.displayName = 'ViewLeadDialog';
 
 export default ViewLeadDialog;

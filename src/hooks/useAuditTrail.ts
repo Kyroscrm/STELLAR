@@ -83,7 +83,7 @@ export const useAuditTrail = () => {
       if (error) throw error;
 
       // Map to AuditRecord interface
-      const mappedRecords: AuditRecord[] = (data || []).map((record: any) => ({
+      const mappedRecords: AuditRecord[] = (data || []).map((record: AuditLog) => ({
         id: record.id,
         user_id: record.user_id,
         action: record.action,
@@ -118,7 +118,16 @@ export const useAuditTrail = () => {
         p_action: action,
         p_entity_type: entityType,
         p_entity_id: entityId,
-        p_description: description
+        p_description: description,
+        p_metadata: null,
+        p_old_data: null,
+        p_new_data: null,
+        p_changed_fields: null,
+        p_ip_address: null,
+        p_user_agent: null,
+        p_session_id: null,
+        p_compliance_level: 'standard',
+        p_risk_score: 0
       });
 
       if (error) throw error;

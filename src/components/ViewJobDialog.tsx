@@ -1,5 +1,5 @@
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,12 +14,12 @@ interface ViewJobDialogProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-const ViewJobDialog: React.FC<ViewJobDialogProps> = ({
+const ViewJobDialog = React.forwardRef<HTMLButtonElement, ViewJobDialogProps>(({
   job,
   trigger,
   open: controlledOpen,
   onOpenChange
-}) => {
+}, ref) => {
   const [internalOpen, setInternalOpen] = React.useState(false);
 
   const isControlled = controlledOpen !== undefined;
@@ -27,7 +27,7 @@ const ViewJobDialog: React.FC<ViewJobDialogProps> = ({
   const setOpen = isControlled ? (onOpenChange || (() => {})) : setInternalOpen;
 
   const defaultTrigger = (
-    <Button variant="ghost" size="sm">
+    <Button ref={ref} variant="ghost" size="sm">
       <Eye className="h-4 w-4 mr-2" />
       View Details
     </Button>
@@ -43,6 +43,9 @@ const ViewJobDialog: React.FC<ViewJobDialogProps> = ({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Job Details</DialogTitle>
+          <DialogDescription>
+            View detailed information for job: {job.title}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -190,6 +193,8 @@ const ViewJobDialog: React.FC<ViewJobDialogProps> = ({
       </DialogContent>
     </Dialog>
   );
-};
+});
+
+ViewJobDialog.displayName = 'ViewJobDialog';
 
 export default ViewJobDialog;

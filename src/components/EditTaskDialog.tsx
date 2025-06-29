@@ -1,7 +1,7 @@
-
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -12,7 +12,6 @@ import { Task, useTasks } from '@/hooks/useTasks';
 import { TaskPriority, TaskStatus } from '@/types/supabase-enums';
 import { format } from 'date-fns';
 import { CalendarIcon, Edit } from 'lucide-react';
-import React, { useState } from 'react';
 import { toast } from 'sonner';
 
 interface EditTaskDialogProps {
@@ -20,10 +19,10 @@ interface EditTaskDialogProps {
   trigger?: React.ReactNode;
 }
 
-const EditTaskDialog: React.FC<EditTaskDialogProps> = ({
+const EditTaskDialog = React.forwardRef<HTMLButtonElement, EditTaskDialogProps>(({
   task,
   trigger
-}) => {
+}, ref) => {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { updateTask } = useTasks();
@@ -82,13 +81,16 @@ const EditTaskDialog: React.FC<EditTaskDialogProps> = ({
       {trigger ? (
         <div onClick={() => setOpen(true)}>{trigger}</div>
       ) : (
-        <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
+        <Button ref={ref} variant="ghost" size="sm" onClick={() => setOpen(true)}>
           <Edit className="h-4 w-4" />
         </Button>
       )}
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Task</DialogTitle>
+          <DialogDescription>
+            Update information for task: {task.title}
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -223,6 +225,8 @@ const EditTaskDialog: React.FC<EditTaskDialogProps> = ({
       </DialogContent>
     </Dialog>
   );
-};
+});
+
+EditTaskDialog.displayName = 'EditTaskDialog';
 
 export default EditTaskDialog;

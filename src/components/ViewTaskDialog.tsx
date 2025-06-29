@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,20 +14,20 @@ interface ViewTaskDialogProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-const ViewTaskDialog: React.FC<ViewTaskDialogProps> = ({ 
-  task, 
-  trigger, 
+const ViewTaskDialog = React.forwardRef<HTMLButtonElement, ViewTaskDialogProps>(({
+  task,
+  trigger,
   open: controlledOpen,
-  onOpenChange 
-}) => {
+  onOpenChange
+}, ref) => {
   const [internalOpen, setInternalOpen] = React.useState(false);
-  
+
   const isControlled = controlledOpen !== undefined;
   const isOpen = isControlled ? controlledOpen : internalOpen;
   const setOpen = isControlled ? (onOpenChange || (() => {})) : setInternalOpen;
 
   const defaultTrigger = (
-    <Button variant="ghost" size="sm">
+    <Button ref={ref} variant="ghost" size="sm">
       <Eye className="h-4 w-4 mr-2" />
       View Details
     </Button>
@@ -44,8 +43,11 @@ const ViewTaskDialog: React.FC<ViewTaskDialogProps> = ({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Task Details</DialogTitle>
+          <DialogDescription>
+            View detailed information for task: {task.title}
+          </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-6">
           {/* Header Info */}
           <div className="flex items-start justify-between">
@@ -157,6 +159,8 @@ const ViewTaskDialog: React.FC<ViewTaskDialogProps> = ({
       </DialogContent>
     </Dialog>
   );
-};
+});
+
+ViewTaskDialog.displayName = 'ViewTaskDialog';
 
 export default ViewTaskDialog;

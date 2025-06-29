@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,18 +22,18 @@ interface EditJobDialogProps {
   onSuccess?: () => void;
 }
 
-const EditJobDialog: React.FC<EditJobDialogProps> = ({ 
-  job, 
-  trigger, 
+const EditJobDialog = React.forwardRef<HTMLButtonElement, EditJobDialogProps>(({
+  job,
+  trigger,
   open: controlledOpen,
   onOpenChange,
-  onSuccess 
-}) => {
+  onSuccess
+}, ref) => {
   const { updateJob } = useJobs();
   const { customers } = useCustomers();
   const [loading, setLoading] = useState(false);
   const [internalOpen, setInternalOpen] = useState(false);
-  
+
   const isControlled = controlledOpen !== undefined;
   const isOpen = isControlled ? controlledOpen : internalOpen;
   const setOpen = isControlled ? (onOpenChange || (() => {})) : setInternalOpen;
@@ -55,7 +54,7 @@ const EditJobDialog: React.FC<EditJobDialogProps> = ({
   });
 
   const defaultTrigger = (
-    <Button variant="ghost" size="sm">
+    <Button ref={ref} variant="ghost" size="sm">
       <Edit className="h-4 w-4 mr-2" />
       Edit Job
     </Button>
@@ -63,7 +62,7 @@ const EditJobDialog: React.FC<EditJobDialogProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.title.trim()) {
       toast.error('Job title is required');
       return;
@@ -89,7 +88,6 @@ const EditJobDialog: React.FC<EditJobDialogProps> = ({
         toast.success('Job updated successfully');
       }
     } catch (error) {
-      console.error('Error updating job:', error);
       toast.error('Failed to update job');
     } finally {
       setLoading(false);
@@ -106,8 +104,11 @@ const EditJobDialog: React.FC<EditJobDialogProps> = ({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Job</DialogTitle>
+          <DialogDescription>
+            Update information for job: {job.title}
+          </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="title">Job Title *</Label>
@@ -299,6 +300,8 @@ const EditJobDialog: React.FC<EditJobDialogProps> = ({
       </DialogContent>
     </Dialog>
   );
-};
+});
+
+EditJobDialog.displayName = 'EditJobDialog';
 
 export default EditJobDialog;

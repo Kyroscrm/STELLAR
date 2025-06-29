@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Eye, Mail, Phone, MapPin, Building, User } from 'lucide-react';
@@ -13,20 +12,20 @@ interface ViewCustomerDialogProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-const ViewCustomerDialog: React.FC<ViewCustomerDialogProps> = ({ 
-  customer, 
-  trigger, 
+const ViewCustomerDialog = React.forwardRef<HTMLButtonElement, ViewCustomerDialogProps>(({
+  customer,
+  trigger,
   open: controlledOpen,
-  onOpenChange 
-}) => {
+  onOpenChange
+}, ref) => {
   const [internalOpen, setInternalOpen] = React.useState(false);
-  
+
   const isControlled = controlledOpen !== undefined;
   const isOpen = isControlled ? controlledOpen : internalOpen;
   const setOpen = isControlled ? (onOpenChange || (() => {})) : setInternalOpen;
 
   const defaultTrigger = (
-    <Button variant="ghost" size="sm">
+    <Button ref={ref} variant="ghost" size="sm">
       <Eye className="h-4 w-4 mr-2" />
       View Details
     </Button>
@@ -42,8 +41,11 @@ const ViewCustomerDialog: React.FC<ViewCustomerDialogProps> = ({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Customer Details</DialogTitle>
+          <DialogDescription>
+            View detailed information for {customer.first_name} {customer.last_name}
+          </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-6">
           {/* Header Info */}
           <div className="flex items-start justify-between">
@@ -137,6 +139,8 @@ const ViewCustomerDialog: React.FC<ViewCustomerDialogProps> = ({
       </DialogContent>
     </Dialog>
   );
-};
+});
+
+ViewCustomerDialog.displayName = 'ViewCustomerDialog';
 
 export default ViewCustomerDialog;

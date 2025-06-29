@@ -1,6 +1,6 @@
-
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -9,7 +9,6 @@ import { useEstimates } from '@/hooks/useEstimates';
 import { useEstimateTemplates } from '@/hooks/useEstimateTemplates';
 import { Lead } from '@/hooks/useLeads';
 import { FileText } from 'lucide-react';
-import React, { useState } from 'react';
 import { toast } from 'sonner';
 
 interface CreateEstimateFromLeadDialogProps {
@@ -20,13 +19,13 @@ interface CreateEstimateFromLeadDialogProps {
   onSuccess?: () => void;
 }
 
-const CreateEstimateFromLeadDialog: React.FC<CreateEstimateFromLeadDialogProps> = ({
+const CreateEstimateFromLeadDialog = React.forwardRef<HTMLButtonElement, CreateEstimateFromLeadDialogProps>(({
   lead,
   trigger,
   open: controlledOpen,
   onOpenChange,
   onSuccess
-}) => {
+}, ref) => {
   const { createEstimate } = useEstimates();
   const { templates } = useEstimateTemplates();
   const [loading, setLoading] = useState(false);
@@ -46,7 +45,7 @@ const CreateEstimateFromLeadDialog: React.FC<CreateEstimateFromLeadDialogProps> 
   });
 
   const defaultTrigger = (
-    <Button variant="ghost" size="sm">
+    <Button ref={ref} variant="ghost" size="sm">
       <FileText className="h-4 w-4 mr-2" />
       Create Estimate
     </Button>
@@ -129,6 +128,9 @@ const CreateEstimateFromLeadDialog: React.FC<CreateEstimateFromLeadDialogProps> 
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create Estimate from Lead</DialogTitle>
+          <DialogDescription>
+            Create a new estimate for {lead.first_name} {lead.last_name}
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -233,6 +235,8 @@ const CreateEstimateFromLeadDialog: React.FC<CreateEstimateFromLeadDialogProps> 
       </DialogContent>
     </Dialog>
   );
-};
+});
+
+CreateEstimateFromLeadDialog.displayName = 'CreateEstimateFromLeadDialog';
 
 export default CreateEstimateFromLeadDialog;

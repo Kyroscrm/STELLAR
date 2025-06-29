@@ -1,6 +1,6 @@
-
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -9,7 +9,6 @@ import { Customer } from '@/hooks/useCustomers';
 import { useEstimates } from '@/hooks/useEstimates';
 import { useEstimateTemplates } from '@/hooks/useEstimateTemplates';
 import { FileText } from 'lucide-react';
-import React, { useState } from 'react';
 import { toast } from 'sonner';
 
 interface CreateEstimateFromCustomerDialogProps {
@@ -20,13 +19,13 @@ interface CreateEstimateFromCustomerDialogProps {
   onSuccess?: () => void;
 }
 
-const CreateEstimateFromCustomerDialog: React.FC<CreateEstimateFromCustomerDialogProps> = ({
+const CreateEstimateFromCustomerDialog = React.forwardRef<HTMLButtonElement, CreateEstimateFromCustomerDialogProps>(({
   customer,
   trigger,
   open: controlledOpen,
   onOpenChange,
   onSuccess
-}) => {
+}, ref) => {
   const { createEstimate } = useEstimates();
   const { templates } = useEstimateTemplates();
   const [loading, setLoading] = useState(false);
@@ -46,7 +45,7 @@ const CreateEstimateFromCustomerDialog: React.FC<CreateEstimateFromCustomerDialo
   });
 
   const defaultTrigger = (
-    <Button variant="ghost" size="sm">
+    <Button ref={ref} variant="ghost" size="sm">
       <FileText className="h-4 w-4 mr-2" />
       Create Estimate
     </Button>
@@ -130,6 +129,9 @@ const CreateEstimateFromCustomerDialog: React.FC<CreateEstimateFromCustomerDialo
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create Estimate for Customer</DialogTitle>
+          <DialogDescription>
+            Create a new estimate for {customer.first_name} {customer.last_name}
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -234,6 +236,8 @@ const CreateEstimateFromCustomerDialog: React.FC<CreateEstimateFromCustomerDialo
       </DialogContent>
     </Dialog>
   );
-};
+});
+
+CreateEstimateFromCustomerDialog.displayName = 'CreateEstimateFromCustomerDialog';
 
 export default CreateEstimateFromCustomerDialog;
