@@ -50,6 +50,7 @@ interface UseInvoicesReturn {
   addInvoice: (invoiceData: InvoiceFormData) => Promise<InvoiceWithCustomer | null>;
   updateInvoice: (id: string, updates: InvoiceUpdate) => Promise<boolean>;
   deleteInvoice: (id: string) => Promise<boolean>;
+  fetchInvoiceById: (id: string) => Promise<InvoiceWithCustomer | null>;
 }
 
 export const useInvoices = (): UseInvoicesReturn => {
@@ -285,6 +286,11 @@ export const useInvoices = (): UseInvoicesReturn => {
               delete cleanedUpdates.status;
             }
 
+            // Remove line_items property if present
+            if ('line_items' in cleanedUpdates) {
+              delete cleanedUpdates.line_items;
+            }
+
             // Remove undefined fields
             Object.keys(cleanedUpdates).forEach(key => {
               if (cleanedUpdates[key as keyof typeof cleanedUpdates] === undefined) {
@@ -406,6 +412,36 @@ export const useInvoices = (): UseInvoicesReturn => {
     }
   };
 
+  const fetchInvoiceById = async (id: string): Promise<InvoiceWithCustomer | null> => {
+    if (!validateUserAndSession()) return null;
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from('invoices')
+        .select(`
+          *,
+          invoice_line_items(*),
+          customers(id, first_name, last_name, email, phone)
+        `)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single();
+      if (error) throw error;
+      // Update the invoice in state
+      setInvoices(prev => {
+        const filtered = prev.filter(inv => inv.id !== id);
+        return data ? [data, ...filtered] : filtered;
+      });
+      return data;
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error : new Error('Failed to fetch invoice'));
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (user && session) {
       fetchInvoices();
@@ -419,6 +455,7 @@ export const useInvoices = (): UseInvoicesReturn => {
     fetchInvoices,
     addInvoice,
     updateInvoice,
-    deleteInvoice
+    deleteInvoice,
+    fetchInvoiceById,
   };
 };

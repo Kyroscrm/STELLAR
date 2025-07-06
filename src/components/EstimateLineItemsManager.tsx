@@ -195,8 +195,7 @@ const EstimateLineItemsManager: React.FC<EstimateLineItemsManagerProps> = ({
                               const value = Number(e.target.value);
                               if (value >= 0) {
                                 updateLineItem(item.id, {
-                                  quantity: value,
-                                  total: value * item.unit_price
+                                  quantity: value
                                 }).catch(() => {
                                   toast.error('Failed to update quantity');
                                 });
@@ -215,8 +214,7 @@ const EstimateLineItemsManager: React.FC<EstimateLineItemsManagerProps> = ({
                               const value = Number(e.target.value);
                               if (value >= 0) {
                                 updateLineItem(item.id, {
-                                  unit_price: value,
-                                  total: item.quantity * value
+                                  unit_price: value
                                 }).catch(() => {
                                   toast.error('Failed to update price');
                                 });

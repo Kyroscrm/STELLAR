@@ -35,6 +35,8 @@ type CrewUpdate = Partial<CrewInsert>;
 type CrewMemberInsert = Omit<CrewMember, 'id' | 'created_at' | 'updated_at'>;
 type CrewMemberUpdate = Partial<CrewMemberInsert>;
 
+let fetchCrewsCallCount = 0;
+
 export const useCrews = () => {
   const [crews, setCrews] = useState<Crew[]>([]);
   const [crewMembers, setCrewMembers] = useState<CrewMember[]>([]);
@@ -55,6 +57,9 @@ export const useCrews = () => {
   };
 
   const fetchCrews = async () => {
+    fetchCrewsCallCount++;
+    // eslint-disable-next-line no-console
+    console.info(`[useCrews] fetchCrews called ${fetchCrewsCallCount} times this session`);
     if (!validateUserAndSession()) return;
 
     setLoading(true);

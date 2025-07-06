@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
@@ -14,14 +14,7 @@ import { RefreshCw, Plus, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Invoice, InvoiceFormData } from '@/types/app-types';
-
-interface LineItem {
-  description: string;
-  quantity: number;
-  unit_price: number;
-  total?: number;
-  sort_order?: number;
-}
+import InvoiceLineItemsManager from './InvoiceLineItemsManager';
 
 interface InvoiceFormProps {
   onSubmit: (data: InvoiceFormData) => Promise<void>;
@@ -39,8 +32,6 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
   const { customers } = useCustomers();
   const { jobs } = useJobs();
   const { generateInvoiceNumber, loading: generatingNumber } = useJobNumberGenerator();
-
-  const [lineItems, setLineItems] = useState<LineItem[]>([]);
 
   const form = useForm<InvoiceFormData>({
     resolver: zodResolver(invoiceSchema),
@@ -66,29 +57,6 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
     form.setValue('invoice_number', invoiceNumber);
   };
 
-  const addLineItem = () => {
-    setLineItems([...lineItems, { description: '', quantity: 1, unit_price: 0, total: 0, sort_order: lineItems.length }]);
-  };
-
-  const updateLineItem = (index: number, field: keyof LineItem, value: string | number) => {
-    const updated = [...lineItems];
-    updated[index] = { ...updated[index], [field]: value };
-
-    if (field === 'quantity' || field === 'unit_price') {
-      updated[index].total = Number(updated[index].quantity) * Number(updated[index].unit_price);
-    }
-
-    setLineItems(updated);
-  };
-
-  const removeLineItem = (index: number) => {
-    setLineItems(lineItems.filter((_, i) => i !== index));
-  };
-
-  const calculateSubtotal = () => {
-    return lineItems.reduce((sum, item) => sum + (item.total || 0), 0);
-  };
-
   // Auto-generate invoice number on mount if not provided
   useEffect(() => {
     if (!initialData?.invoice_number) {
@@ -97,38 +65,14 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
   }, []);
 
   const handleSubmit = async (data: InvoiceFormData) => {
-    console.log('🔥 INVOICE FORM SUBMIT STARTED', { data, lineItems });
-
     try {
-      // Additional validation
       if (!data.customer_id || data.customer_id.trim() === '') {
-        console.log('❌ VALIDATION FAILED: No customer selected');
         toast.error('Please select a customer for this invoice');
         return;
       }
-
-      // Only require line items for non-draft invoices
-      if (lineItems.length === 0 && data.status !== 'draft') {
-        console.log('❌ VALIDATION FAILED: No line items for non-draft invoice');
-        toast.error('Please add at least one line item before marking invoice as non-draft');
-        return;
-      }
-
-      const formData: InvoiceFormData = {
-        ...data,
-        status: data.status || 'draft',
-        payment_status: data.payment_status || 'pending',
-        line_items: lineItems.map((item, index) => ({
-          ...item,
-          sort_order: index
-        }))
-      };
-
-      console.log('✅ VALIDATION PASSED - Calling onSubmit with:', formData);
-      await onSubmit(formData);
-      console.log('✅ INVOICE SUBMISSION COMPLETED');
+      // Only require line items for non-draft invoices (validation will be handled in the manager)
+      await onSubmit(data);
     } catch (error) {
-      console.error('❌ INVOICE SUBMISSION ERROR:', error);
       toast.error('Failed to submit invoice: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
@@ -240,91 +184,6 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
             )}
           />
         </div>
-
-        {/* Line Items Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              Line Items
-              <Button type="button" size="sm" onClick={addLineItem}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Item
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {lineItems.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <p>No line items yet. Click "Add Item" to get started.</p>
-              </div>
-            ) : (
-              <>
-                {/* Header Row */}
-                <div className="grid grid-cols-12 gap-2 text-sm font-medium text-gray-600 pb-2 border-b">
-                  <div className="col-span-6">Description</div>
-                  <div className="col-span-2">Quantity</div>
-                  <div className="col-span-2">Unit Price</div>
-                  <div className="col-span-1">Total</div>
-                  <div className="col-span-1"></div>
-                </div>
-
-                {/* Line Items */}
-                {lineItems.map((item, index) => (
-                  <div key={index} className="grid grid-cols-12 gap-2 items-center">
-                    <div className="col-span-6">
-                      <Textarea
-                        value={item.description}
-                        onChange={(e) => updateLineItem(index, 'description', e.target.value)}
-                        placeholder="Item description"
-                        className="min-h-[60px]"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <Input
-                        type="number"
-                        value={item.quantity}
-                        onChange={(e) => updateLineItem(index, 'quantity', Number(e.target.value))}
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <Input
-                        type="number"
-                        value={item.unit_price}
-                        onChange={(e) => updateLineItem(index, 'unit_price', Number(e.target.value))}
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
-                    <div className="col-span-1 text-right font-medium">
-                      ${item.total.toFixed(2)}
-                    </div>
-                    <div className="col-span-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeLineItem(index)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Totals */}
-                <div className="border-t pt-4">
-                  <div className="flex justify-between items-center text-lg font-semibold">
-                    <span>Subtotal:</span>
-                    <span>${calculateSubtotal().toFixed(2)}</span>
-                  </div>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <FormField
@@ -442,6 +301,9 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
             </FormItem>
           )}
         />
+
+        {/* Invoice line items manager (persisted, DnD, etc.) */}
+        <InvoiceLineItemsManager invoiceId={initialData?.id} />
 
         <div className="flex gap-2 pt-4">
           <Button type="submit" disabled={isSubmitting}>
