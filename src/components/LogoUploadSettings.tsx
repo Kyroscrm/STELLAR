@@ -170,7 +170,7 @@ const LogoUploadSettings: React.FC = () => {
               <Label>Logo Position</Label>
               <RadioGroup
                 value={settings.logo_position}
-                onValueChange={(value) => updateSettings({ logo_position: value as any })}
+                onValueChange={(value) => updateSettings({ logo_position: value as 'top-center' | 'watermark' | 'both' })}
               >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="top-center" id="top-center" />

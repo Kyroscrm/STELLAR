@@ -13,10 +13,10 @@ const GalleryPage = () => {
       <section className="pt-32 pb-16 bg-gradient-to-br from-primary/5 to-secondary/5">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-6xl font-heading font-bold text-primary mb-6">
-            Our <span className="text-secondary">Project</span> Gallery
+            CAPTION <span className="text-secondary">In Action</span>
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Take a look at our recent roofing and retrofit projects. Each one showcases our commitment to quality craftsmanship and customer satisfaction.
+            See how CAPTION's intuitive interface and powerful features streamline operations for businesses like yours.
           </p>
         </div>
       </section>
@@ -28,10 +28,10 @@ const GalleryPage = () => {
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl font-heading font-bold text-primary mb-4">
-            Ready to Transform Your Home?
+            Ready to See CAPTION in Action?
           </h2>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Join hundreds of satisfied homeowners who have trusted us with their roofing projects.
+            Explore our interactive demo or schedule a personalized walkthrough to experience the full power of CAPTION.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" className="bg-secondary text-primary hover:bg-secondary/90 font-semibold">

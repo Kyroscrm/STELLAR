@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContextExports';
 import { useRBAC } from '@/hooks/useRBAC';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { Card, CardContent } from '@/components/ui/card';

@@ -37,10 +37,10 @@ const ContactPage = () => {
       <section className="pt-32 pb-16 bg-gradient-to-br from-primary/5 to-secondary/5">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-6xl font-heading font-bold text-primary mb-6">
-            Get In <span className="text-secondary">Touch</span>
+            Contact <span className="text-secondary">CAPTION</span> Support
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Ready to start your roofing project? Contact us today for a free estimate and consultation. We're here to answer all your questions and help you find the perfect solution for your home.
+            Have questions about CAPTION? Need assistance with your account? Our team is here to help you streamline your business operations.
           </p>
         </div>
       </section>
@@ -98,7 +98,7 @@ const ContactPage = () => {
                         value={formData.phone}
                         onChange={handleChange}
                         required
-                        placeholder="(123) 456-7890"
+                        placeholder="(346) 849-3169"
                       />
                     </div>
                     <div>
@@ -112,21 +112,20 @@ const ContactPage = () => {
                         onChange={handleChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                       >
-                        <option value="">Select a service</option>
-                        <option value="roof-replacement">Roof Replacement</option>
-                        <option value="roof-repair">Roof Repair</option>
-                        <option value="energy-retrofit">Energy Retrofit</option>
-                        <option value="solar-integration">Solar Integration</option>
-                        <option value="gutter-systems">Gutter Systems</option>
-                        <option value="commercial">Commercial Roofing</option>
-                        <option value="other">Other</option>
+                        <option value="">Select a topic</option>
+                        <option value="lead-management">Lead Management</option>
+                        <option value="project-tracking">Project Tracking</option>
+                        <option value="invoicing-billing">Invoicing & Billing</option>
+                        <option value="reporting-analytics">Reporting & Analytics</option>
+                        <option value="technical-support">Technical Support</option>
+                        <option value="other">Other Inquiry</option>
                       </select>
                     </div>
                   </div>
 
                   <div>
                     <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-                      Project Details
+                      Your Message
                     </label>
                     <Textarea
                       id="message"
@@ -134,7 +133,7 @@ const ContactPage = () => {
                       value={formData.message}
                       onChange={handleChange}
                       rows={4}
-                      placeholder="Tell us about your project, timeline, and any specific requirements..."
+                      placeholder="Tell us about your inquiry or how we can help..."
                     />
                   </div>
 
@@ -158,7 +157,7 @@ const ContactPage = () => {
                   </div>
                   <div className="space-y-2">
                     <a href="tel:+1234567890" className="block text-lg font-semibold text-secondary hover:underline">
-                      (123) 456-7890
+                      (346) 849-3169
                     </a>
                     <p className="text-sm text-gray-500">Available 24/7 for emergencies</p>
                   </div>
@@ -175,8 +174,8 @@ const ContactPage = () => {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <a href="mailto:info@finalroofing.com" className="block text-lg font-semibold text-secondary hover:underline">
-                      info@finalroofing.com
+                    <a href="mailto:newdarkorbit@outlook.com" className="block text-lg font-semibold text-secondary hover:underline">
+                      newdarkorbit@outlook.com
                     </a>
                     <p className="text-sm text-gray-500">We respond within 2 hours</p>
                   </div>
@@ -234,55 +233,7 @@ const ContactPage = () => {
         </div>
       </section>
 
-      {/* Service Areas */}
-      <section className="py-20 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-heading font-bold text-primary mb-4">Service Areas</h2>
-            <p className="text-xl text-gray-600">Proudly serving homeowners throughout the region</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 text-center">
-            {[
-              "Cityville & Surrounding Areas",
-              "Downtown Metropolitan District",
-              "Suburban Communities",
-              "Rural Properties",
-              "Commercial Districts",
-              "Historic Neighborhoods"
-            ].map((area, index) => (
-              <Card key={index} className="p-6 hover:shadow-lg transition-shadow">
-                <MapPin className="h-8 w-8 text-primary mx-auto mb-3" />
-                <h3 className="font-semibold text-primary">{area}</h3>
-              </Card>
-            ))}
-          </div>
-
-          <div className="text-center mt-12">
-            <p className="text-gray-600 mb-4">Don't see your area listed?</p>
-            <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white">
-              <MessageCircle className="h-4 w-4 mr-2" />
-              Contact Us to Check
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Emergency Services */}
-      <section className="py-20 bg-red-50">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-4xl font-heading font-bold text-red-700 mb-4">
-            Emergency Roofing Services
-          </h2>
-          <p className="text-xl text-gray-600 mb-8">
-            Storm damage? Leak? We're available 24/7 for roofing emergencies.
-          </p>
-          <Button size="lg" className="bg-red-600 hover:bg-red-700 text-white">
-            <Phone className="h-5 w-5 mr-2" />
-            Call Emergency Line: (123) 456-7890
-          </Button>
-        </div>
-      </section>
+      
     </div>
   );
 };

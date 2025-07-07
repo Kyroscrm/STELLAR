@@ -1,8 +1,8 @@
-# Final Roofing & Retro-Fit CRM
+# CAPTION CRM
 
 ## Project Overview
 
-The Final Roofing & Retro-Fit CRM is a comprehensive customer relationship management system designed specifically for roofing contractors. It streamlines lead management, customer tracking, estimate creation, job scheduling, invoicing, and payment processing—all within a secure, role-based access system with complete audit logging and optimistic UI updates for a seamless user experience.
+CAPTION is a comprehensive Customer Relationship Management (CRM) system designed in 2025 as an affordable and simple solution for small business owners, offering a powerful alternative to expensive CRM platforms. It streamlines lead management, customer tracking, estimate creation, job scheduling, invoicing, and payment processing—all within a secure, role-based access system with complete audit logging and optimistic UI updates for a seamless user experience.
 
 ## Tech Stack
 
@@ -19,8 +19,8 @@ The Final Roofing & Retro-Fit CRM is a comprehensive customer relationship manag
 
 1. Clone the repository
    ```bash
-   git clone https://github.com/your-org/final-roofing-crm.git
-   cd final-roofing-crm
+   git clone https://github.com/your-org/caption-crm.git
+   cd caption-crm
    ```
 
 2. Copy the environment variables template and fill in your Supabase credentials
@@ -138,4 +138,4 @@ Test Schedule:
 
 ## License
 
-Copyright © 2023-2024 Final Roofing & Retro-Fit. All rights reserved.
+Copyright © 2023-2024 CAPTION. All rights reserved.

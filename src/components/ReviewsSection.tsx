@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Star, Quote, ThumbsUp, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -23,10 +22,10 @@ const ReviewsSection = () => {
 
   const platforms = [
     { id: 'all', label: 'All Reviews', logo: '⭐' },
-    { id: 'google', label: 'Google', logo: '🔵' },
-    { id: 'yelp', label: 'Yelp', logo: '🔴' },
-    { id: 'bbb', label: 'BBB', logo: '🏛️' },
-    { id: 'angi', label: 'Angi', logo: '🔨' }
+    { id: 'capterra', label: 'Capterra', logo: '📊' },
+    { id: 'g2', label: 'G2', logo: '📈' },
+    { id: 'software-advice', label: 'Software Advice', logo: '💡' },
+    { id: 'trustpilot', label: 'Trustpilot', logo: '⭐' }
   ];
 
   const filteredReviews = selectedPlatform === 'all' 
@@ -59,10 +58,10 @@ const ReviewsSection = () => {
 
   const handlePlatformButtonClick = (platform: string) => {
     const urls: Record<string, string> = {
-      google: 'https://g.co/kgs/Autr3zW',
-      yelp: 'https://www.yelp.com/biz/final-roofing-retro-fit',
-      bbb: 'https://www.bbb.org/us/ca/final-roofing-retro-fit',
-      angi: 'https://www.angi.com/companyprofile/final-roofing-retro-fit'
+      capterra: 'https://www.capterra.com/p/200001/stellar-crm/',
+      g2: 'https://www.g2.com/products/stellar-crm/reviews',
+      'software-advice': 'https://www.softwareadvice.com/crm/stellar-profile/',
+      trustpilot: 'https://www.trustpilot.com/review/stellar-crm.com'
     };
     
     if (urls[platform]) {
@@ -88,14 +87,14 @@ const ReviewsSection = () => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-heading font-bold text-primary mb-4">
-            What Our Clients Say
+            What Our <span className="text-secondary">Users</span> Say
           </h2>
           <div className="flex items-center justify-center gap-4 mb-4">
             <StarRating rating={Math.round(4.9)} size="lg" />
             <span className="text-2xl font-bold text-primary">4.9</span>
           </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Don't just take our word for it. Here's what our satisfied clients have to say about their experience with Final Roofing & Retro-Fit.
+            Hear directly from small business owners who have transformed their operations with CAPTION.
           </p>
         </div>
 
@@ -169,30 +168,30 @@ const ReviewsSection = () => {
         {/* Review Platform Links */}
         <div className="bg-gray-50 rounded-lg p-8 text-center">
           <h3 className="text-2xl font-bold text-primary mb-4">
-            Read More Reviews
+            Explore More Reviews
           </h3>
           <p className="text-gray-600 mb-6">
-            Check out our reviews on your favorite platform
+            See what users are saying about CAPTION on leading review platforms.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Button variant="outline" className="flex items-center gap-2" onClick={() => handlePlatformButtonClick('google')}>
-              <span>🔵</span>
-              Google Reviews
+            <Button variant="outline" className="flex items-center gap-2" onClick={() => handlePlatformButtonClick('capterra')}>
+              <span>📊</span>
+              Capterra
               <ExternalLink className="h-4 w-4" />
             </Button>
-            <Button variant="outline" className="flex items-center gap-2" onClick={() => handlePlatformButtonClick('yelp')}>
-              <span>🔴</span>
-              Yelp Reviews
+            <Button variant="outline" className="flex items-center gap-2" onClick={() => handlePlatformButtonClick('g2')}>
+              <span>📈</span>
+              G2
               <ExternalLink className="h-4 w-4" />
             </Button>
-            <Button variant="outline" className="flex items-center gap-2" onClick={() => handlePlatformButtonClick('bbb')}>
-              <span>🏛️</span>
-              BBB Profile
+            <Button variant="outline" className="flex items-center gap-2" onClick={() => handlePlatformButtonClick('software-advice')}>
+              <span>💡</span>
+              Software Advice
               <ExternalLink className="h-4 w-4" />
             </Button>
-            <Button variant="outline" className="flex items-center gap-2" onClick={() => handlePlatformButtonClick('angi')}>
-              <span>🔨</span>
-              Angi Reviews
+            <Button variant="outline" className="flex items-center gap-2" onClick={() => handlePlatformButtonClick('trustpilot')}>
+              <span>⭐</span>
+              Trustpilot
               <ExternalLink className="h-4 w-4" />
             </Button>
           </div>
@@ -201,17 +200,16 @@ const ReviewsSection = () => {
         {/* Review Incentive */}
         <div className="mt-12 bg-gradient-to-r from-primary to-primary/80 rounded-lg p-8 text-center text-white">
           <h3 className="text-2xl font-bold mb-4">
-            Share Your Experience
+            Love CAPTION? Share Your Story!
           </h3>
           <p className="mb-6">
-            Completed a project with us? We'd love to hear about your experience! 
-            Leave a review to help other homeowners.
+            Your feedback helps us grow and improve. If you're enjoying CAPTION, please consider leaving us a review!
           </p>
           <Button 
             className="bg-secondary text-primary hover:bg-secondary/90 font-semibold"
             onClick={handleReviewButtonClick}
           >
-            Leave a Review
+            Write a Review
           </Button>
         </div>
       </div>

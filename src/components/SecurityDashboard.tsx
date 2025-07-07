@@ -71,7 +71,7 @@ const SecurityDashboard: React.FC = () => {
       
       setSecurityScore(Math.max(0, score));
     } catch (error) {
-      console.error('Error loading security metrics:', error);
+      // console.error('Error loading security metrics:', error);
       toast.error('Failed to load security metrics');
     } finally {
       setLoading(false);

@@ -15,16 +15,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { 
-  Bell, 
-  Settings, 
-  Activity, 
-  Shield, 
+import {
+  Bell,
+  Settings,
+  Activity,
+  Shield,
   BarChart3,
   User
 } from 'lucide-react';
 import SecurityDashboard from '@/components/SecurityDashboard';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContextExports';
 
 const AdminHeaderNav: React.FC = () => {
   const [showOverview, setShowOverview] = useState(false);

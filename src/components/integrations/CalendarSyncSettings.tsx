@@ -127,7 +127,7 @@ const CalendarSyncSettings = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="provider">Calendar Provider</Label>
-                  <Select value={formData.provider} onValueChange={(value) => setFormData(prev => ({ ...prev, provider: value as any }))}>
+                  <Select value={formData.provider} onValueChange={(value) => setFormData(prev => ({ ...prev, provider: value as 'google' | 'outlook' }))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>

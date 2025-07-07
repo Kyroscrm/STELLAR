@@ -52,17 +52,17 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
     },
   });
 
-  const handleGenerateInvoiceNumber = async () => {
+  const handleGenerateInvoiceNumber = React.useCallback(async () => {
     const invoiceNumber = await generateInvoiceNumber();
     form.setValue('invoice_number', invoiceNumber);
-  };
+  }, [generateInvoiceNumber, form]);
 
   // Auto-generate invoice number on mount if not provided
   useEffect(() => {
     if (!initialData?.invoice_number) {
       handleGenerateInvoiceNumber();
     }
-  }, []);
+  }, [initialData?.invoice_number, handleGenerateInvoiceNumber]);
 
   const handleSubmit = async (data: InvoiceFormData) => {
     try {

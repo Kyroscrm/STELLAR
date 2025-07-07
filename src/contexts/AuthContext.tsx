@@ -1,37 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
-import { Session, User } from '@supabase/supabase-js';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-
-interface AuthUser {
-  id: string;
-  email: string;
-  name: string;
-  role: 'client' | 'admin' | 'staff' | 'manager';
-  roleId?: string;
-}
-
-interface AuthContextType {
-  user: AuthUser | null;
-  session: Session | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
-  register: (email: string, password: string, name: string, role?: 'client' | 'admin') => Promise<boolean>;
-  isLoading: boolean;
-  hasPermission: (permission: string) => Promise<boolean>;
-  checkPermission: (permission: string) => Promise<boolean>;
-  isAdmin: () => boolean;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+import { AuthContext, AuthUser, useAuth } from './AuthContextExports';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -44,8 +15,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
-        loadUserProfile(session.user);
+        loadUserProfile(session.user).finally(() => setIsLoading(false));
+      } else {
+        setIsLoading(false);
       }
+    }).catch(() => {
       setIsLoading(false);
     });
 
@@ -53,17 +27,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setSession(session);
-
         if (session?.user) {
-          // Use setTimeout to defer profile loading and avoid recursion
           setTimeout(() => {
-            loadUserProfile(session.user);
+            loadUserProfile(session.user).finally(() => setIsLoading(false));
           }, 0);
         } else {
           setUser(null);
           setPermissionCache({});
+          setIsLoading(false);
         }
-        setIsLoading(false);
       }
     );
 
@@ -79,18 +51,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         name: authUser.email?.split('@')[0] || 'User',
         role: authUser.email === 'nayib@finalroofingcompany.com' ? 'admin' : 'client'
       };
-
-      // Set the basic user immediately
       setUser(basicUser);
-
-      // Try to enhance with profile data, but don't fail if it doesn't work
       try {
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('*, roles:role_id(id, name)')
           .eq('id', authUser.id)
           .maybeSingle();
-
         if (!error && profile) {
           setUser({
             id: authUser.id,
@@ -104,13 +71,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Keep the basic user we already set
       }
     } catch (error) {
-      // Fallback: create basic user object
       setUser({
         id: authUser.id,
         email: authUser.email || '',
         name: authUser.email?.split('@')[0] || 'User',
         role: authUser.email === 'nayib@finalroofingcompany.com' ? 'admin' : 'client'
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -255,3 +223,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </AuthContext.Provider>
   );
 };
+
+// Re-export useAuth for convenience
+export { useAuth };

@@ -1,4 +1,4 @@
-# Contributing to Final Roofing & Retro-Fit CRM
+# Contributing to CAPTION CRM
 
 Thank you for considering contributing to our project! This document provides guidelines and instructions to help you contribute effectively.
 

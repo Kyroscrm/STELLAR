@@ -1,4 +1,4 @@
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContextExports';
 import { supabase } from '@/integrations/supabase/client';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -30,12 +30,16 @@ type InvoiceRecord = Tables<'invoices'>;
 interface UseRealTimeNotificationsReturn {
   connected: boolean;
   showNotification: (notification: RealTimeNotification) => void;
+  retryCount: number;
 }
 
 export const useRealTimeNotifications = (): UseRealTimeNotificationsReturn => {
   const { user } = useAuth();
   const { createNotification } = useNotifications();
   const [connected, setConnected] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 5;
+  const RETRY_DELAY = 2000; // 2 seconds
 
   const showNotification = useCallback((notification: RealTimeNotification) => {
     // Show toast notification
@@ -78,48 +82,70 @@ export const useRealTimeNotifications = (): UseRealTimeNotificationsReturn => {
     if (!user) return;
 
     let isSubscribed = true;
+    let retryTimeout: NodeJS.Timeout;
 
-    const channel = supabase
-      .channel(`user_notifications_${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'user_notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload: RealtimePostgresChangesPayload<UserNotificationRecord>) => {
+    const setupChannel = () => {
+      const channel = supabase
+        .channel(`user_notifications_${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'user_notifications',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload: RealtimePostgresChangesPayload<UserNotificationRecord>) => {
+            if (!isSubscribed) return;
+
+            const notification = payload.new as UserNotificationRecord | null;
+            if (notification && !notification.dismissed) {
+              showNotification({
+                id: notification.id,
+                type: notification.type as NotificationType,
+                title: notification.title,
+                message: notification.message,
+                priority: notification.priority as NotificationPriority,
+                entity_type: notification.entity_type || undefined,
+                entity_id: notification.entity_id || undefined,
+                action_url: notification.action_url || undefined,
+                auto_dismiss: false
+              });
+            }
+          }
+        )
+        .subscribe((status) => {
           if (!isSubscribed) return;
 
-          const notification = payload.new as UserNotificationRecord | null;
-          if (notification && !notification.dismissed) {
-            showNotification({
-              id: notification.id,
-              type: notification.type as NotificationType,
-              title: notification.title,
-              message: notification.message,
-              priority: notification.priority as NotificationPriority,
-              entity_type: notification.entity_type || undefined,
-              entity_id: notification.entity_id || undefined,
-              action_url: notification.action_url || undefined,
-              auto_dismiss: false
-            });
+          if (status === 'SUBSCRIBED') {
+            setConnected(true);
+            setRetryCount(0); // Reset retry count on successful connection
+          } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+            setConnected(false);
+            // Attempt reconnection if under max retries
+            if (retryCount < MAX_RETRIES) {
+              retryTimeout = setTimeout(() => {
+                setRetryCount(prev => prev + 1);
+                setupChannel();
+              }, RETRY_DELAY * Math.pow(2, retryCount)); // Exponential backoff
+            } else {
+              toast.error('Failed to connect to real-time notifications. Please refresh the page.');
+            }
           }
-        }
-      )
-      .subscribe((status) => {
-        if (isSubscribed) {
-          setConnected(status === 'SUBSCRIBED');
-        }
-      });
+        });
+
+      return channel;
+    };
+
+    const channel = setupChannel();
 
     return () => {
       isSubscribed = false;
+      clearTimeout(retryTimeout);
       supabase.removeChannel(channel);
       setConnected(false);
     };
-  }, [user?.id]); // Only depend on user.id, not the whole user object or showNotification
+  }, [user?.id, retryCount]); // Add retryCount to dependencies
 
   // Disable activity-based notifications to reduce WebSocket spam
   // TODO: Re-enable when optimized for production
@@ -159,6 +185,7 @@ export const useRealTimeNotifications = (): UseRealTimeNotificationsReturn => {
 
   return {
     connected,
-    showNotification
+    showNotification,
+    retryCount
   };
 };

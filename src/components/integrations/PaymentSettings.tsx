@@ -64,7 +64,7 @@ const PaymentSettings = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="type">Payment Provider</Label>
-                  <Select value={formData.type} onValueChange={(value) => setFormData(prev => ({ ...prev, type: value as any }))}>
+                  <Select value={formData.type} onValueChange={(value) => setFormData(prev => ({ ...prev, type: value as 'stripe' | 'paypal' | 'ach' | 'credit_card' }))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>

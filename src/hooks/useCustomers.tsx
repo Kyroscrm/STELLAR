@@ -13,7 +13,7 @@ export const useCustomers = () => {
   const [loading, setLoading] = useState(false);
   const { user, session } = useAuth();
 
-  const fetchCustomers = async () => {
+  const fetchCustomers = React.useCallback(async () => {
     if (!user || !session) {
       return;
     }
@@ -41,7 +41,7 @@ export const useCustomers = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, session, setCustomers, setLoading, toast]);
 
   const createCustomer = async (customerData: Omit<CustomerInsert, 'user_id'>) => {
     if (!user || !session) {
@@ -166,7 +166,7 @@ export const useCustomers = () => {
     if (user && session) {
       fetchCustomers();
     }
-  }, [user, session]);
+  }, [user, session, fetchCustomers]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     customers,

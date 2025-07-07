@@ -12,7 +12,7 @@ const AboutPage = () => {
       role: "Founder & Lead Contractor",
       experience: "20+ years",
       image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&face=1",
-      bio: "Mike founded Final Roofing with a vision to provide honest, quality roofing services. Licensed master roofer with expertise in all roofing systems."
+      bio: "Mike founded CAPTION with a vision to provide honest, quality services. Licensed master contractor with expertise in all service systems."
     },
     {
       name: "Sarah Davis",
@@ -26,7 +26,7 @@ const AboutPage = () => {
       role: "Energy Efficiency Specialist",
       experience: "8+ years",
       image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop&face=1",
-      bio: "Alex specializes in energy retrofits and sustainable roofing solutions. Certified in the latest energy-efficient technologies and rebate programs."
+      bio: "Alex specializes in energy retrofits and sustainable service solutions. Certified in the latest energy-efficient technologies and rebate programs."
     }
   ];
 
@@ -40,24 +40,24 @@ const AboutPage = () => {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <h1 className="text-4xl md:text-6xl font-heading font-bold text-primary mb-6">
-                About <span className="text-secondary">Final Roofing</span> & Retro-Fit
+                About <span className="text-secondary">CAPTION</span> CRM
               </h1>
               <p className="text-xl text-gray-600 mb-8">
-                For over 15 years, we've been transforming homes with premium roofing and energy-efficient retrofit solutions. Our commitment to quality, integrity, and customer satisfaction has made us the trusted choice for homeowners across the region.
+                CAPTION is a revolutionary CRM designed in 2025 to empower small business owners worldwide. We provide an affordable, simple, and powerful solution to manage your customer relationships, projects, and sales with ease.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button size="lg" className="bg-secondary text-primary hover:bg-secondary/90 font-semibold">
                   Get Free Estimate
                 </Button>
                 <Button variant="outline" size="lg" className="border-primary text-primary hover:bg-primary hover:text-white">
-                  Call (123) 456-7890
+                  Call (346) 849-3169
                 </Button>
               </div>
             </div>
             <div>
               <img 
-                src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&h=400&fit=crop"
-                alt="Professional roofing team at work"
+                src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=600&h=400&fit=crop"
+                alt="CRM dashboard showing various features"
                 className="rounded-3xl shadow-2xl w-full h-96 object-cover"
               />
             </div>
@@ -69,16 +69,16 @@ const AboutPage = () => {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-4xl font-heading font-bold text-primary mb-8">Our Story</h2>
+            <h2 className="text-4xl font-heading font-bold text-primary mb-8">Our Mission</h2>
             <div className="space-y-6 text-lg text-gray-600">
               <p>
-                Final Roofing & Retro-Fit was founded in 2008 with a simple mission: to provide honest, reliable roofing services that homeowners can trust. What started as a small family business has grown into one of the region's most respected roofing contractors.
+                CAPTION was founded in 2025 with a clear mission: to democratize powerful CRM capabilities for small business owners. We saw a gap in the market for an affordable, intuitive, and comprehensive solution that didn't require extensive training or a large budget.
               </p>
               <p>
-                We've always believed that a roof is more than just protection—it's peace of mind. That's why we go above and beyond on every project, using premium materials, expert craftsmanship, and providing warranties that give our customers confidence in their investment.
+                We believe that every business, regardless of size, deserves access to tools that can help them grow. Our platform is built on the principles of simplicity, efficiency, and affordability, ensuring that you can focus on what you do best – serving your customers.
               </p>
               <p>
-                As the industry evolved, so did we. We expanded our services to include energy-efficient retrofits and solar integration, helping homeowners not just protect their homes, but also reduce their energy costs and environmental impact.
+                From lead management to project tracking and invoicing, CAPTION is designed to streamline your operations, enhance customer relationships, and provide the insights you need to make informed decisions. We are constantly evolving, adding new features and refining existing ones based on user feedback and market needs.
               </p>
             </div>
           </div>
@@ -163,23 +163,23 @@ const AboutPage = () => {
             {[
               {
                 icon: <Shield className="h-8 w-8 text-primary" />,
-                title: "Licensed Contractor",
-                description: "State licensed roofing contractor #RC123456"
+                title: "Certified CRM Provider",
+                description: "Officially recognized and certified CRM solution for small businesses."
               },
               {
                 icon: <CheckCircle className="h-8 w-8 text-green-600" />,
-                title: "Fully Insured",
-                description: "Comprehensive liability and workers' compensation"
+                title: "Data Security Compliant",
+                description: "Adheres to industry best practices for data protection and privacy."
               },
               {
                 icon: <Award className="h-8 w-8 text-secondary" />,
-                title: "BBB A+ Rated",
-                description: "Better Business Bureau accredited business"
+                title: "Award-Winning Support",
+                description: "Recognized for exceptional customer service and user satisfaction."
               },
               {
                 icon: <Clock className="h-8 w-8 text-primary" />,
-                title: "25-Year Warranty",
-                description: "Industry-leading warranty on all roofing work"
+                title: "Continuous Innovation",
+                description: "Regular updates and new features based on user feedback and market trends."
               }
             ].map((credential, index) => (
               <Card key={index} className="text-center p-6">
@@ -196,10 +196,10 @@ const AboutPage = () => {
       <section className="py-20 bg-primary text-white">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl font-heading font-bold mb-4">
-            Ready to Work with the Best?
+            Ready to Transform Your Business?
           </h2>
           <p className="text-xl mb-8 opacity-90">
-            Experience the difference that expertise, integrity, and quality craftsmanship make.
+            Discover how CAPTION can help you manage your leads, projects, and customer relationships more effectively.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" className="bg-secondary text-primary hover:bg-secondary/90 font-semibold">

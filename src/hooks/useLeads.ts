@@ -1,48 +1,39 @@
-import { useAuth } from '@/contexts/AuthContext';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
-import { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { useErrorHandler } from './useErrorHandler';
-import { useOptimisticUpdate } from './useOptimisticUpdate';
-import { useRBAC } from './useRBAC';
-import { useEnhancedActivityLogs } from './useEnhancedActivityLogs';
+import { useRBAC } from '@/hooks/useRBAC';
 
-export type Lead = Tables<'leads'>;
-type LeadInsert = Omit<TablesInsert<'leads'>, 'user_id'>;
-type LeadUpdate = TablesUpdate<'leads'>;
+export interface Lead {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  source: 'website' | 'referral' | 'google_ads' | 'facebook' | 'direct_mail' | 'cold_call' | 'trade_show' | 'other';
+  status: 'new' | 'contacted' | 'qualified' | 'proposal_sent' | 'negotiating' | 'won' | 'lost' | 'converted';
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  estimated_value?: number;
+  expected_close_date?: string;
+  user_id: string;
+}
 
 export const useLeads = () => {
+  const { user } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const { user, session } = useAuth();
-  const { executeUpdate } = useOptimisticUpdate();
-  const { handleError } = useErrorHandler();
   const { hasPermission } = useRBAC();
-  const { logEntityChange } = useEnhancedActivityLogs();
 
-  const validateUserAndSession = () => {
-    if (!user || !session) {
-      const errorMsg = 'Authentication required. Please log in again.';
-      setError(new Error(errorMsg));
-      toast.error(errorMsg);
-      return false;
-    }
-    return true;
-  };
-
-  const validatePermission = (action: 'read' | 'write' | 'delete'): boolean => {
-    const permission = `leads:${action}`;
-    if (!hasPermission(permission)) {
-      toast.error(`You don't have permission to ${action} leads`);
-      return false;
-    }
-    return true;
-  };
-
-  const fetchLeads = async () => {
-    if (!validateUserAndSession() || !validatePermission('read')) return;
+  const fetchLeads = useCallback(async () => {
+    if (!user) return;
 
     setLoading(true);
     setError(null);
@@ -54,251 +45,87 @@ export const useLeads = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-
       setLeads(data || []);
-    } catch (error: unknown) {
-      const leadError = error instanceof Error ? error : new Error('Failed to fetch leads');
-      setError(leadError);
-      handleError(leadError, { title: 'Failed to fetch leads' });
-      setLeads([]);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to fetch leads'));
+      toast.error('Failed to fetch leads');
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const createLead = async (leadData: LeadInsert) => {
-    if (!validateUserAndSession() || !validatePermission('write')) return null;
-
-    const optimisticLead: Lead = {
-      id: `temp-${Date.now()}`,
-      ...leadData,
-      user_id: user.id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    } as Lead;
+  const addLead = useCallback(async (lead: Omit<Lead, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
+    if (!user) return;
 
     try {
-      return await executeUpdate(
-        // Optimistic update
-        () => setLeads(prev => [optimisticLead, ...prev]),
-        // Actual update
-        async () => {
-          const { data, error } = await supabase
-            .from('leads')
-            .insert({ ...leadData, user_id: user.id })
-            .select()
-            .single();
-
-          if (error) throw error;
-
-          // Replace optimistic with real data
-          setLeads(prev => prev.map(l => l.id === optimisticLead.id ? data : l));
-
-          // Enhanced activity logging
-          await logEntityChange(
-            'lead',
-            data.id,
-            'created',
-            null,
-            data,
-            `Lead created: ${data.first_name} ${data.last_name}`
-          );
-
-          return data;
-        },
-        // Rollback
-        () => setLeads(prev => prev.filter(l => l.id !== optimisticLead.id)),
-        {
-          successMessage: 'Lead created successfully',
-          errorMessage: 'Failed to create lead'
-        }
-      );
-    } catch (error: unknown) {
-      return null;
-    }
-  };
-
-  const updateLead = async (id: string, updates: LeadUpdate) => {
-    if (!validateUserAndSession() || !validatePermission('write')) return false;
-
-    // Store original for rollback and change tracking
-    const originalLead = leads.find(l => l.id === id);
-    if (!originalLead) {
-      toast.error('Lead not found');
-      return false;
-    }
-
-    const optimisticLead = { ...originalLead, ...updates, updated_at: new Date().toISOString() };
-
-    try {
-      return await executeUpdate(
-        // Optimistic update
-        () => setLeads(prev => prev.map(l => l.id === id ? optimisticLead : l)),
-        // Actual update
-        async () => {
-          const { data, error } = await supabase
-            .from('leads')
-            .update(updates)
-            .eq('id', id)
-            .eq('user_id', user.id)
-            .select()
-            .single();
-
-          if (error) throw error;
-
-          // Update with real data
-          setLeads(prev => prev.map(l => l.id === id ? data : l));
-
-          // Enhanced activity logging with change tracking
-          await logEntityChange(
-            'lead',
-            id,
-            'updated',
-            originalLead,
-            data,
-            `Lead updated: ${data.first_name} ${data.last_name}`
-          );
-
-          return true;
-        },
-        // Rollback
-        () => setLeads(prev => prev.map(l => l.id === id ? originalLead : l)),
-        {
-          successMessage: 'Lead updated successfully',
-          errorMessage: 'Failed to update lead'
-        }
-      );
-    } catch (error: unknown) {
-      return false;
-    }
-  };
-
-  const deleteLead = async (id: string) => {
-    if (!validateUserAndSession() || !validatePermission('delete')) return;
-
-    // Store original for rollback and change tracking
-    const originalLead = leads.find(l => l.id === id);
-    if (!originalLead) {
-      toast.error('Lead not found');
-      return;
-    }
-
-    try {
-      await executeUpdate(
-        // Optimistic update
-        () => setLeads(prev => prev.filter(l => l.id !== id)),
-        // Actual update
-        async () => {
-          const { error } = await supabase
-            .from('leads')
-            .delete()
-            .eq('id', id)
-            .eq('user_id', user.id);
-
-          if (error) throw error;
-
-          // Enhanced activity logging
-          await logEntityChange(
-            'lead',
-            id,
-            'deleted',
-            originalLead,
-            null,
-            `Lead deleted: ${originalLead.first_name} ${originalLead.last_name}`
-          );
-
-          return true;
-        },
-        // Rollback
-        () => setLeads(prev => [...prev, originalLead].sort((a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        )),
-        {
-          successMessage: 'Lead deleted successfully',
-          errorMessage: 'Failed to delete lead'
-        }
-      );
-    } catch (error: unknown) {
-      // Error handling is managed by executeUpdate
-    }
-  };
-
-  const convertToCustomer = async (id: string) => {
-    if (!validateUserAndSession() || !validatePermission('write')) return null;
-
-    const lead = leads.find(l => l.id === id);
-    if (!lead) {
-      toast.error('Lead not found');
-      return null;
-    }
-
-    try {
-      // Create customer from lead data
-      const customerData = {
-        first_name: lead.first_name,
-        last_name: lead.last_name,
-        email: lead.email,
-        phone: lead.phone,
-        address: lead.address,
-        city: lead.city,
-        state: lead.state,
-        zip_code: lead.zip_code,
-        notes: lead.notes,
-        lead_id: lead.id,
-        user_id: user.id
-      };
-
-      const { data: customer, error: customerError } = await supabase
-        .from('customers')
-        .insert(customerData)
+      const { data, error } = await supabase
+        .from('leads')
+        .insert([{ ...lead, user_id: user.id }])
         .select()
         .single();
 
-      if (customerError) throw customerError;
-
-      // Update lead status to converted
-      await updateLead(id, { status: 'converted' });
-
-      // Enhanced activity logging
-      await logEntityChange(
-        'lead',
-        id,
-        'updated',
-        lead,
-        { ...lead, status: 'converted' },
-        `Lead converted to customer: ${lead.first_name} ${lead.last_name}`
-      );
-
-      await logEntityChange(
-        'customer',
-        customer.id,
-        'created',
-        null,
-        customer,
-        `Customer created from lead: ${customer.first_name} ${customer.last_name}`
-      );
-
-      toast.success('Lead successfully converted to customer');
-      return customer;
-    } catch (error: unknown) {
-      const convertError = error instanceof Error ? error : new Error('Failed to convert lead');
-      handleError(convertError, { title: 'Failed to convert lead to customer' });
-      return null;
+      if (error) throw error;
+      setLeads(prev => [data, ...prev]);
+      toast.success('Lead added successfully');
+      return data;
+    } catch (err) {
+      toast.error('Failed to add lead');
+      throw err;
     }
-  };
+  }, [user]);
+
+  const updateLead = useCallback(async (id: string, updates: Partial<Omit<Lead, 'id' | 'created_at' | 'updated_at' | 'user_id'>>) => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('leads')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      setLeads(prev => prev.map(lead => lead.id === id ? { ...lead, ...data } : lead));
+      toast.success('Lead updated successfully');
+      return data;
+    } catch (err) {
+      toast.error('Failed to update lead');
+      throw err;
+    }
+  }, [user]);
+
+  const deleteLead = useCallback(async (id: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      setLeads(prev => prev.filter(lead => lead.id !== id));
+      toast.success('Lead deleted successfully');
+    } catch (err) {
+      toast.error('Failed to delete lead');
+      throw err;
+    }
+  }, [user]);
 
   useEffect(() => {
     fetchLeads();
-  }, [user, session]);
+  }, [fetchLeads]);
 
   return {
     leads,
     loading,
     error,
     fetchLeads,
-    createLead,
+    addLead,
     updateLead,
-    deleteLead,
-    convertToCustomer
+    deleteLead
   };
 };

@@ -70,6 +70,25 @@ export interface TimeEntryFilters {
   end_date?: string;
 }
 
+interface TimeEntryRow {
+  id: string;
+  job_id: string;
+  user_id: string;
+  crew_id?: string | null;
+  start_time: string;
+  end_time?: string | null;
+  duration_hours?: number | null;
+  entry_type?: string | null;
+  hourly_rate?: number | null;
+  total_cost?: number | null;
+  description?: string | null;
+  approved?: boolean | null;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // Simple activity logging function to avoid dependency issues
 const logTimeEntryActivity = async (action: string, entityId: string, description: string) => {
   try {
@@ -94,7 +113,7 @@ export function useTimeEntries() {
   const { toast } = useToast();
 
   // Fetch time entries with optional filters
-  const fetchTimeEntries = async (filters?: TimeEntryFilters) => {
+  const fetchTimeEntries = React.useCallback(async (filters?: TimeEntryFilters) => {
     // Prevent multiple simultaneous requests
     if (loading) {
       return;
@@ -105,8 +124,7 @@ export function useTimeEntries() {
       setError(null);
 
       // Build the query for time_entries table with error handling
-      // Use any cast since the table might not exist in types yet
-      const { data, error: fetchError } = await (supabase as any)
+      const { data, error: fetchError } = await supabase
         .from('time_entries')
         .select('*')
         .order('start_time', { ascending: false })
@@ -124,32 +142,32 @@ export function useTimeEntries() {
       }
 
       // Apply filters on the client side for now since we need to handle RLS properly
-      let filteredData = data || [];
+      let filteredData: TimeEntryRow[] = data || [];
 
       if (filters?.job_id) {
-        filteredData = filteredData.filter((entry: any) => entry.job_id === filters.job_id);
+        filteredData = filteredData.filter((entry: TimeEntryRow) => entry.job_id === filters.job_id);
       }
       if (filters?.user_id) {
-        filteredData = filteredData.filter((entry: any) => entry.user_id === filters.user_id);
+        filteredData = filteredData.filter((entry: TimeEntryRow) => entry.user_id === filters.user_id);
       }
       if (filters?.crew_id) {
-        filteredData = filteredData.filter((entry: any) => entry.crew_id === filters.crew_id);
+        filteredData = filteredData.filter((entry: TimeEntryRow) => entry.crew_id === filters.crew_id);
       }
       if (filters?.approved !== undefined) {
-        filteredData = filteredData.filter((entry: any) => entry.approved === filters.approved);
+        filteredData = filteredData.filter((entry: TimeEntryRow) => entry.approved === filters.approved);
       }
       if (filters?.entry_type) {
-        filteredData = filteredData.filter((entry: any) => entry.entry_type === filters.entry_type);
+        filteredData = filteredData.filter((entry: TimeEntryRow) => entry.entry_type === filters.entry_type);
       }
       if (filters?.start_date) {
-        filteredData = filteredData.filter((entry: any) => entry.start_time >= filters.start_date!);
+        filteredData = filteredData.filter((entry: TimeEntryRow) => entry.start_time >= filters.start_date!);
       }
       if (filters?.end_date) {
-        filteredData = filteredData.filter((entry: any) => entry.start_time <= filters.end_date!);
+        filteredData = filteredData.filter((entry: TimeEntryRow) => entry.start_time <= filters.end_date!);
       }
 
       // Transform the data to match our TimeEntry interface
-      const transformedData: TimeEntry[] = filteredData.map((entry: any) => ({
+      const transformedData: TimeEntry[] = filteredData.map((entry: TimeEntryRow) => ({
         id: entry.id,
         job_id: entry.job_id,
         user_id: entry.user_id,
@@ -157,7 +175,7 @@ export function useTimeEntries() {
         start_time: entry.start_time,
         end_time: entry.end_time || undefined,
         duration_hours: entry.duration_hours || 0,
-        entry_type: entry.entry_type || 'regular',
+        entry_type: (entry.entry_type as 'regular' | 'overtime' | 'travel' | 'break') || 'regular',
         hourly_rate: entry.hourly_rate || undefined,
         total_cost: entry.total_cost || 0,
         description: entry.description || undefined,
@@ -187,7 +205,7 @@ export function useTimeEntries() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [loading, toast]);
 
   // Create time entry with optimistic update
   const createTimeEntry = async (timeEntryData: CreateTimeEntryData): Promise<TimeEntry | null> => {

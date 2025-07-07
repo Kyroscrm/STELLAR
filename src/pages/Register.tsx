@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContextExports';
 import { useToast } from '@/hooks/use-toast';
 import { UserPlus, Mail, Lock, User, ArrowLeft } from 'lucide-react';
 
@@ -25,7 +25,7 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (formData.password !== formData.confirmPassword) {
       toast({
         title: "Password Mismatch",
@@ -53,7 +53,7 @@ const Register = () => {
           title: "Registration Successful",
           description: "Please check your email to confirm your account."
         });
-        
+
         setTimeout(() => {
           navigate('/login');
         }, 2000);
@@ -170,8 +170,8 @@ const Register = () => {
                 </div>
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full bg-primary text-white hover:bg-primary/90"
                 disabled={isLoading}
               >
@@ -181,7 +181,7 @@ const Register = () => {
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
-                Already have an account? 
+                Already have an account?
                 <Link to="/login" className="text-primary hover:text-primary/80 font-medium ml-1">
                   Sign in here
                 </Link>

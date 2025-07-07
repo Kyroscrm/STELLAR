@@ -142,7 +142,7 @@ const Navigation = () => {
             {/* Logo */}
             <Link to="/admin" className="flex-shrink-0">
               <h1 className="text-xl font-bold text-primary">
-                Final<span className="text-secondary">Roofing</span>
+                Final<span className="text-secondary">Services</span>
               </h1>
             </Link>
 

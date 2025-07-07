@@ -63,32 +63,31 @@ const CalendarScheduler = () => {
   });
 
   useEffect(() => {
+    const fetchEvents = async () => {
+      if (!user) return;
+
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('calendar_events')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('start_time', { ascending: true });
+
+        if (error) throw error;
+        setEvents(data || []);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          toast.error(`Failed to fetch calendar events: ${error.message}`);
+        } else {
+          toast.error('Failed to fetch calendar events');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchEvents();
   }, [user]);
-
-  const fetchEvents = async () => {
-    if (!user) return;
-
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('calendar_events')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('start_time', { ascending: true });
-
-      if (error) throw error;
-      setEvents(data || []);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        toast.error(`Failed to fetch calendar events: ${error.message}`);
-      } else {
-        toast.error('Failed to fetch calendar events');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const createEvent = async () => {
     if (!user || !newEvent.title) return;

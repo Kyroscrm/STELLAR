@@ -332,7 +332,7 @@ const TaskKanbanBoard = () => {
               <p className="text-blue-100">Organize, track, and complete your team's work efficiently</p>
             </div>
             <div className="hidden md:block">
-              <img alt="Task Management" className="w-32 h-20 rounded-lg object-cover" src="/lovable-uploads/9e3f6abc-5416-43d5-b655-52bba8811ab8.png" />
+              <img alt="Task Management" className="w-32 h-20 rounded-lg object-cover" src="/placeholder-image.png" />
             </div>
           </div>
         </div>

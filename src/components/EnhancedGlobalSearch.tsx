@@ -212,9 +212,9 @@ const EnhancedGlobalSearch: React.FC = () => {
     }
   };
 
-  const handleSearch = () => {
+  const handleSearch = React.useCallback(() => {
     searchEntities(query, selectedEntityTypes);
-  };
+  }, [query, selectedEntityTypes, user, searchEntities]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSaveSearch = async () => {
     if (!saveName.trim()) return;
@@ -258,7 +258,7 @@ const EnhancedGlobalSearch: React.FC = () => {
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [query, selectedEntityTypes]);
+  }, [query, selectedEntityTypes, handleSearch]);
 
   return (
     <Card className="w-full">

@@ -17,7 +17,7 @@ export interface SignedDocument {
   signed_at: string | null;
   expires_at: string | null;
   status: 'pending' | 'signed' | 'expired' | 'cancelled';
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -44,7 +44,7 @@ export const useDocumentSignature = () => {
       const transformedData: SignedDocument[] = (data || []).map((item: SignedDocumentsRow) => ({
         ...item,
         status: item.status as 'pending' | 'signed' | 'expired' | 'cancelled',
-        metadata: (item.metadata as Record<string, any>) || {}
+        metadata: (item.metadata as Record<string, unknown>) || {}
       }));
 
       setDocuments(transformedData);
@@ -70,7 +70,7 @@ export const useDocumentSignature = () => {
       const transformedData: SignedDocument = {
         ...data,
         status: data.status as 'pending' | 'signed' | 'expired' | 'cancelled',
-        metadata: (data.metadata as Record<string, any>) || {}
+        metadata: (data.metadata as Record<string, unknown>) || {}
       };
 
       setDocuments(prev => [transformedData, ...prev]);
@@ -100,7 +100,7 @@ export const useDocumentSignature = () => {
       const transformedData: SignedDocument = {
         ...data,
         status: data.status as 'pending' | 'signed' | 'expired' | 'cancelled',
-        metadata: (data.metadata as Record<string, any>) || {}
+        metadata: (data.metadata as Record<string, unknown>) || {}
       };
 
       setDocuments(prev => prev.map(doc => doc.id === id ? transformedData : doc));
@@ -126,7 +126,7 @@ export const useDocumentSignature = () => {
       const transformedData: SignedDocument = {
         ...data,
         status: data.status as 'pending' | 'signed' | 'expired' | 'cancelled',
-        metadata: (data.metadata as Record<string, any>) || {}
+        metadata: (data.metadata as Record<string, unknown>) || {}
       };
 
       setDocuments(prev => prev.map(doc => doc.id === id ? transformedData : doc));

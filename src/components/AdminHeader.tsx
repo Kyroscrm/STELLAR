@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { User, Menu, X, Briefcase, Users, FileText, Calendar, Receipt, UserPlus, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContextExports';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTour } from '@/contexts/TourContext';
 
@@ -33,13 +33,13 @@ const AdminHeader = () => {
           <div className="flex items-center gap-4">
             <Link to="/admin" className="flex items-center gap-4">
               <img
-                src="/lovable-uploads/f6ae6373-2ac3-4ff4-8436-389ab0da2914.png"
-                alt="Final Roofing & Retro-Fit Logo"
+                src="/placeholder-logo.png"
+                alt="CAPTION Logo"
                 className="h-10 w-auto"
               />
               <div>
                 <h1 className="text-xl font-heading font-bold text-primary">
-                  Final <span className="text-secondary">Roofing</span> CRM
+                  Final <span className="text-secondary">Services</span> CRM
                 </h1>
                 <p className="text-xs text-gray-600">Customer Relationship Management</p>
               </div>

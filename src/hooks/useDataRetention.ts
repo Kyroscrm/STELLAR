@@ -42,7 +42,7 @@ export const useDataRetention = () => {
   const canManageRetention = hasPermission('retention:manage');
   const canViewRetention = hasPermission('retention:read');
 
-  const validateUserAndSession = () => {
+  const validateUserAndSession = React.useCallback(() => {
     if (!user) {
       const errorMsg = 'Authentication required. Please log in again.';
       setError(new Error(errorMsg));
@@ -50,7 +50,7 @@ export const useDataRetention = () => {
       return false;
     }
     return true;
-  };
+  }, [user, setError, toast]);
 
   const fetchPolicies = async () => {
     if (!validateUserAndSession() || !canViewRetention) return;
@@ -90,7 +90,7 @@ export const useDataRetention = () => {
     }
   };
 
-  const createRetentionPoliciesTable = async () => {
+  const createRetentionPoliciesTable = React.useCallback(async () => {
     const { error } = await supabase.rpc('exec', {
       sql: `
         CREATE TABLE IF NOT EXISTS public.data_retention_policies (
@@ -128,7 +128,7 @@ export const useDataRetention = () => {
     });
 
     if (error) throw error;
-  };
+  }, [supabase, user]);
 
   const createPolicy = async (policyData: Omit<DataRetentionPolicy, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
     if (!validateUserAndSession() || !canManageRetention) return null;

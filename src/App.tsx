@@ -16,9 +16,9 @@ import SuspenseLoader from "@/components/SuspenseLoader";
 
 // Lazy load all pages
 const Index = lazy(() => import("./pages/Index"));
-const ServicesPage = lazy(() => import("./pages/ServicesPage"));
-const GalleryPage = lazy(() => import("./pages/GalleryPage"));
-const ReviewsPage = lazy(() => import("./pages/ReviewsPage"));
+const FeaturesPage = lazy(() => import("./pages/FeaturesPage"));
+const DemoPage = lazy(() => import("./pages/DemoPage"));
+const TestimonialsPage = lazy(() => import("./pages/ReviewsPage"));
 const AboutPage = lazy(() => import("./pages/AboutPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
 const Login = lazy(() => import("./pages/Login"));
@@ -74,9 +74,9 @@ function App() {
                   <Routes>
                     {/* Public Pages */}
                     <Route path="/" element={<Suspense fallback={<SuspenseLoader />}><Index /></Suspense>} />
-                    <Route path="/services" element={<Suspense fallback={<SuspenseLoader />}><ServicesPage /></Suspense>} />
-                    <Route path="/gallery" element={<Suspense fallback={<SuspenseLoader />}><GalleryPage /></Suspense>} />
-                    <Route path="/reviews" element={<Suspense fallback={<SuspenseLoader />}><ReviewsPage /></Suspense>} />
+                    <Route path="/features" element={<Suspense fallback={<SuspenseLoader />}><FeaturesPage /></Suspense>} />
+                    <Route path="/demo" element={<Suspense fallback={<SuspenseLoader />}><DemoPage /></Suspense>} />
+                    <Route path="/testimonials" element={<Suspense fallback={<SuspenseLoader />}><TestimonialsPage /></Suspense>} />
                     <Route path="/about" element={<Suspense fallback={<SuspenseLoader />}><AboutPage /></Suspense>} />
                     <Route path="/contact" element={<Suspense fallback={<SuspenseLoader />}><ContactPage /></Suspense>} />
                     <Route path="/login" element={<Suspense fallback={<SuspenseLoader />}><Login /></Suspense>} />

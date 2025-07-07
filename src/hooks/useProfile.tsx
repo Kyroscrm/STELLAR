@@ -1,4 +1,4 @@
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContextExports';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesUpdate } from '@/integrations/supabase/types';
 import { useEffect, useState } from 'react';
@@ -162,7 +162,7 @@ export const useProfile = (): UseProfileReturn => {
       setRoles(data);
       return data;
     } catch (error) {
-      console.error('Error fetching roles:', error);
+      // console.error('Error fetching roles:', error);
       toast.error('Failed to load roles');
       return [];
     } finally {
@@ -210,7 +210,7 @@ export const useProfile = (): UseProfileReturn => {
       toast.success('User role updated successfully');
       return data;
     } catch (error) {
-      console.error('Error updating user role:', error);
+      // console.error('Error updating user role:', error);
       toast.error('Failed to update user role');
       return null;
     }
@@ -229,7 +229,7 @@ export const useProfile = (): UseProfileReturn => {
       if (error) throw error;
       return !!data;
     } catch (error) {
-      console.error('Error checking permission:', error);
+      // console.error('Error checking permission:', error);
       return false;
     }
   };

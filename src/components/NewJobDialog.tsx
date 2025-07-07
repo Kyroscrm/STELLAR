@@ -175,7 +175,7 @@ const NewJobDialog: React.FC<NewJobDialogProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as any }))}>
+              <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as 'quoted' | 'scheduled' | 'in_progress' | 'completed' | 'cancelled' }))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

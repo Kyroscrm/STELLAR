@@ -1,118 +1,127 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Joyride, { CallBackProps, STATUS, Step } from 'react-joyride';
 import { useLocation } from 'react-router-dom';
 import { mainTourSteps, leadsTourSteps, estimatesTourSteps, invoicesTourSteps, jobsTourSteps, tasksTourSteps } from '@/lib/tour-steps';
+import { TourContext } from './TourContextExports';
 
-type TourContextType = {
-  startTour: (tourName?: string) => void;
-  endTour: () => void;
-  resetTours: () => void;
-  isFirstVisit: boolean;
-};
+interface TourProviderProps {
+  children: React.ReactNode;
+}
 
-const TourContext = createContext<TourContextType | undefined>(undefined);
-
-export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [runTour, setRunTour] = useState(false);
+export const TourProvider: React.FC<TourProviderProps> = ({ children }) => {
+  const [isRunning, setIsRunning] = useState(false);
+  const [currentTour, setCurrentTour] = useState<string>('');
+  const [stepIndex, setStepIndex] = useState(0);
   const [steps, setSteps] = useState<Step[]>([]);
-  const [isFirstVisit, setIsFirstVisit] = useState(() => {
-    return localStorage.getItem('hasSeenTour') !== 'true';
-  });
+  const [isFirstVisit, setIsFirstVisit] = useState(false);
   const location = useLocation();
 
+  // Check if it's the user's first visit
   useEffect(() => {
-    // Check if this is the first visit to the admin dashboard
-    if (location.pathname === '/admin' && isFirstVisit) {
-      setTimeout(() => {
-        startTour('main');
-      }, 1000);
+    const hasVisited = localStorage.getItem('hasVisitedApp');
+    if (!hasVisited) {
+      setIsFirstVisit(true);
+      localStorage.setItem('hasVisitedApp', 'true');
     }
-  }, [location.pathname, isFirstVisit]);
+  }, []);
 
-  const getStepsForTour = (tourName: string): Step[] => {
+  // Start a tour
+  const startTour = (tourName: string = 'main') => {
+    let tourSteps: Step[] = [];
+
     switch (tourName) {
-      case 'main':
-        return mainTourSteps;
       case 'leads':
-        return leadsTourSteps;
+        tourSteps = leadsTourSteps;
+        break;
       case 'estimates':
-        return estimatesTourSteps;
+        tourSteps = estimatesTourSteps;
+        break;
       case 'invoices':
-        return invoicesTourSteps;
+        tourSteps = invoicesTourSteps;
+        break;
       case 'jobs':
-        return jobsTourSteps;
+        tourSteps = jobsTourSteps;
+        break;
       case 'tasks':
-        return tasksTourSteps;
+        tourSteps = tasksTourSteps;
+        break;
       default:
-        return mainTourSteps;
+        tourSteps = mainTourSteps;
     }
+
+    setSteps(tourSteps);
+    setCurrentTour(tourName);
+    setStepIndex(0);
+    setIsRunning(true);
   };
 
-  const startTour = (tourName = 'main') => {
-    setSteps(getStepsForTour(tourName));
-    setRunTour(true);
-  };
-
+  // End the current tour
   const endTour = () => {
-    setRunTour(false);
-    if (isFirstVisit) {
-      localStorage.setItem('hasSeenTour', 'true');
-      setIsFirstVisit(false);
-    }
+    setIsRunning(false);
+    setCurrentTour('');
+    setStepIndex(0);
+    setSteps([]);
   };
 
+  // Reset all tours (clear localStorage flags)
   const resetTours = () => {
-    localStorage.removeItem('hasSeenTour');
+    localStorage.removeItem('hasVisitedApp');
+    localStorage.removeItem('completedTours');
     setIsFirstVisit(true);
   };
 
+  // Handle tour callbacks
   const handleJoyrideCallback = (data: CallBackProps) => {
-    const { status } = data;
+    const { status, type, index } = data;
 
     if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
       endTour();
+
+      // Mark tour as completed
+      const completedTours = JSON.parse(localStorage.getItem('completedTours') || '[]');
+      if (!completedTours.includes(currentTour)) {
+        completedTours.push(currentTour);
+        localStorage.setItem('completedTours', JSON.stringify(completedTours));
+      }
+    } else if (type === 'step:after') {
+      setStepIndex(index + 1);
     }
   };
 
+  const value = {
+    startTour,
+    endTour,
+    resetTours,
+    isFirstVisit
+  };
+
   return (
-    <TourContext.Provider value={{ startTour, endTour, resetTours, isFirstVisit }}>
+    <TourContext.Provider value={value}>
+      {children}
       <Joyride
         steps={steps}
-        run={runTour}
-        continuous
-        showProgress
-        showSkipButton
-        disableOverlayClose
-        disableCloseOnEsc
+        run={isRunning}
+        stepIndex={stepIndex}
         callback={handleJoyrideCallback}
+        continuous
+        showSkipButton
+        showProgress
         styles={{
           options: {
-            primaryColor: '#0f766e', // Match your primary color
-            zIndex: 10000,
-          },
-          tooltip: {
-            borderRadius: '8px',
-          },
-          tooltipContainer: {
-            textAlign: 'left',
-          },
-          buttonNext: {
-            backgroundColor: '#0f766e',
-          },
-          buttonBack: {
-            marginRight: 10,
-          },
+            primaryColor: '#3b82f6',
+          }
+        }}
+        locale={{
+          back: 'Back',
+          close: 'Close',
+          last: 'Finish',
+          next: 'Next',
+          skip: 'Skip Tour'
         }}
       />
-      {children}
     </TourContext.Provider>
   );
 };
 
-export const useTour = (): TourContextType => {
-  const context = useContext(TourContext);
-  if (context === undefined) {
-    throw new Error('useTour must be used within a TourProvider');
-  }
-  return context;
-};
+// Re-export useTour for convenience
+export { useTour } from './TourContextExports';

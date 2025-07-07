@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,73 +21,73 @@ const ProjectGallery = () => {
   const projects: Project[] = [
     {
       id: '1',
-      title: 'Complete Roof Replacement',
-      category: 'roofing',
-      beforeImage: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop',
-      afterImage: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=400&h=300&fit=crop',
-      cost: '$45,000',
-      duration: '2 weeks',
-      description: 'Complete roof replacement with premium architectural shingles and new gutters.'
+      title: 'Lead Management Dashboard',
+      category: 'services',
+      beforeImage: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=400&h=300&fit=crop',
+      afterImage: 'https://images.unsplash.com/photo-1522071820081-009f0129c7ce?w=400&h=300&fit=crop',
+      cost: 'Essential Plan',
+      duration: 'Instant Setup',
+      description: `Visualize and manage your sales pipeline with an intuitive dashboard, tracking leads from initial contact to conversion.`,
     },
     {
       id: '2',
-      title: 'Metal Roof Installation',
-      category: 'roofing',
-      beforeImage: 'https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=400&h=300&fit=crop',
-      afterImage: 'https://images.unsplash.com/photo-1504233529578-6d46beb811cd?w=400&h=300&fit=crop',
-      cost: '$32,000',
-      duration: '1.5 weeks',
-      description: 'Modern metal roofing installation with energy-efficient coating and extended warranty.'
+      title: 'Automated Workflow Example',
+      category: 'services',
+      beforeImage: 'https://images.unsplash.com/photo-1556157382-97eda2d13296?w=400&h=300&fit=crop',
+      afterImage: 'https://images.unsplash.com/photo-1550522600-08777929b720?w=400&h=300&fit=crop',
+      cost: 'Pro Plan',
+      duration: 'Quick Setup',
+      description: `See how automated workflows can save you time by automating repetitive tasks and notifications.`,
     },
     {
       id: '3',
-      title: 'Roof Repair & Gutters',
+      title: 'Customizable Reporting',
       category: 'repair',
-      beforeImage: 'https://images.unsplash.com/photo-1523755231516-e43fd2e8dca5?w=400&h=300&fit=crop',
-      afterImage: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop',
-      cost: '$12,500',
-      duration: '3 days',
-      description: 'Storm damage repair with new shingle sections and complete gutter replacement.'
+      beforeImage: 'https://images.unsplash.com/photo-1551288259-cd7c81741d52?w=400&h=300&fit=crop',
+      afterImage: 'https://images.unsplash.com/photo-1550522600-08777929b720?w=400&h=300&fit=crop',
+      cost: 'Pro Plan',
+      duration: 'Real-time',
+      description: `Generate custom reports and gain insights into your business performance with powerful analytics tools.`,
     },
     {
       id: '4',
-      title: 'Tile Roof Restoration',
+      title: 'Secure Client Portal',
       category: 'restoration',
-      beforeImage: 'https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?w=400&h=300&fit=crop',
-      afterImage: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&h=300&fit=crop',
-      cost: '$28,000',
-      duration: '1 week',
-      description: 'Clay tile roof restoration with cleaning, sealing, and damaged tile replacement.'
+      beforeImage: 'https://images.unsplash.com/photo-1550522600-08777929b720?w=400&h=300&fit=crop',
+      afterImage: 'https://images.unsplash.com/photo-1550522600-08777929b720?w=400&h=300&fit=crop',
+      cost: 'Included',
+      duration: 'Always On',
+      description: `Provide your clients with a secure portal to view project updates, invoices, and communicate directly.`,
     },
     {
       id: '5',
-      title: 'Solar Panel Integration',
+      title: 'Mobile Access & Sync',
       category: 'solar',
       beforeImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&h=300&fit=crop',
       afterImage: 'https://images.unsplash.com/photo-1600573472550-8090b5e0745e?w=400&h=300&fit=crop',
-      cost: '$18,000',
-      duration: '2 days',
-      description: 'Solar panel installation with proper roof mounting and electrical integration.'
+      cost: 'Included',
+      duration: 'Seamless',
+      description: `Access your CRM data on the go with our mobile-friendly interface, ensuring you're always connected.`,
     },
     {
       id: '6',
-      title: 'Commercial Roof Overhaul',
+      title: 'Integration Capabilities',
       category: 'commercial',
       beforeImage: 'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=400&h=300&fit=crop',
       afterImage: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=400&h=300&fit=crop',
-      cost: '$180,000',
-      duration: '3 weeks',
-      description: 'Complete commercial building roof replacement with EPDM membrane and insulation upgrade.'
+      cost: 'Customizable',
+      duration: 'Flexible',
+      description: `Connect CAPTION with your favorite business tools and applications for a unified workflow.`,
     }
   ];
 
   const categories = [
-    { id: 'all', label: 'All Projects' },
-    { id: 'roofing', label: 'New Roofing' },
-    { id: 'repair', label: 'Repairs' },
-    { id: 'restoration', label: 'Restoration' },
-    { id: 'solar', label: 'Solar Integration' },
-    { id: 'commercial', label: 'Commercial' }
+    { id: 'all', label: 'All Features' },
+    { id: 'lead-management', label: 'Lead Management' },
+    { id: 'project-tracking', label: 'Project Tracking' },
+    { id: 'invoicing', label: 'Invoicing' },
+    { id: 'reporting', label: 'Reporting' },
+    { id: 'automation', label: 'Automation' }
   ];
 
   const filteredProjects = selectedCategory === 'all' 
@@ -105,10 +104,10 @@ const ProjectGallery = () => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-heading font-bold text-primary mb-4">
-            Our Recent Projects
+            CRM Features <span className="text-secondary">Showcase</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            See the transformation stories from our recent roofing projects. Each project showcases our commitment to quality craftsmanship and attention to detail.
+            Explore the core functionalities of CAPTION through interactive demos and visual examples.
           </p>
         </div>
 
@@ -231,9 +230,9 @@ const ProjectGallery = () => {
                     </div>
                   </div>
                   <div>
-                    <h4 className="font-semibold mb-2">Interested in Similar Work?</h4>
+                    <h4 className="font-semibold mb-2">Ready to Explore CAPTION?</h4>
                     <p className="text-gray-600 mb-4">
-                      Get a free consultation and estimate for your roofing project. Our experts will work with you to create the perfect solution for your home.
+                      Discover how CAPTION can streamline your business operations. Schedule a demo or start your free trial today!
                     </p>
                     <Button 
                       className="w-full bg-secondary text-primary hover:bg-secondary/90"

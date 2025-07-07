@@ -56,7 +56,7 @@ export const useCrews = () => {
     return true;
   };
 
-  const fetchCrews = async () => {
+  const fetchCrews = React.useCallback(async () => {
     fetchCrewsCallCount++;
     // eslint-disable-next-line no-console
     console.info(`[useCrews] fetchCrews called ${fetchCrewsCallCount} times this session`);
@@ -81,7 +81,7 @@ export const useCrews = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, validateUserAndSession, setLoading, setError, setCrews, handleError]);
 
   const fetchCrewMembers = async (crewId?: string) => {
     if (!validateUserAndSession()) return;
@@ -353,7 +353,7 @@ export const useCrews = () => {
 
   useEffect(() => {
     fetchCrews();
-  }, [user, session]);
+  }, [user, session, fetchCrews]);
 
   return {
     crews,

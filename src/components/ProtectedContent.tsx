@@ -1,5 +1,5 @@
 
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContextExports';
 import React from 'react';
 import { NetworkErrorFallback } from './FallbackUI';
 

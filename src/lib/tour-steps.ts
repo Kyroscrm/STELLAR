@@ -4,7 +4,7 @@ import { Step } from "react-joyride";
 export const mainTourSteps: Step[] = [
   {
     target: "header",
-    content: "Welcome to Final Roofing CRM! This is the main navigation area where you can access all modules.",
+    content: "Welcome to CAPTION CRM! This is the main navigation area where you can access all modules.",
     disableBeacon: true,
     placement: "bottom",
   },

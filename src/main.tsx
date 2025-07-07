@@ -25,17 +25,21 @@ if (import.meta.env.VITE_SENTRY_DSN_FRONTEND) {
       // Default to 20% sampling rate
       return 0.2;
     },
-    // Set performance monitoring thresholds
-    performanceMonitoring: {
-      enabled: true,
-      tracingOrigins: ['localhost', window.location.hostname],
-      idleTimeout: 5000,
-      markBackgroundTransactions: true,
-      routingInstrumentation: true,
-    }
+    // Enable performance monitoring
+    maxBreadcrumbs: 50
   });
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <App />
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error('Failed to find the root element');
+}
+
+const root = ReactDOM.createRoot(rootElement);
+
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
 );
+

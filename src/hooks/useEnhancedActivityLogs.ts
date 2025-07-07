@@ -3,23 +3,25 @@ import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useErrorHandler } from './useErrorHandler';
+import { ActivityLog } from '@/types/app-types';
 
-interface ActivityLog {
+interface ActivityLogData {
   id: string;
   user_id: string;
+  action: string;
   entity_type: string;
   entity_id: string;
-  action: string;
-  description: string;
-  old_data: any;
-  new_data: any;
-  changed_fields: string[];
-  ip_address: string;
-  user_agent: string;
-  session_id: string;
-  compliance_level: string;
-  risk_score: number;
+  old_data?: Record<string, unknown>;
+  new_data?: Record<string, unknown>;
+  description?: string;
   created_at: string;
+  updated_at: string;
+}
+
+interface ActivityLogDiff {
+  field: string;
+  oldValue: unknown;
+  newValue: unknown;
 }
 
 interface LogActivityParams {
@@ -27,108 +29,102 @@ interface LogActivityParams {
   entityId: string;
   action: string;
   description?: string;
-  oldData?: any;
-  newData?: any;
+  oldData?: Record<string, unknown>;
+  newData?: Record<string, unknown>;
   changedFields?: string[];
   complianceLevel?: 'standard' | 'high' | 'critical';
   riskScore?: number;
 }
 
 export const useEnhancedActivityLogs = () => {
-  const [logs, setLogs] = useState<ActivityLog[]>([]);
+  const { user, session } = useAuth();
+  const [logs, setLogs] = useState<ActivityLogData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const { user } = useAuth();
   const { handleError } = useErrorHandler();
 
   const validateUserAndSession = () => {
-    if (!user) {
-      const errorMsg = 'Authentication required for activity logging';
-      setError(new Error(errorMsg));
+    if (!user || !session) {
+      toast.error('Authentication required. Please log in again.');
       return false;
     }
     return true;
   };
 
-  const fetchActivityLogs = async (filters?: {
-    entityType?: string;
-    entityId?: string;
-    limit?: number;
-    offset?: number;
-  }) => {
+  const fetchLogs = async () => {
     if (!validateUserAndSession()) return;
 
     setLoading(true);
     setError(null);
-
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from('activity_logs')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (filters?.entityType) {
-        query = query.eq('entity_type', filters.entityType);
-      }
-
-      if (filters?.entityId) {
-        query = query.eq('entity_id', filters.entityId);
-      }
-
-      if (filters?.limit) {
-        query = query.limit(filters.limit);
-      }
-
-      if (filters?.offset) {
-        query = query.range(filters.offset, filters.offset + (filters.limit || 50) - 1);
-      }
-
-      const { data, error } = await query;
-
       if (error) throw error;
 
       setLogs(data || []);
     } catch (error: unknown) {
-      const logError = error instanceof Error ? error : new Error('Failed to fetch activity logs');
-      setError(logError);
-      handleError(logError, { title: 'Failed to fetch activity logs' });
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch activity logs';
+      setError(error instanceof Error ? error : new Error(errorMessage));
+      toast.error(errorMessage);
       setLogs([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const logActivity = async (params: LogActivityParams) => {
-    if (!validateUserAndSession()) return null;
+  const compareObjects = (oldObj: Record<string, unknown>, newObj: Record<string, unknown>): ActivityLogDiff[] => {
+    const changes: ActivityLogDiff[] = [];
+    const allKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
+
+    for (const key of allKeys) {
+      const oldValue = oldObj[key];
+      const newValue = newObj[key];
+
+      if (oldValue !== newValue) {
+        changes.push({
+          field: key,
+          oldValue,
+          newValue
+        });
+      }
+    }
+
+    return changes;
+  };
+
+  const logActivity = async (
+    action: string,
+    entityType: string,
+    entityId: string,
+    description: string,
+    oldData?: Record<string, unknown>,
+    newData?: Record<string, unknown>
+  ) => {
+    if (!validateUserAndSession()) return;
 
     try {
-      // Get current session and browser info
-      const sessionId = await getCurrentSessionId();
-      const browserInfo = getBrowserInfo();
-
-      const { data, error } = await supabase.rpc('log_activity', {
-        p_action: params.action,
-        p_entity_type: params.entityType,
-        p_entity_id: params.entityId,
-        p_description: params.description || null,
-        p_old_data: params.oldData || null,
-        p_new_data: params.newData || null,
-        p_changed_fields: params.changedFields || null,
-        p_ip_address: browserInfo.ipAddress || null,
-        p_user_agent: browserInfo.userAgent || null,
-        p_session_id: sessionId || null,
-        p_compliance_level: params.complianceLevel || 'standard',
-        p_risk_score: params.riskScore || 0
-      });
+      const { error } = await supabase
+        .from('activity_logs')
+        .insert({
+          user_id: user.id,
+          action,
+          entity_type: entityType,
+          entity_id: entityId,
+          description,
+          old_data: oldData,
+          new_data: newData,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
 
       if (error) throw error;
-
-      return data;
     } catch (error: unknown) {
-      const logError = error instanceof Error ? error : new Error('Failed to log activity');
-      handleError(logError, { title: 'Activity logging failed' });
-      return null;
+      const errorMessage = error instanceof Error ? error.message : 'Failed to log activity';
+      toast.error(errorMessage);
     }
   };
 
@@ -208,29 +204,12 @@ export const useEnhancedActivityLogs = () => {
     };
   };
 
-  const compareObjects = (oldObj: any, newObj: any): string[] => {
-    const changedFields: string[] = [];
-
-    if (!oldObj || !newObj) return changedFields;
-
-    // Get all keys from both objects
-    const allKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
-
-    allKeys.forEach(key => {
-      if (oldObj[key] !== newObj[key]) {
-        changedFields.push(key);
-      }
-    });
-
-    return changedFields;
-  };
-
   const logEntityChange = async (
     entityType: string,
     entityId: string,
     action: 'created' | 'updated' | 'deleted',
-    oldData?: any,
-    newData?: any,
+    oldData?: Record<string, unknown>,
+    newData?: Record<string, unknown>,
     description?: string
   ) => {
     const changedFields = oldData && newData ? compareObjects(oldData, newData) : [];
@@ -292,18 +271,15 @@ export const useEnhancedActivityLogs = () => {
   };
 
   useEffect(() => {
-    if (user) {
-      fetchActivityLogs();
-    }
-  }, [user]);
+    fetchLogs();
+  }, [user, session]);
 
   return {
     logs,
     loading,
     error,
-    fetchActivityLogs,
     logActivity,
-    logEntityChange,
+    fetchLogs,
     getEntityAuditHistory,
     getFieldChangeHistory,
     compareObjects

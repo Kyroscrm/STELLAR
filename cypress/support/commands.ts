@@ -1,6 +1,5 @@
 /// <reference types="cypress" />
 /// <reference types="cypress-axe" />
-/// <reference path="./types.ts" />
 
 // Custom command to check text content of elements
 Cypress.Commands.add('checkElementsText', { prevSubject: true }, (subject, expectedText) => {

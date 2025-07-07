@@ -1,6 +1,6 @@
-const jestDom = require('@testing-library/jest-dom');
-const { vi } = require('vitest');
-const { server } = require('./__mocks__/server');
+import * as jestDom from '@testing-library/jest-dom';
+import { vi } from 'vitest';
+import { server } from './__mocks__/server';
 
 // Add Jest DOM matchers
 Object.keys(jestDom).forEach(key => {

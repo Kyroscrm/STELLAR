@@ -94,7 +94,7 @@ const TimeEntriesList: React.FC<TimeEntriesListProps> = ({
     if (hasInitialized) {
       fetchTimeEntries(filters);
     }
-  }, [filters, hasInitialized]);
+  }, [filters, hasInitialized, fetchTimeEntries]);
 
   // Filter entries based on search term
   const filteredEntries = timeEntries.filter(entry =>

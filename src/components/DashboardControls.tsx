@@ -16,7 +16,7 @@ const DashboardControls: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Search query:', searchQuery);
+    // console.log('Search query:', searchQuery);
     // Implement search functionality
   };
   return <div className="bg-white rounded-lg border shadow-sm p-6 mb-6">

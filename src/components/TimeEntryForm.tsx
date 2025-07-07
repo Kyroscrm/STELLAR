@@ -49,7 +49,7 @@ const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   useEffect(() => {
     initializeTimeEntries();
     fetchCrews();
-  }, []);
+  }, [initializeTimeEntries, fetchCrews]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));

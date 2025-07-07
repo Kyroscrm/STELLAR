@@ -132,7 +132,7 @@ export const generateEstimatePDF = async (estimate: EstimateWithLineItems, logoS
   if (!logoSettings?.logo_url) {
     pdf.setFontSize(20);
     pdf.setFont(undefined, 'bold');
-    pdf.text('FINAL ROOFING & RETRO-FIT', 20, startY);
+    pdf.text('CAPTION', 20, startY);
     startY += 10;
   }
 
@@ -141,7 +141,7 @@ export const generateEstimatePDF = async (estimate: EstimateWithLineItems, logoS
   pdf.text('123 Business Street', 20, startY + 10);
   pdf.text('City, State 12345', 20, startY + 16);
   pdf.text('Phone: (555) 123-4567', 20, startY + 22);
-  pdf.text('Email: info@finalroofing.com', 20, startY + 28);
+  pdf.text('Email: newdarkorbit@outlook.com', 20, startY + 28);
 
   // Customer information (top-right)
   const customerName = estimate.customer ?
@@ -306,7 +306,7 @@ export const generateInvoicePDF = async (invoice: InvoiceWithLineItems, logoSett
   if (!logoSettings?.logo_url) {
     pdf.setFontSize(20);
     pdf.setFont(undefined, 'bold');
-    pdf.text('FINAL ROOFING & RETRO-FIT', 20, startY);
+    pdf.text('CAPTION', 20, startY);
     startY += 10;
   }
 
@@ -315,7 +315,7 @@ export const generateInvoicePDF = async (invoice: InvoiceWithLineItems, logoSett
   pdf.text('123 Business Street', 20, startY + 10);
   pdf.text('City, State 12345', 20, startY + 16);
   pdf.text('Phone: (555) 123-4567', 20, startY + 22);
-  pdf.text('Email: info@finalroofing.com', 20, startY + 28);
+  pdf.text('Email: newdarkorbit@outlook.com', 20, startY + 28);
 
   // Customer information (top-right)
   const customerName = invoice.customer ?

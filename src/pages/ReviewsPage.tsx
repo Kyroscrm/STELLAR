@@ -19,10 +19,10 @@ const ReviewsPage = () => {
             ))}
           </div>
           <h1 className="text-4xl md:text-6xl font-heading font-bold text-primary mb-6">
-            Customer <span className="text-secondary">Reviews</span>
+            What Our <span className="text-secondary">Users</span> Say
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-            Don't just take our word for it. Read what our satisfied customers have to say about their experience with Final Roofing & Retro-Fit.
+            Hear directly from small business owners who have transformed their operations with CAPTION.
           </p>
           <div className="bg-white rounded-lg p-6 inline-block shadow-lg">
             <div className="text-4xl font-bold text-primary">4.9/5</div>
@@ -44,21 +44,21 @@ const ReviewsPage = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-heading font-bold text-primary mb-4">
-              Trusted by Homeowners
+              Trusted by Businesses Worldwide
             </h2>
             <p className="text-xl text-gray-600">
-              Our commitment to excellence shows in every review
+              Our commitment to empowering small businesses is reflected in our user success stories.
             </p>
           </div>
           
           <div className="grid md:grid-cols-4 gap-8 text-center">
             <div className="p-6">
               <div className="text-4xl font-bold text-primary mb-2">500+</div>
-              <div className="text-gray-600">Projects Completed</div>
+              <div className="text-gray-600">Businesses Empowered</div>
             </div>
             <div className="p-6">
               <div className="text-4xl font-bold text-primary mb-2">15+</div>
-              <div className="text-gray-600">Years Experience</div>
+              <div className="text-gray-600">Years in Market</div>
             </div>
             <div className="p-6">
               <div className="text-4xl font-bold text-primary mb-2">247</div>
@@ -76,17 +76,17 @@ const ReviewsPage = () => {
       <section className="py-20 bg-primary text-white">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl font-heading font-bold mb-4">
-            Ready to Join Our Happy Customers?
+            Ready to Transform Your Business?
           </h2>
           <p className="text-xl mb-8 opacity-90">
-            Experience the quality and service that our customers rave about.
+            Join the growing community of successful small businesses powered by CAPTION.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" className="bg-secondary text-primary hover:bg-secondary/90 font-semibold">
               Get Free Estimate
             </Button>
             <Button variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-primary">
-              Call (123) 456-7890
+              Call (346) 849-3169
             </Button>
           </div>
         </div>

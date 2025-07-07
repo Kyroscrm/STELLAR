@@ -22,12 +22,12 @@ class CriticalErrorBoundary extends React.Component<CriticalErrorBoundaryProps, 
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Critical Error Boundary caught an error:', error, errorInfo);
+    // console.error('Critical Error Boundary caught an error:', error, errorInfo);
     
     // Log to external service in production
     if (process.env.NODE_ENV === 'production') {
       // Here you would log to your error tracking service
-      console.error('Critical error logged:', { error, errorInfo });
+      // console.error('Critical error logged:', { error, errorInfo });
     }
   }
 

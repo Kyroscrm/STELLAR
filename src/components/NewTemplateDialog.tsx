@@ -92,7 +92,7 @@ const NewTemplateDialog: React.FC<NewTemplateDialogProps> = ({
         line_items: validLineItems
       };
 
-      console.log('Creating template with data:', templateData);
+      // console.log('Creating template with data:', templateData);
 
       const result = await createTemplate(templateData);
 
@@ -104,7 +104,7 @@ const NewTemplateDialog: React.FC<NewTemplateDialogProps> = ({
         toast.success('Template created successfully');
       }
     } catch (error) {
-      console.error('Error creating template:', error);
+      // console.error('Error creating template:', error);
       toast.error('Failed to create template');
     } finally {
       setIsSubmitting(false);
@@ -150,7 +150,7 @@ const NewTemplateDialog: React.FC<NewTemplateDialogProps> = ({
                   <FormItem>
                     <FormLabel>Template Name *</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Basic Roofing Estimate" {...field} />
+                      <Input placeholder="e.g., Basic Contractor Estimate" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

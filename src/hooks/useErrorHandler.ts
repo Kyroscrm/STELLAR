@@ -81,8 +81,8 @@ export const useErrorHandler = () => {
     return errorMessage;
   }, []);
 
-  const handleAsyncError = useCallback(async (
-    asyncOperation: () => Promise<any>,
+  const handleAsyncError = useCallback(async <T,>(
+    asyncOperation: () => Promise<T>,
     options: ErrorHandlerOptions = {}
   ) => {
     try {

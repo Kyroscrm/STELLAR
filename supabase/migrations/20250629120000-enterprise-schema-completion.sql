@@ -33,7 +33,7 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE expense_category AS ENUM ('materials', 'equipment', 'travel', 'supplies', 'subcontractor', 'other');
+  CREATE TYPE expense_category AS ENUM ('general_supplies', 'equipment', 'travel', 'supplies', 'external_services', 'other');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
@@ -72,8 +72,8 @@ CREATE TABLE IF NOT EXISTS crew_members (
   UNIQUE(crew_id, user_id)
 );
 
--- 3. Materials table for inventory management
-CREATE TABLE IF NOT EXISTS materials (
+-- 3. Inventory Items table for inventory management
+CREATE TABLE IF NOT EXISTS inventory_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   description TEXT,
@@ -91,11 +91,11 @@ CREATE TABLE IF NOT EXISTS materials (
   updated_by UUID REFERENCES auth.users(id)
 );
 
--- 4. Job Materials table for tracking material usage
-CREATE TABLE IF NOT EXISTS job_materials (
+-- 4. Project Inventory Usage table for tracking material usage
+CREATE TABLE IF NOT EXISTS project_inventory_usage (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   job_id UUID NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
-  material_id UUID NOT NULL REFERENCES materials(id),
+  material_id UUID NOT NULL REFERENCES inventory_items(id),
   quantity_needed DECIMAL(10,2) NOT NULL,
   quantity_used DECIMAL(10,2) DEFAULT 0,
   cost_per_unit DECIMAL(10,2) NOT NULL,
@@ -276,13 +276,13 @@ CREATE INDEX IF NOT EXISTS idx_crew_members_crew_id ON crew_members(crew_id);
 CREATE INDEX IF NOT EXISTS idx_crew_members_user_id ON crew_members(user_id);
 CREATE INDEX IF NOT EXISTS idx_crew_members_active ON crew_members(is_active);
 
-CREATE INDEX IF NOT EXISTS idx_materials_category ON materials(category);
-CREATE INDEX IF NOT EXISTS idx_materials_sku ON materials(sku);
-CREATE INDEX IF NOT EXISTS idx_materials_active ON materials(is_active);
-CREATE INDEX IF NOT EXISTS idx_materials_stock ON materials(current_stock, minimum_stock);
+CREATE INDEX IF NOT EXISTS idx_inventory_items_category ON inventory_items(category);
+CREATE INDEX IF NOT EXISTS idx_inventory_items_sku ON inventory_items(sku);
+CREATE INDEX IF NOT EXISTS idx_inventory_items_active ON inventory_items(is_active);
+CREATE INDEX IF NOT EXISTS idx_inventory_items_stock ON inventory_items(current_stock, minimum_stock);
 
-CREATE INDEX IF NOT EXISTS idx_job_materials_job_id ON job_materials(job_id);
-CREATE INDEX IF NOT EXISTS idx_job_materials_material_id ON job_materials(material_id);
+CREATE INDEX IF NOT EXISTS idx_project_inventory_usage_job_id ON project_inventory_usage(job_id);
+CREATE INDEX IF NOT EXISTS idx_project_inventory_usage_material_id ON project_inventory_usage(material_id);
 
 CREATE INDEX IF NOT EXISTS idx_time_entries_job_id ON time_entries(job_id);
 CREATE INDEX IF NOT EXISTS idx_time_entries_user_id ON time_entries(user_id);
@@ -319,8 +319,8 @@ CREATE INDEX IF NOT EXISTS idx_report_templates_public ON report_templates(is_pu
 -- Enable RLS on all new tables
 ALTER TABLE crews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE crew_members ENABLE ROW LEVEL SECURITY;
-ALTER TABLE materials ENABLE ROW LEVEL SECURITY;
-ALTER TABLE job_materials ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inventory_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE project_inventory_usage ENABLE ROW LEVEL SECURITY;
 ALTER TABLE time_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE change_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE recurring_invoices ENABLE ROW LEVEL SECURITY;
@@ -366,12 +366,12 @@ CREATE POLICY "Users can manage crew members with permission or as crew lead" ON
     crew_id IN (SELECT id FROM crews WHERE lead_id = auth.uid())
   );
 
--- Materials policies
-CREATE POLICY "Users can view materials with permission" ON materials
-  FOR SELECT USING (has_permission(auth.uid(), 'materials', 'read'));
+-- Inventory Items policies
+CREATE POLICY "Users can view inventory items with permission" ON inventory_items
+  FOR SELECT USING (has_permission(auth.uid(), 'inventory_items', 'read'));
 
-CREATE POLICY "Users can manage materials with permission" ON materials
-  FOR ALL USING (has_permission(auth.uid(), 'materials', 'create'));
+CREATE POLICY "Users can manage inventory items with permission" ON inventory_items
+  FOR ALL USING (has_permission(auth.uid(), 'inventory_items', 'create'));
 
 -- Job Materials policies
 CREATE POLICY "Users can view job materials for jobs they can access" ON job_materials
@@ -473,8 +473,8 @@ CREATE POLICY "Users can manage their own report templates or with permission" O
 -- Create audit triggers for all new tables
 SELECT audit_table('crews');
 SELECT audit_table('crew_members');
-SELECT audit_table('materials');
-SELECT audit_table('job_materials');
+SELECT audit_table('inventory_items');
+SELECT audit_table('project_inventory_usage');
 SELECT audit_table('time_entries');
 SELECT audit_table('change_orders');
 SELECT audit_table('recurring_invoices');
@@ -513,7 +513,7 @@ RETURNS TABLE (
 BEGIN
   RETURN QUERY
   SELECT m.id, m.name, m.current_stock, m.minimum_stock, m.category
-  FROM materials m
+  FROM inventory_items m
   WHERE m.current_stock <= m.minimum_stock
     AND m.is_active = true
   ORDER BY (m.current_stock::FLOAT / NULLIF(m.minimum_stock, 0)) ASC;
@@ -533,7 +533,7 @@ BEGIN
   -- Calculate material costs
   SELECT COALESCE(SUM(total_cost), 0)
   INTO material_costs
-  FROM job_materials
+  FROM project_inventory_usage
   WHERE job_id = job_uuid;
 
   -- Calculate labor costs

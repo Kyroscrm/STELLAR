@@ -77,15 +77,7 @@ const SecuritySettings: React.FC = () => {
 
   const canManageSecurity = hasPermission('security:manage');
 
-  useEffect(() => {
-    if (user) {
-      fetchUserSessions();
-      fetchSecurityPreferences();
-      checkMfaStatus();
-    }
-  }, [user]);
-
-  const fetchUserSessions = async () => {
+  const fetchUserSessions = React.useCallback(async () => {
     if (!user) return;
 
     try {
@@ -101,9 +93,9 @@ const SecuritySettings: React.FC = () => {
     } catch (error) {
       handleError(error as Error, { title: 'Failed to fetch user sessions' });
     }
-  };
+  }, [user, handleError]);
 
-  const fetchSecurityPreferences = async () => {
+  const fetchSecurityPreferences = React.useCallback(async () => {
     if (!user) return;
 
     try {
@@ -125,9 +117,9 @@ const SecuritySettings: React.FC = () => {
     } catch (error) {
       handleError(error as Error, { title: 'Failed to fetch security preferences' });
     }
-  };
+  }, [user, handleError]);
 
-  const checkMfaStatus = async () => {
+  const checkMfaStatus = React.useCallback(async () => {
     if (!user) return;
 
     try {
@@ -138,7 +130,15 @@ const SecuritySettings: React.FC = () => {
       // Silently handle MFA check failure as it may not be supported in all configurations
       setMfaEnabled(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserSessions();
+      fetchSecurityPreferences();
+      checkMfaStatus();
+    }
+  }, [user, fetchUserSessions, fetchSecurityPreferences, checkMfaStatus]);
 
   const enableMfa = async () => {
     if (!user) return;

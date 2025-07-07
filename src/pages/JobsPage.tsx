@@ -16,7 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import ViewJobDialog from '@/components/ViewJobDialog';
 import { useJobs } from '@/hooks/useJobs';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContextExports';
 import {
     AlertCircle,
     Briefcase,
@@ -33,17 +33,22 @@ import {
     Search,
     Settings,
     TrendingUp,
-    User
+    User,
+    FileText
 } from 'lucide-react';
 import { useState } from 'react';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import { JobWithCustomer } from '@/types/app-types';
+import ChangeOrdersList from '@/components/ChangeOrdersList';
 
 const JobsPage = () => {
   const { jobs, loading, updateJob, deleteJob, fetchJobs } = useJobs();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'files' | 'time'>('kanban');
+  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'files' | 'time' | 'changes'>('kanban');
   const [selectedJobId, setSelectedJobId] = useState<string>('');
+  const [deleteJobId, setDeleteJobId] = useState<string | null>(null);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -67,10 +72,11 @@ const JobsPage = () => {
   };
 
   const filteredJobs = jobs.filter(job => {
+    const jobWithCustomer = job as JobWithCustomer;
     const matchesSearch = !searchTerm ||
       job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (job.description && job.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (job.customers && `${job.customers.first_name} ${job.customers.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()));
+      (jobWithCustomer.customers && `${jobWithCustomer.customers.first_name} ${jobWithCustomer.customers.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const matchesStatus = statusFilter === 'all' || job.status === statusFilter;
 
@@ -90,8 +96,13 @@ const JobsPage = () => {
   };
 
   const handleDeleteJob = async (jobId: string) => {
-    if (window.confirm('Are you sure you want to delete this job?')) {
-      await deleteJob(jobId);
+    setDeleteJobId(jobId);
+  };
+
+  const confirmDeleteJob = async () => {
+    if (deleteJobId) {
+      await deleteJob(deleteJobId);
+      setDeleteJobId(null);
     }
   };
 
@@ -134,6 +145,15 @@ const JobsPage = () => {
             data-testid="time-tracking-button"
           >
             <Clock className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setViewMode('changes')}
+            className={viewMode === 'changes' ? 'bg-primary text-white' : ''}
+            title="Change Orders"
+          >
+            <FileText className="h-4 w-4" />
           </Button>
           <NewJobDialog onSuccess={fetchJobs} />
         </div>
@@ -272,6 +292,56 @@ const JobsPage = () => {
         </div>
       )}
 
+      {viewMode === 'changes' && (
+        <div className="space-y-6">
+          {/* Job Selection for Change Orders */}
+          {!selectedJobId && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Select a Job for Change Orders</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {jobs.filter(job => ['approved', 'scheduled', 'in_progress'].includes(job.status || '')).map((job) => (
+                    <Card
+                      key={job.id}
+                      className="cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => setSelectedJobId(job.id)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="font-medium">{job.title}</div>
+                        <div className="text-sm text-gray-600 mt-1">{job.address}</div>
+                        <Badge className={`mt-2 ${getStatusColor(job.status || 'quoted')}`}>
+                          {job.status}
+                        </Badge>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {selectedJobId && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium">
+                  Change Orders: {jobs.find(j => j.id === selectedJobId)?.title}
+                </h3>
+                <Button variant="outline" onClick={() => setSelectedJobId('')}>
+                  Change Job
+                </Button>
+              </div>
+
+              <ChangeOrdersList
+                jobId={selectedJobId}
+                jobNumber={jobs.find(j => j.id === selectedJobId)?.job_number || ''}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       {viewMode === 'list' && (
         <>
           {/* Filters */}
@@ -362,10 +432,10 @@ const JobsPage = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {job.customers && (
+                    {(job as JobWithCustomer).customers && (
                       <div className="flex items-center text-sm text-gray-600">
                         <User className="h-4 w-4 mr-2" />
-                        {job.customers.first_name} {job.customers.last_name}
+                        {(job as JobWithCustomer).customers!.first_name} {(job as JobWithCustomer).customers!.last_name}
                       </div>
                     )}
                     {job.address && (
@@ -433,6 +503,17 @@ const JobsPage = () => {
           )}
         </>
       )}
+
+      <ConfirmDialog
+        open={!!deleteJobId}
+        onOpenChange={() => setDeleteJobId(null)}
+        title="Delete Job"
+        description="Are you sure you want to delete this job? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
+        onConfirm={confirmDeleteJob}
+      />
     </div>
   );
 };

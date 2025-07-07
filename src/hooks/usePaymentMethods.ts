@@ -26,7 +26,7 @@ export const usePaymentMethods = () => {
       const transformedData: PaymentMethod[] = (data || []).map((item) => ({
         ...item,
         is_default: item.is_default ?? false, // Convert null to false
-        metadata: (item.metadata as Record<string, any>) || {}
+        metadata: (item.metadata as Record<string, unknown>) || {}
       }));
 
       setPaymentMethods(transformedData);
@@ -52,7 +52,7 @@ export const usePaymentMethods = () => {
       const transformedData: PaymentMethod = {
         ...data,
         is_default: data.is_default ?? false, // Convert null to false
-        metadata: (data.metadata as Record<string, any>) || {}
+        metadata: (data.metadata as Record<string, unknown>) || {}
       };
 
       setPaymentMethods(prev => [transformedData, ...prev]);
@@ -78,7 +78,7 @@ export const usePaymentMethods = () => {
       const transformedData: PaymentMethod = {
         ...data,
         is_default: data.is_default ?? false, // Convert null to false
-        metadata: (data.metadata as Record<string, any>) || {}
+        metadata: (data.metadata as Record<string, unknown>) || {}
       };
 
       setPaymentMethods(prev => prev.map(method => method.id === id ? transformedData : method));

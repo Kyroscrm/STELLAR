@@ -1,1 +1,1 @@
-This is a test file created by MCP tools test.
+postgresql://postgres:[1Millisnothing%40]@db.kmjgbbzbqotorocychzl.supabase.co:5432/postgres

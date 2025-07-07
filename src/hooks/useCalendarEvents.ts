@@ -23,7 +23,7 @@ export const useCalendarEvents = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchEvents = async (startDate?: Date, endDate?: Date) => {
+  const fetchEvents = React.useCallback(async (startDate?: Date, endDate?: Date) => {
     if (!user) return;
 
     setLoading(true);
@@ -50,9 +50,9 @@ export const useCalendarEvents = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, setLoading, setEvents, toast]);
 
-  const createEvent = async (eventData: Omit<CalendarEvent, 'id' | 'user_id' | 'created_at'>) => {
+  const createEvent = React.useCallback(async (eventData: Omit<CalendarEvent, 'id' | 'user_id' | 'created_at'>) => {
     if (!user) return null;
 
     try {
@@ -76,9 +76,9 @@ export const useCalendarEvents = () => {
       toast.error('Failed to create event');
       return null;
     }
-  };
+  }, [user, setEvents, toast]);
 
-  const updateEvent = async (id: string, updates: Partial<Omit<CalendarEvent, 'id' | 'user_id' | 'created_at'>>) => {
+  const updateEvent = React.useCallback(async (id: string, updates: Partial<Omit<CalendarEvent, 'id' | 'user_id' | 'created_at'>>) => {
     if (!user) return false;
 
     try {
@@ -103,7 +103,7 @@ export const useCalendarEvents = () => {
       toast.error('Failed to update event');
       return false;
     }
-  };
+  }, [user, setEvents, toast]);
 
   const deleteEvent = async (id: string) => {
     if (!user) return;
@@ -126,7 +126,7 @@ export const useCalendarEvents = () => {
 
   useEffect(() => {
     fetchEvents();
-  }, [user]);
+  }, [user, fetchEvents]);
 
   return {
     events,

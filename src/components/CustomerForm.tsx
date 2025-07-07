@@ -61,7 +61,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
     try {
       await onSubmit(data);
     } catch (error) {
-      console.error('Error submitting customer form:', error);
+      // console.error('Error submitting customer form:', error);
     }
   };
 

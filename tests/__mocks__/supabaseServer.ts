@@ -39,7 +39,7 @@ export const server = setupServer(
   }),
 
   rest.post(`${SUPABASE_URL}/rest/v1/rpc/get_changed_fields`, (req, res, ctx) => {
-    const { old_record, new_record } = req.body as { old_record: Record<string, any>; new_record: Record<string, any> };
+    const { old_record, new_record } = req.body as { old_record: Record<string, unknown>; new_record: Record<string, unknown> };
 
     const changedFields: string[] = [];
     for (const key in new_record) {

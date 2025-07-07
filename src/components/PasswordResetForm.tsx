@@ -58,7 +58,7 @@ const PasswordResetForm = () => {
         });
       }
     } catch (error) {
-      console.error('Password reset error:', error);
+      // console.error('Password reset error:', error);
       setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);

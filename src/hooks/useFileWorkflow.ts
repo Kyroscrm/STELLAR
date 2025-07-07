@@ -126,7 +126,7 @@ export const useFileWorkflow = (): UseFileWorkflowReturn => {
 
       if (error) throw error;
 
-      const workflowsWithSteps = data?.map((workflow: any): FileWorkflow => ({
+      const workflowsWithSteps = data?.map((workflow: FileWorkflow): FileWorkflow => ({
         id: workflow.id,
         name: workflow.name,
         page_type: workflow.page_type,

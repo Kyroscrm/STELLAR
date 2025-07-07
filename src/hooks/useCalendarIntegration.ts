@@ -1,7 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 
 type CalendarIntegrationsRow = Database['public']['Tables']['calendar_integrations']['Row'];
@@ -21,11 +21,12 @@ export interface CalendarIntegration {
 }
 
 export const useCalendarIntegration = () => {
+  const { user } = useAuth();
   const [integrations, setIntegrations] = useState<CalendarIntegration[]>([]);
   const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
+  const [error, setError] = useState<Error | null>(null);
 
-  const fetchIntegrations = async () => {
+  const fetchIntegrations = useCallback(async () => {
     if (!user) return;
 
     setLoading(true);
@@ -45,13 +46,13 @@ export const useCalendarIntegration = () => {
       }));
 
       setIntegrations(transformedData);
-    } catch (error: unknown) {
-      // Log error handled - functionality preserved
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to fetch integrations'));
       toast.error('Failed to fetch calendar integrations');
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   const createIntegration = async (integrationData: Omit<CalendarIntegration, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (!user) return null;
@@ -143,11 +144,12 @@ export const useCalendarIntegration = () => {
 
   useEffect(() => {
     fetchIntegrations();
-  }, [user]);
+  }, [user, fetchIntegrations]);
 
   return {
     integrations,
     loading,
+    error,
     fetchIntegrations,
     createIntegration,
     updateIntegration,

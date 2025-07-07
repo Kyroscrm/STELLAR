@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useCustomers } from '@/hooks/useCustomers';
 import ViewCustomerDialog from '@/components/ViewCustomerDialog';
 import EditCustomerDialog from '@/components/EditCustomerDialog';
@@ -12,6 +12,7 @@ import SkeletonLoader from '@/components/ui/skeleton-loader';
 import ErrorMessage from '@/components/ui/error-message';
 import { Plus, Search, Filter, MoreHorizontal, Mail, Phone, MapPin, Building, User, Calendar, Users, DollarSign } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 const CustomersPage = () => {
   const {
@@ -25,6 +26,7 @@ const CustomersPage = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'all' | 'active' | 'inactive'>('all');
+  const [deleteCustomerId, setDeleteCustomerId] = useState<string | null>(null);
 
   const filteredCustomers = customers.filter(customer => {
     const matchesSearch = !searchTerm ||
@@ -44,8 +46,13 @@ const CustomersPage = () => {
   };
 
   const handleDeleteCustomer = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this customer?')) {
-      await deleteCustomer(id);
+    setDeleteCustomerId(id);
+  };
+
+  const confirmDeleteCustomer = async () => {
+    if (deleteCustomerId) {
+      await deleteCustomer(deleteCustomerId);
+      setDeleteCustomerId(null);
     }
   };
 
@@ -257,6 +264,17 @@ const CustomersPage = () => {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteCustomerId}
+        onOpenChange={() => setDeleteCustomerId(null)}
+        title="Delete Customer"
+        description="Are you sure you want to delete this customer? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
+        onConfirm={confirmDeleteCustomer}
+      />
     </div>
   );
 };

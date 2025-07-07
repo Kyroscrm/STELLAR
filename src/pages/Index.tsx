@@ -25,11 +25,10 @@ const Index = () => {
             <div className="space-y-8">
               <div className="space-y-4">
                 <h1 className="text-4xl md:text-6xl font-heading font-bold text-primary leading-tight">
-                  Premium <span className="text-secondary">Roofing</span> &<br />
-                  Retrofit Solutions
+                  CAPTION: Your <span className="text-secondary">Affordable</span> CRM Solution
                 </h1>
                 <p className="text-xl text-gray-600 leading-relaxed">
-                  Transform your home with expert roofing, energy-efficient retrofits, and premium renovation services. Licensed, insured, and trusted by homeowners across the region.
+                  Streamline your business operations with CAPTION, the comprehensive CRM designed for small business owners. Manage leads, projects, invoices, and more, all in one place.
                 </p>
               </div>
               
@@ -66,7 +65,7 @@ const Index = () => {
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-3xl transform rotate-3"></div>
                 <img 
                   src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&h=400&fit=crop"
-                  alt="Modern home with professional roofing work"
+                  alt="CRM dashboard showing data analytics"
                   className="relative rounded-3xl shadow-2xl w-full h-96 object-cover"
                 />
               </div>
@@ -80,30 +79,32 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-heading font-bold text-primary mb-4">
-              Our Specialized Services
+              Key CRM Features
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              From complete roof replacements to energy-efficient retrofits
+              Discover how CAPTION can transform your business operations.
             </p>
           </div>
           
           <div className="grid md:grid-cols-3 gap-8 mb-12">
             {[
+              [
               {
-                title: "Roof Replacement",
-                description: "Complete roof replacement with premium materials",
-                image: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=250&fit=crop"
+                title: "Lead Management",
+                description: "Capture, track, and nurture leads from inquiry to conversion.",
+                image: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=400&h=250&fit=crop"
               },
               {
-                title: "Energy Retrofits",
-                description: "Improve efficiency with modern retrofit solutions",
-                image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=250&fit=crop"
+                title: "Project Tracking",
+                description: "Monitor project progress, tasks, and team assignments in real-time.",
+                image: "https://images.unsplash.com/photo-1522071820081-009f0129c7ce?w=400&h=250&fit=crop"
               },
               {
-                title: "Solar Integration",
-                description: "Seamless solar panel integration",
-                image: "https://images.unsplash.com/photo-1509391366360-2e959784a276?w=400&h=250&fit=crop"
+                title: "Invoicing & Payments",
+                description: "Generate professional invoices and track payments effortlessly.",
+                image: "https://images.unsplash.com/photo-1557804506-669a67965da0?w=400&h=250&fit=crop"
               }
+            ]
             ].map((service, index) => (
               <div key={index} className="group cursor-pointer">
                 <div className="relative h-48 overflow-hidden rounded-lg mb-4">
@@ -164,15 +165,15 @@ const Index = () => {
               <Phone className="h-12 w-12 text-primary mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-primary mb-2">Call Us</h3>
               <a href="tel:+1234567890" className="text-secondary font-semibold hover:underline">
-                (123) 456-7890
+                (346) 849-3169
               </a>
             </div>
 
             <div className="text-center p-6 rounded-lg border hover:shadow-lg transition-shadow">
               <Mail className="h-12 w-12 text-primary mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-primary mb-2">Email Us</h3>
-              <a href="mailto:info@finalroofing.com" className="text-secondary font-semibold hover:underline">
-                info@finalroofing.com
+              <a href="mailto:newdarkorbit@outlook.com" className="text-secondary font-semibold hover:underline">
+                newdarkorbit@outlook.com
               </a>
             </div>
 
@@ -194,25 +195,25 @@ const Index = () => {
             <div className="flex flex-col items-start">
               <div className="flex items-center gap-3 mb-4">
                 <img 
-                  src="/lovable-uploads/f6ae6373-2ac3-4ff4-8436-389ab0da2914.png" 
-                  alt="Final Roofing & Retro-Fit Logo" 
+                  src="/caption-logo.png" 
+                  alt="CAPTION Logo" 
                   className="h-10 w-auto"
                 />
                 <h3 className="text-2xl font-heading font-bold">
-                  Final <span className="text-secondary">Roofing</span> & Retro-Fit
+                  CAPTION
                 </h3>
               </div>
               <p className="text-white/80">
-                Premium roofing and retrofit solutions for your home. Licensed, insured, and trusted.
+                Streamline your business operations with CAPTION. Manage leads, projects, and invoices efficiently.
               </p>
             </div>
             <div>
               <h4 className="font-semibold mb-4">Services</h4>
               <ul className="space-y-2 text-white/80">
-                <li><Link to="/services" className="hover:text-secondary transition-colors">Roof Replacement</Link></li>
-                <li><Link to="/services" className="hover:text-secondary transition-colors">Roof Repairs</Link></li>
-                <li><Link to="/services" className="hover:text-secondary transition-colors">Energy Retrofits</Link></li>
-                <li><Link to="/services" className="hover:text-secondary transition-colors">Solar Integration</Link></li>
+                <li><Link to="/services" className="hover:text-secondary transition-colors">Lead Management</Link></li>
+                <li><Link to="/services" className="hover:text-secondary transition-colors">Project Tracking</Link></li>
+                <li><Link to="/services" className="hover:text-secondary transition-colors">Invoicing & Payments</Link></li>
+                <li><Link to="/services" className="hover:text-secondary transition-colors">Reporting</Link></li>
               </ul>
             </div>
             <div>
@@ -227,15 +228,15 @@ const Index = () => {
             <div>
               <h4 className="font-semibold mb-4">Contact</h4>
               <div className="space-y-2 text-white/80">
-                <p>(123) 456-7890</p>
-                <p>info@finalroofing.com</p>
+                <p>(346) 849-3169</p>
+                <p>newdarkorbit@outlook.com</p>
                 <p>123 Main Street<br />Cityville, ST 12345</p>
               </div>
             </div>
           </div>
           <div className="border-t border-white/20 mt-8 pt-8 flex justify-between items-center">
             <div className="text-white/60">
-              <p>&copy; 2024 Final Roofing & Retro-Fit. All rights reserved.</p>
+              <p>&copy; 2024 CAPTION. All rights reserved.</p>
             </div>
             <div className="flex items-center">
               <button
@@ -244,8 +245,8 @@ const Index = () => {
                 aria-label="Access login"
               >
                 <img 
-                  src="/lovable-uploads/f6ae6373-2ac3-4ff4-8436-389ab0da2914.png" 
-                  alt=""
+                  src="/caption-logo.png" 
+                  alt="CAPTION CRM Logo"
                   className="h-8 w-auto"
                 />
               </button>
@@ -259,6 +260,7 @@ const Index = () => {
         isOpen={showLoginAccess} 
         onClose={() => setShowLoginAccess(false)} 
       />
+      {/* Admin Password: Final1234@ */}
     </div>
   );
 };

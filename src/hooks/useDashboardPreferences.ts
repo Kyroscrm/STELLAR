@@ -27,7 +27,7 @@ export const useDashboardPreferences = () => {
     return true;
   };
 
-  const fetchPreferences = async () => {
+  const fetchPreferences = React.useCallback(async () => {
     if (!validateUserAndSession()) return;
 
     setLoading(true);
@@ -54,9 +54,9 @@ export const useDashboardPreferences = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, session, validateUserAndSession, setLoading, setPreferences, toast, createDefaultPreferences]);
 
-  const createDefaultPreferences = async () => {
+  const createDefaultPreferences = React.useCallback(async () => {
     if (!validateUserAndSession()) return;
 
     try {
@@ -79,7 +79,7 @@ export const useDashboardPreferences = () => {
     } catch (error: unknown) {
       return null;
     }
-  };
+  }, [user, validateUserAndSession, setPreferences]);
 
   const updatePreferences = async (updates: Partial<Omit<DashboardPreferences, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => {
     if (!validateUserAndSession() || !preferences) return false;
@@ -134,7 +134,7 @@ export const useDashboardPreferences = () => {
 
   useEffect(() => {
     fetchPreferences();
-  }, [user, session]);
+  }, [user, session, fetchPreferences]);
 
   return {
     preferences,

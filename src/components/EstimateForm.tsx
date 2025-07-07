@@ -67,10 +67,10 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
     },
   });
 
-  const handleGenerateEstimateNumber = async () => {
+  const handleGenerateEstimateNumber = React.useCallback(async () => {
     const estimateNumber = await generateEstimateNumber();
     form.setValue('estimate_number', estimateNumber);
-  };
+  }, [generateEstimateNumber, form]);
 
   const addLineItem = () => {
     setLineItems([...lineItems, { description: '', quantity: 1, unit_price: 0, total: 0 }]);
@@ -137,7 +137,7 @@ const EstimateForm: React.FC<EstimateFormProps> = ({
     if (!initialData?.estimate_number) {
       handleGenerateEstimateNumber();
     }
-  }, []);
+  }, [handleGenerateEstimateNumber, initialData?.estimate_number]);
 
   // Load initial line items if editing
   useEffect(() => {

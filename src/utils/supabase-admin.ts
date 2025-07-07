@@ -37,7 +37,7 @@ export const createTable = async (tableName: string, columns: string): Promise<{
     // If we get here, we have admin access. Now use direct SQL API for table operations
     // Note: In a real application, you'd need to implement this differently, possibly with
     // a serverless function that has direct database access.
-    console.warn('In a production environment, use a secure server-side function for this operation');
+    // console.warn('In a production environment, use a secure server-side function for this operation');
 
     return {
       success: true,

@@ -79,7 +79,7 @@ async function executeSchemaFix() {
     try {
       // Using raw SQL through direct connection
       // This bypasses RLS and schema cache issues
-      const response = await fetch(`${supabaseUrl}/rest/v1/rpc/exec_sql`, {
+      const response = await fetch(`${supabaseUrl}/rest/v1/rpc/execute_sql`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

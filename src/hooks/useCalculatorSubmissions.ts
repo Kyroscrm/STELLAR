@@ -1,7 +1,6 @@
-
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface CalculatorSubmission {
@@ -24,7 +23,7 @@ export const useCalculatorSubmissions = () => {
   const [submissions, setSubmissions] = useState<CalculatorSubmission[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchSubmissions = async () => {
+  const fetchSubmissions = useCallback(async () => {
     if (!user) return;
 
     setLoading(true);
@@ -47,9 +46,9 @@ export const useCalculatorSubmissions = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const createSubmission = async (submissionData: Omit<CalculatorSubmission, 'id' | 'created_at'>) => {
+  const createSubmission = useCallback(async (submissionData: Omit<CalculatorSubmission, 'id' | 'created_at'>) => {
     try {
       const { data, error } = await supabase
         .from('calculator_submissions')
@@ -75,9 +74,9 @@ export const useCalculatorSubmissions = () => {
       }
       return null;
     }
-  };
+  }, [user]);
 
-  const deleteSubmission = async (id: string) => {
+  const deleteSubmission = useCallback(async (id: string) => {
     if (!user) return;
 
     try {
@@ -98,11 +97,11 @@ export const useCalculatorSubmissions = () => {
         toast.error('Failed to delete submission');
       }
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchSubmissions();
-  }, [user]);
+  }, [fetchSubmissions]);
 
   return {
     submissions,

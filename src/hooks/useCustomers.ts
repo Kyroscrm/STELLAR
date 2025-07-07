@@ -1,7 +1,7 @@
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContextExports';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { ApiError } from '@/types/app-types';
 import { useErrorHandler } from './useErrorHandler';
@@ -23,58 +23,38 @@ interface UseCustomersReturn {
 }
 
 export const useCustomers = (): UseCustomersReturn => {
+  const { user } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const { user, session } = useAuth();
   const { handleError } = useErrorHandler();
   const { executeUpdate } = useOptimisticUpdate();
 
-  const validateUserAndSession = (): boolean => {
-    if (!user || !session) {
-      const errorMsg = 'Authentication required. Please log in again.';
-      setError(new Error(errorMsg));
-      toast.error(errorMsg);
-      return false;
-    }
-    return true;
-  };
-
-  const fetchCustomers = async (): Promise<void> => {
-    if (!validateUserAndSession()) return;
+  const fetchCustomers = useCallback(async (): Promise<void> => {
+    if (!user) return;
 
     setLoading(true);
     setError(null);
+    
     try {
-      const data = await enforcePolicy('customers:read', async () => {
-        const { data, error } = await supabase
-          .from('customers')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-        if (error) throw error;
-        return data || [];
-      });
+      if (error) throw error;
 
-      setCustomers(data);
-    } catch (error: unknown) {
-      if (error instanceof SecurityError) {
-        setError(error);
-        handleError(error, { title: 'Access Denied: You do not have permission to view customers.' });
-      } else {
-        const processedError = handleSupabaseError(error);
-        setError(processedError);
-        handleError(processedError, { title: 'Failed to fetch customers' });
-      }
-      setCustomers([]);
+      setCustomers(data || []);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to fetch customers'));
+      toast.error('Failed to fetch customers');
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   const createCustomer = async (customerData: CustomerInsert): Promise<Customer | null> => {
-    if (!validateUserAndSession()) return null;
+    if (!user) return null;
 
     const optimisticCustomer: Customer = {
       id: `temp-${Date.now()}`,
@@ -131,7 +111,7 @@ export const useCustomers = (): UseCustomersReturn => {
   };
 
   const updateCustomer = async (id: string, updates: CustomerUpdate): Promise<boolean> => {
-    if (!validateUserAndSession()) return false;
+    if (!user) return false;
 
     // Store original for rollback
     const originalCustomer = customers.find(c => c.id === id);
@@ -192,7 +172,7 @@ export const useCustomers = (): UseCustomersReturn => {
   };
 
   const deleteCustomer = async (id: string): Promise<boolean> => {
-    if (!validateUserAndSession()) return false;
+    if (!user) return false;
 
     // Store original for rollback
     const originalCustomer = customers.find(c => c.id === id);
@@ -248,10 +228,10 @@ export const useCustomers = (): UseCustomersReturn => {
   };
 
   useEffect(() => {
-    if (user && session) {
+    if (user) {
       fetchCustomers();
     }
-  }, [user?.id]);
+  }, [user, fetchCustomers]);
 
   return {
     customers,

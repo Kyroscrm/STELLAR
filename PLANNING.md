@@ -126,7 +126,7 @@ Accessibility & UX
 Documentation & Onboarding
 
 ## Vision
-Deliver a production-grade, visually premium, and fully responsive CRM tailored for contractors — beginning with Final Roofing & Retro-Fit — with no visual/UX changes from the existing layout. The CRM must achieve enterprise-grade resilience, automation, integration, and security.
+Deliver a production-grade, visually premium, and fully responsive CRM tailored for contractors — beginning with CAPTION — with no visual/UX changes from the existing layout. The CRM must achieve enterprise-grade resilience, automation, integration, and security.
 
 ## Tech Stack
 - Frontend: React + TypeScript

@@ -30,14 +30,14 @@ const InvoiceLineItemsManager: React.FC<InvoiceLineItemsManagerProps> = ({
   });
   const [isAdding, setIsAdding] = useState(false);
 
-  const calculateTotal = () => {
+  const calculateTotal = React.useCallback(() => {
     return lineItems.reduce((sum, item) => sum + (item.total || 0), 0);
-  };
+  }, [lineItems]);
 
   React.useEffect(() => {
     const total = calculateTotal();
     onTotalChange?.(total);
-  }, [lineItems, onTotalChange]);
+  }, [calculateTotal, onTotalChange]);
 
   const refetchInvoice = async () => {
     if (invoiceId && fetchInvoiceById) {

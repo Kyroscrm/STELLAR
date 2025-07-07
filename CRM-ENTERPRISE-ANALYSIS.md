@@ -20,7 +20,7 @@ I've now created a detailed assessment plan. I will begin by evaluating the exis
 
 Formulating a Deep Dive
 
-I'm now prioritizing the detailed features and functionalities required for enterprise-level readiness. I'm constructing an in-depth checklist, based on the project scope. I'll begin with core CRM features, followed by advanced components like user management and security protocols. Then, I'll integrate the user’s specific requirements, like specialized features for the Final Roofing & Retro-Fit, for a comprehensive final report.
+I'm now prioritizing the detailed features and functionalities required for enterprise-level readiness. I'm constructing an in-depth checklist, based on the project scope. I'll begin with core CRM features, followed by advanced components like user management and security protocols. Then, I'll integrate the user’s specific requirements, like specialized features for the CAPTION, for a comprehensive final report.
 
 Developing the Analysis Plan
 
@@ -28,7 +28,7 @@ I'm now synthesizing all the project's requirements and formulating a robust ana
 
 Outlining a Detailed Plan
 
-I'm now fully immersed in breaking down the project scope. The initial focus is on assessing the current system's strengths, and existing capabilities. I plan a deep dive into the schema and the codebase. I'll then identify the features needed for enterprise standards. My next step is to devise features to cater to the user's specific needs for roofing, while observing their request.
+I'm now fully immersed in breaking down the project scope. The initial focus is on assessing the current system's strengths, and existing capabilities. I plan a deep dive into the schema and the codebase. I'll then identify the features needed for enterprise standards. My next step is to devise features to cater to the user's specific needs for services, while observing their request.
 
 Refining Analysis Framework
 
@@ -48,15 +48,15 @@ I'm currently meticulously reviewing the current Web-CRM project, taking the sch
 
 Refining Enterprise Readiness
 
-I'm now starting to focus on how to bridge the current CRM functionalities and enterprise-level demands. I am carefully breaking down each area, starting with the schema and code review, as instructed. The goal is to pinpoint the missing elements. Then I will suggest enhancements, covering functionality, security, and the specific roofing business needs.
+I'm now starting to focus on how to bridge the current CRM functionalities and enterprise-level demands. I am carefully breaking down each area, starting with the schema and code review, as instructed. The goal is to pinpoint the missing elements. Then I will suggest enhancements, covering functionality, security, and the specific services business needs.
 
 Refining Enterprise Readiness
 
-I'm now transitioning into a structured plan. I'm focusing on identifying gaps in core functions, especially for enterprise needs. The plan includes an in-depth schema review, source code examination, and a deep analysis of required features. I will assess the CRM features. The user's requests for the Final Roofing & Retro-Fit business will be the priority.
+I'm now transitioning into a structured plan. I'm focusing on identifying gaps in core functions, especially for enterprise needs. The plan includes an in-depth schema review, source code examination, and a deep analysis of required features. I will assess the CRM features. The user's requests for the CAPTION business will be the priority.
 
 Evaluating Enterprise Gaps
 
-I'm now refining my assessment framework, reviewing the provided codebase and schema for a thorough analysis. I'll identify the current features and functionality to identify what must be added to support enterprise-level needs. The plan is to determine the gaps needed for the CRM system and, also, define what is required for Final Roofing & Retro-Fit.
+I'm now refining my assessment framework, reviewing the provided codebase and schema for a thorough analysis. I'll identify the current features and functionality to identify what must be added to support enterprise-level needs. The plan is to determine the gaps needed for the CRM system and, also, define what is required for CAPTION.
 
 Establishing Security Protocols
 
@@ -68,7 +68,7 @@ I'm now focusing on the specifics. I'll conduct a full evaluation, as requested,
 
 Deep-diving Enterprise Features
 
-I'm now creating a deep and full analysis. My focus is now to identify the core CRM features, required for enterprise-level readiness. I'll identify the gaps in current features and suggest actionable solutions, incorporating the user's detailed needs. My attention is now on key areas for enhancement and user-specific requirements for Final Roofing & Retro-Fit.
+I'm now creating a deep and full analysis. My focus is now to identify the core CRM features, required for enterprise-level readiness. I'll identify the gaps in current features and suggest actionable solutions, incorporating the user's detailed needs. My attention is now on key areas for enhancement and user-specific requirements for CAPTION.
 
 Defining Scope and Focus
 
@@ -80,7 +80,7 @@ I'm now focused on defining the core requirements for dashboard enhancements and
 
 Analyzing User-Specific Needs
 
-I'm now reviewing the detailed features for enterprise-level readiness. This involves a deep dive into the project, with a special focus on how to incorporate Final Roofing & Retro-Fit’s needs. I will meticulously document the gaps. Then I will focus on solutions to give the user a complete, and fully functional, enterprise-ready CRM.
+I'm now reviewing the detailed features for enterprise-level readiness. This involves a deep dive into the project, with a special focus on how to incorporate CAPTION’s needs. I will meticulously document the gaps. Then I will focus on solutions to give the user a complete, and fully functional, enterprise-ready CRM.
 
 Assessing Current System
 
@@ -108,11 +108,11 @@ I'm now focused on creating a prioritized plan to implement the suggested enhanc
 
 Your current Web-CRM project lays a solid foundation with its well-defined database schema and existing components. You have a clear structure for managing leads, customers, jobs, estimates, invoices, and tasks, along with initial implementations for user authentication, activity logging, and various settings. The emphasis on data persistence, proper database relationships with RLS, optimistic updates, type-safety, and scalability indicates a strong architectural vision.
 
-However, achieving "100% enterprise-ready" status for a business like Final Roofing & Retro-Fit requires a significant leap beyond basic functionality. It demands a level of robustness, automation, security, and analytical depth that supports complex business operations, high user loads, stringent compliance, and strategic decision-making.
+However, achieving "100% enterprise-ready" status for a business like CAPTION requires a significant leap beyond basic functionality. It demands a level of robustness, automation, security, and analytical depth that supports complex business operations, high user loads, stringent compliance, and strategic decision-making.
 
 Here's a comprehensive analysis of what's missing and what would need to be implemented to elevate your CRM to an enterprise-grade solution, while adhering to your constraint of maintaining the existing UI/UX layout and styling (focusing on underlying functionality and data structures).
 
-Comprehensive Analysis: Achieving 100% Enterprise Readiness for Final Roofing & Retro-Fit CRM
+Comprehensive Analysis: Achieving 100% Enterprise Readiness for CAPTION CRM
 I. Deepening Core CRM Functionality
 The current system provides basic management of CRM entities. Enterprise readiness requires advanced features to automate processes, enhance data quality, and provide deeper insights.
 
@@ -153,7 +153,7 @@ Enterprise systems demand stringent security, granular access control, and compr
 Granular Role-Based Access Control (RBAC):
 
 The user_role enum is a good start, but enterprise readiness requires more granular permissions. Define specific permissions (e.g., can_view_leads, can_edit_invoices, can_delete_jobs) and assign them to roles. Users inherit permissions from their roles. This would involve new roles and role_permissions tables, and a user_roles junction table.
-For Final Roofing & Retro-Fit: This would mean differentiating between a "Sales Rep" (can manage own leads/estimates), "Project Manager" (can manage jobs/tasks, view customer info), "Accountant" (can manage invoices/payments), and "Field Crew" (can update job/task status, upload media).
+For CAPTION: This would mean differentiating between a "Sales Rep" (can manage own leads/estimates), "Project Manager" (can manage jobs/tasks, view customer info), "Accountant" (can manage invoices/payments), and "Field Crew" (can update job/task status, upload media).
 Comprehensive Audit Trails:
 
 The activity_logs table is crucial, but for enterprise-level auditing, it needs to capture more detail:
@@ -177,7 +177,7 @@ Enterprise CRMs provide deep insights for strategic decision-making.
 Customizable Dashboards & KPIs:
 
 Allow users (especially admin and manager roles) to customize their dashboards (dashboard_layouts, dashboard_widgets) by selecting and arranging widgets relevant to their role and goals.
-Expand the range of KPIs (kpis table) to include metrics specific to roofing: lead-to-estimate conversion rate, estimate acceptance rate, average job profitability, crew efficiency, material waste percentage.
+Expand the range of KPIs (kpis table) to include metrics specific to services: lead-to-estimate conversion rate, estimate acceptance rate, average job profitability, crew efficiency, material waste percentage.
 Implement real-time data updates for critical KPIs.
 Advanced Analytics & Forecasting:
 
@@ -218,7 +218,7 @@ Integrations Ecosystem:
 
 Accounting Software Integration: Full two-way sync with QuickBooks or Xero for invoices, payments, and expenses. This eliminates manual data entry and ensures financial accuracy. The accounting_settings table is a good start.
 Marketing Automation Platforms: Sync leads and customers data with platforms like Mailchimp or HubSpot for targeted email campaigns.
-Industry-Specific Tools: Integration with specialized roofing software (e.g., aerial measurement tools like EagleView for automated estimate generation, or project management tools for construction).
+Industry-Specific Tools: Integration with specialized services software (e.g., aerial measurement tools like EagleView for automated estimate generation, or project management tools for construction).
 Payment Gateways: Full integration with Stripe (beyond just session ID) for managing subscriptions, refunds, and customer payment methods. The payment_methods table is a good start.
 Performance, Scalability & Monitoring:
 
@@ -253,7 +253,7 @@ Deepening existing features: Adding layers of automation, customization, and ana
 Fortifying the foundation: Implementing robust security, comprehensive auditing, and advanced error handling.
 Expanding the ecosystem: Integrating seamlessly with other critical business tools.
 Optimizing for scale: Ensuring the system can handle growing data volumes and user loads without performance degradation.
-For Final Roofing & Retro-Fit, this means building a CRM that not only manages customer data but actively drives sales, optimizes project delivery, ensures financial health, and provides strategic insights, all while maintaining the highest standards of security and reliability.
+For CAPTION, this means building a CRM that not only manages customer data but actively drives sales, optimizes project delivery, ensures financial health, and provides strategic insights, all while maintaining the highest standards of security and reliability.
 
 It's important to note that while the goal is "no bugs or issues" and a "perfect user experience," software development is an iterative process. Implementing these features will require rigorous testing (unit, integration, end-to-end, performance, security), continuous monitoring, and a feedback loop for ongoing refinement to truly deliver a "perfect user experience" in a production environment. The existing activity_logs and useOptimisticUpdate hooks are excellent starting points for building this robust and resilient system.
 
@@ -281,7 +281,7 @@ Finalizing the Blueprint
 
 I've now completed the detailed structure for the requested files: PLANNING.md, TASK.md, .testplan.md, and .env.local. My focus now centers on detailing the specific contents of each file, mapping the integration requirements for features like lead management and client portals to actionable tasks. I will also ensure the inclusion of required accounts and APIs, including their setup, for successful integration.
 
-To achieve 100% enterprise readiness for your Final Roofing & Retro-Fit CRM, leveraging your existing Supabase setup, GitHub repository, and Cursor AI Pro, a structured and detailed plan is essential. The goal is to transform your current functional core into a robust, automated, and insightful system capable of supporting complex business operations, high user loads, and strategic decision-making, all while maintaining your current UI/UX.
+To achieve 100% enterprise readiness for your CAPTION CRM, leveraging your existing Supabase setup, GitHub repository, and Cursor AI Pro, a structured and detailed plan is essential. The goal is to transform your current functional core into a robust, automated, and insightful system capable of supporting complex business operations, high user loads, and strategic decision-making, all while maintaining your current UI/UX.
 
 Here's a deep analysis and a comprehensive plan of action, broken down into the requested markdown files and including necessary external accounts/APIs.
 

@@ -1,17 +1,6 @@
 /// <reference types="cypress" />
 /// <reference types="cypress-axe" />
 
-declare namespace Cypress {
-  interface Chainable {
-    injectAxe(): void;
-    checkA11y(
-      context?: string | Node | null,
-      options?: any
-    ): void;
-    tab(): Chainable<Element>;
-  }
-}
-
 describe('Accessibility checks', () => {
   beforeEach(() => {
     cy.visit('/');

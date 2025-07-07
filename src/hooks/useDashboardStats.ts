@@ -1,6 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 interface DashboardStats {
   totalCustomers: number;
@@ -31,7 +31,7 @@ export const useDashboardStats = () => {
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     if (!user) return;
 
     setLoading(true);
@@ -79,11 +79,11 @@ export const useDashboardStats = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, setStats, setLoading]);
 
   useEffect(() => {
     fetchStats();
-  }, [user]);
+  }, [user, fetchStats]);
 
   return { stats, loading, refetch: fetchStats };
 };

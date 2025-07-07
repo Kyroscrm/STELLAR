@@ -11,12 +11,14 @@ import TaskFormDialog from '@/components/TaskFormDialog';
 import EditTaskDialog from '@/components/EditTaskDialog';
 import ViewTaskDialog from '@/components/ViewTaskDialog';
 import TaskKanbanBoard from '@/components/TaskKanbanBoard';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { TASK_STATUS_COLORS, TASK_PRIORITY_COLORS } from '@/types/supabase-enums';
 
 const TasksPage: React.FC = () => {
   const { tasks, loading, deleteTask } = useTasks();
   const { jobs } = useJobs();
   const [viewTask, setViewTask] = useState<Task | null>(null);
+  const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null);
 
   const getJobTitle = (jobId: string) => {
     const job = jobs.find(j => j.id === jobId);
@@ -24,7 +26,14 @@ const TasksPage: React.FC = () => {
   };
 
   const handleDelete = async (task: Task) => {
-    await deleteTask(task.id);
+    setDeleteTaskId(task.id);
+  };
+
+  const confirmDeleteTask = async () => {
+    if (deleteTaskId) {
+      await deleteTask(deleteTaskId);
+      setDeleteTaskId(null);
+    }
   };
 
   const handleView = (task: Task) => {
@@ -88,7 +97,7 @@ const TasksPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Tasks</h1>
-        <TaskFormDialog 
+        <TaskFormDialog
           trigger={
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -154,6 +163,18 @@ const TasksPage: React.FC = () => {
           onOpenChange={(open) => !open && setViewTask(null)}
         />
       )}
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        open={!!deleteTaskId}
+        onOpenChange={() => setDeleteTaskId(null)}
+        title="Delete Task"
+        description="Are you sure you want to delete this task? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
+        onConfirm={confirmDeleteTask}
+      />
     </div>
   );
 };

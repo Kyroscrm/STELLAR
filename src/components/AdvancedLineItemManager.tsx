@@ -65,25 +65,25 @@ const AdvancedLineItemManager: React.FC<AdvancedLineItemManagerProps> = ({
     }
   }, [showTemplates, preferences, updatePreference]);
 
-  const calculateSubtotal = () => {
+  const calculateSubtotal = React.useCallback(() => {
     return lineItems.reduce((sum, item) => sum + (item.total || 0), 0);
-  };
+  }, [lineItems]);
 
-  const calculateDiscount = () => {
+  const calculateDiscount = React.useCallback(() => {
     const subtotal = calculateSubtotal();
     if (discountType === 'percentage') {
       return subtotal * (discountValue / 100);
     }
     return discountValue;
-  };
+  }, [discountType, discountValue, calculateSubtotal]);
 
-  const calculateTotal = () => {
+  const calculateTotal = React.useCallback(() => {
     const subtotal = calculateSubtotal();
     const discount = calculateDiscount();
     const total = subtotal - discount;
     onTotalChange?.(total);
     return total;
-  };
+  }, [calculateSubtotal, calculateDiscount, onTotalChange]);
 
   const handleAddItem = async () => {
     if (!newItem.description.trim()) {
@@ -147,7 +147,7 @@ const AdvancedLineItemManager: React.FC<AdvancedLineItemManagerProps> = ({
 
   React.useEffect(() => {
     calculateTotal();
-  }, [lineItems, discountValue, discountType]);
+  }, [lineItems, discountValue, discountType, calculateTotal]);
 
   if (loading) {
     return <div className="animate-pulse">Loading line items...</div>;

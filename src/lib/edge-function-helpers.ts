@@ -12,7 +12,7 @@ interface EdgeFunctionResponse<T> {
   headers: Record<string, string>;
 }
 
-type ParamValue = string | number | boolean | null | undefined | Record<string, any>;
+type ParamValue = string | number | boolean | null | undefined | Record<string, unknown>;
 type RequestParams = Record<string, ParamValue>;
 
 /**

@@ -362,8 +362,34 @@ export interface InvoiceWithRelations extends Invoice {
   };
 }
 
+export interface JobWithCustomer extends Job {
+  customers?: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+  };
+}
+
+export interface EstimateLineItem {
+  id: string;
+  estimate_id: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  total: number;
+  sort_order: number;
+  created_at: string;
+}
+
 export interface EstimateWithLineItems extends Estimate {
   estimate_line_items: EstimateLineItem[];
+  customers?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
 }
 
 export interface InvoiceLineItemData {

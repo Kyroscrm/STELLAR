@@ -57,7 +57,7 @@ export const trackPerformance = async (metrics: PerformanceMetrics) => {
     // Check against thresholds
     if (metrics.duration > PERFORMANCE_THRESHOLDS.DATABASE_QUERY &&
         metrics.operation.includes('database')) {
-      console.warn(`Slow database operation: ${metrics.operation} (${metrics.duration}ms)`);
+      // console.warn(`Slow database operation: ${metrics.operation} (${metrics.duration}ms)`);
     }
 
     // Track error counts
@@ -74,7 +74,7 @@ export const trackPerformance = async (metrics: PerformanceMetrics) => {
       }
     }
   } catch (error) {
-    console.error('Failed to log performance metrics:', error);
+    // console.error('Failed to log performance metrics:', error);
   }
 };
 
@@ -98,7 +98,7 @@ export const checkDatabaseHealth = async () => {
 
     return !error;
   } catch (error) {
-    console.error('Database health check failed:', error);
+    // console.error('Database health check failed:', error);
     return false;
   }
 };
@@ -123,7 +123,7 @@ export const checkAuthHealth = async () => {
 
     return !error && !!session;
   } catch (error) {
-    console.error('Auth health check failed:', error);
+    // console.error('Auth health check failed:', error);
     return false;
   }
 };

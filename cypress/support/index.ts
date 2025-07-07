@@ -1,15 +1,10 @@
-/// <reference types="cypress" />
-/// <reference types="cypress-axe" />
-
-// @ts-nocheck - Cypress types are handled by reference directives
-
 import './commands';
 import 'cypress-axe';
 
 // Extend Cypress commands
 declare global {
   namespace Cypress {
-    interface Chainable {
+    interface Chainable<Subject = any> {
       tab(): Chainable<Element>;
       checkA11y(context?: string | null, options?: Record<string, unknown>): void;
       assertFocus(selector: string): void;

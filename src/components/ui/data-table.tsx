@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { ChevronUp, ChevronDown, MoreHorizontal, Search } from 'lucide-react';
 import { Button } from './button';
@@ -8,9 +7,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './table';
 import EditTaskDialog from '@/components/EditTaskDialog';
 import { Task } from '@/hooks/useTasks';
+import SkeletonLoader from '@/components/ui/skeleton-loader';
 
 export interface Column<T> {
-  key: keyof T | string;
+  key: keyof T;
   header: string;
   render?: (item: T) => React.ReactNode;
   sortable?: boolean;
@@ -18,38 +18,42 @@ export interface Column<T> {
   width?: string;
 }
 
-export interface DataTableProps<T> {
+interface SortConfig {
+  key: string;
+  direction: 'asc' | 'desc';
+}
+
+interface DataTableProps<T extends { id: string }> {
   data: T[];
   columns: Column<T>[];
-  onEdit?: (item: T) => void;
-  onDelete?: (item: T) => void;
-  onBulkAction?: (action: string, items: T[]) => void;
-  searchPlaceholder?: string;
-  emptyMessage?: string;
   loading?: boolean;
+  error?: Error | null;
+  emptyMessage?: string;
   actions?: Array<{
     label: string;
     onClick: (item: T) => void;
     variant?: 'default' | 'destructive';
   }>;
+  onEdit?: (item: T) => void;
+  onDelete?: (item: T) => void;
+  onBulkAction?: (action: string, items: T[]) => void;
+  searchPlaceholder?: string;
 }
 
 export function DataTable<T extends { id: string }>({
   data,
   columns,
+  loading = false,
+  error = null,
+  emptyMessage = 'No data found',
+  actions = [],
   onEdit,
   onDelete,
   onBulkAction,
-  searchPlaceholder = "Search...",
-  emptyMessage = "No data available",
-  loading = false,
-  actions = []
+  searchPlaceholder = "Search..."
 }: DataTableProps<T>) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortConfig, setSortConfig] = useState<{
-    key: string;
-    direction: 'asc' | 'desc';
-  } | null>(null);
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: '', direction: 'asc' });
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
   // Filter data based on search term with real-time search
@@ -59,7 +63,7 @@ export function DataTable<T extends { id: string }>({
     return data.filter(item => {
       return columns.some(column => {
         if (column.searchable === false) return false;
-        const value = column.key === 'id' ? item.id : (item as any)[column.key];
+        const value = column.key === 'id' ? item.id : item[column.key as keyof T];
         return String(value || '').toLowerCase().includes(searchLower);
       });
     });
@@ -67,10 +71,10 @@ export function DataTable<T extends { id: string }>({
 
   // Sort data
   const sortedData = useMemo(() => {
-    if (!sortConfig) return filteredData;
+    if (!sortConfig.key) return filteredData;
     return [...filteredData].sort((a, b) => {
-      const aValue = (a as any)[sortConfig.key];
-      const bValue = (b as any)[sortConfig.key];
+      const aValue = a[sortConfig.key as keyof T];
+      const bValue = b[sortConfig.key as keyof T];
       if (aValue < bValue) {
         return sortConfig.direction === 'asc' ? -1 : 1;
       }
@@ -81,19 +85,11 @@ export function DataTable<T extends { id: string }>({
     });
   }, [filteredData, sortConfig]);
 
-  const handleSort = (key: string) => {
-    setSortConfig(current => {
-      if (current?.key === key) {
-        return {
-          key,
-          direction: current.direction === 'asc' ? 'desc' : 'asc'
-        };
-      }
-      return {
-        key,
-        direction: 'asc'
-      };
-    });
+  const handleSort = (key: keyof T) => {
+    setSortConfig(current => ({
+      key: String(key),
+      direction: current.key === String(key) && current.direction === 'asc' ? 'desc' : 'asc'
+    }));
   };
 
   const handleSelectAll = (checked: boolean) => {
@@ -118,7 +114,7 @@ export function DataTable<T extends { id: string }>({
     if (column.render) {
       return column.render(item);
     }
-    const value = column.key === 'id' ? item.id : (item as any)[column.key];
+    const value = column.key === 'id' ? item.id : item[column.key as keyof T];
     return String(value || '');
   };
 
@@ -127,9 +123,21 @@ export function DataTable<T extends { id: string }>({
   };
 
   if (loading) {
+    return <SkeletonLoader type="table" count={5} />;
+  }
+
+  if (error) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-muted-foreground">Loading...</div>
+      <div className="text-center py-4 text-red-600">
+        {error.message || 'An error occurred while loading data.'}
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="text-center py-4 text-gray-500">
+        {emptyMessage}
       </div>
     );
   }
@@ -146,7 +154,7 @@ export function DataTable<T extends { id: string }>({
             className="pl-10"
           />
         </div>
-        
+
         {selectedItems.size > 0 && onBulkAction && (
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">
@@ -180,11 +188,11 @@ export function DataTable<T extends { id: string }>({
                   {column.sortable !== false ? (
                     <Button
                       variant="ghost"
-                      onClick={() => handleSort(String(column.key))}
+                      onClick={() => handleSort(column.key)}
                       className="h-auto p-0 font-semibold"
                     >
                       {column.header}
-                      {sortConfig?.key === column.key && (
+                      {sortConfig.key === String(column.key) && (
                         sortConfig.direction === 'asc' ? (
                           <ChevronUp className="ml-2 h-4 w-4" />
                         ) : (
@@ -230,11 +238,14 @@ export function DataTable<T extends { id: string }>({
                       />
                     </TableCell>
                   )}
-                  {columns.map((column) => (
-                    <TableCell key={String(column.key)}>
-                      {renderCellValue(item, column)}
-                    </TableCell>
-                  ))}
+                  {columns.map((column, index) => {
+                    const value = column.key === 'id' ? item.id : item[column.key as keyof T];
+                    return (
+                      <TableCell key={index} className="px-6 py-4 text-sm text-gray-900">
+                        {column.render ? column.render(item) : String(value || '')}
+                      </TableCell>
+                    );
+                  })}
                   {(onEdit || onDelete || actions.length > 0) && (
                     <TableCell>
                       <DropdownMenu>
@@ -254,13 +265,13 @@ export function DataTable<T extends { id: string }>({
                             </DropdownMenuItem>
                           ))}
                           {onEdit && isTask(item) && (
-                            <EditTaskDialog 
-                              task={item} 
+                            <EditTaskDialog
+                              task={item}
                               trigger={
                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                                   Edit
                                 </DropdownMenuItem>
-                              } 
+                              }
                             />
                           )}
                           {onDelete && (

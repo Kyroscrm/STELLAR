@@ -1,4 +1,4 @@
-# TASK.md: Final Roofing & Retro-Fit CRM - Detailed Action Plan
+# TASK.md: CAPTION CRM - Detailed Action Plan
 
 This document outlines the detailed tasks required for each phase of the CRM's development towards 100% enterprise readiness.
 
@@ -16,7 +16,7 @@ This document outlines the detailed tasks required for each phase of the CRM's d
 #### ✅ Database Schema Completion (STEP 1 - CURRENT)
 **Status: Creating missing enterprise tables**
 - 🔄 Creating 12 new tables with relationships, RLS policies, and audit triggers:
-  - `crews` & `crew_members` (roofing team management)
+  - `crews` & `crew_members` (team management)
   - `materials` & `job_materials` (inventory tracking)
   - `time_entries` (time tracking)
   - `change_orders` (project change management)

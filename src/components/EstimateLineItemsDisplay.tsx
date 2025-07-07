@@ -30,16 +30,7 @@ const EstimateLineItemsDisplay: React.FC<EstimateLineItemsDisplayProps> = ({
   const [loading, setLoading] = useState(estimateId ? true : false);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
-    if (providedLineItems) {
-      setLineItems(providedLineItems as LineItem[]);
-      setLoading(false);
-    } else if (estimateId) {
-      loadLineItems();
-    }
-  }, [estimateId, providedLineItems]);
-
-  const loadLineItems = async () => {
+  const loadLineItems = React.useCallback(async () => {
     if (!estimateId) return;
 
     try {
@@ -58,7 +49,16 @@ const EstimateLineItemsDisplay: React.FC<EstimateLineItemsDisplayProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [estimateId]);
+
+  useEffect(() => {
+    if (providedLineItems) {
+      setLineItems(providedLineItems as LineItem[]);
+      setLoading(false);
+    } else if (estimateId) {
+      loadLineItems();
+    }
+  }, [estimateId, providedLineItems, loadLineItems]);
 
   const calculateSubtotal = () => {
     return lineItems.reduce((sum, item) => sum + Number(item.total), 0);

@@ -32,7 +32,7 @@ export const useActivityLogs = (): UseActivityLogsReturn => {
   const { handleError } = useErrorHandler();
   const { executeUpdate } = useOptimisticUpdate();
 
-  const validateUserAndSession = () => {
+  const validateUserAndSession = React.useCallback(() => {
     if (!user || !session) {
       const errorMsg = 'Authentication required. Please log in again.';
       setError(new Error(errorMsg));
@@ -40,9 +40,9 @@ export const useActivityLogs = (): UseActivityLogsReturn => {
       return false;
     }
     return true;
-  };
+  }, [user, session, setError]);
 
-  const fetchLogs = async (limit: number = 50) => {
+  const fetchLogs = React.useCallback(async (limit: number = 50) => {
     if (!validateUserAndSession()) return;
 
     setLoading(true);
@@ -74,7 +74,7 @@ export const useActivityLogs = (): UseActivityLogsReturn => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, validateUserAndSession, setLoading, setError, setLogs, handleError]);
 
   const logActivity = async (
     action: string,
@@ -161,7 +161,7 @@ export const useActivityLogs = (): UseActivityLogsReturn => {
     if (user && session) {
       fetchLogs();
     }
-  }, [user, session]);
+  }, [user, session, fetchLogs]);
 
   return {
     logs,

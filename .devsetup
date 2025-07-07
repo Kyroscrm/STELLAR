@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# 🛠️ DEV-SETUP for CAPTION CRM (Vite + React + Supabase + Tailwind)
+
+echo "🔧 Installing dependencies..."
+npm install
+
+# ✅ Notes:
+# - Ensure Supabase URL and anon key are set in .env.local
+# - Use Supabase Studio to manage schema, RLS, and file storage
+# - Run `npm run test` for unit tests and `npm run cypress:open` for E2E

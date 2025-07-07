@@ -1,6 +1,6 @@
 # System Architecture
 
-This document outlines the architecture of the Final Roofing & Retro-Fit CRM system, including database structure, key workflows, and design decisions.
+This document outlines the architecture of the CAPTION CRM system, including database structure, key workflows, and design decisions.
 
 ## Database Schema (ER Diagram)
 

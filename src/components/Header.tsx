@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Phone, Mail, User, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContextExports';
 import { useNavigate, Link } from 'react-router-dom';
 
 const Header = () => {
@@ -35,9 +35,9 @@ const Header = () => {
               <Phone className="h-4 w-4" />
               <span className="hidden sm:inline">(123) 456-7890</span>
             </a>
-            <a href="mailto:info@finalroofing.com" className="flex items-center gap-2 hover:text-secondary transition-colors">
+            <a href="mailto:newdarkorbit@outlook.com" className="flex items-center gap-2 hover:text-secondary transition-colors">
               <Mail className="h-4 w-4" />
-              <span className="hidden sm:inline">info@finalroofing.com</span>
+              <span className="hidden sm:inline">newdarkorbit@outlook.com</span>
             </a>
           </div>
           <div className="text-xs">
@@ -51,27 +51,27 @@ const Header = () => {
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
             <Link to="/" className="flex items-center gap-4">
-              <img 
-                src="/lovable-uploads/f6ae6373-2ac3-4ff4-8436-389ab0da2914.png" 
-                alt="Final Roofing & Retro-Fit Logo" 
+              <img
+                src="/placeholder-logo.png"
+                alt="CAPTION Logo"
                 className="h-12 w-auto"
               />
               <h1 className="text-2xl font-heading font-bold text-primary">
-                Final <span className="text-secondary">Roofing</span> & Retro-Fit
+                CAPTION
               </h1>
             </Link>
           </div>
 
           {/* Desktop Navigation - Public site only */}
           <nav className="hidden lg:flex items-center space-x-8">
-            <Link to="/services" className="text-gray-700 hover:text-primary transition-colors font-medium">
-              Services
+            <Link to="/features" className="text-gray-700 hover:text-primary transition-colors font-medium">
+              Features
             </Link>
-            <Link to="/gallery" className="text-gray-700 hover:text-primary transition-colors font-medium">
-              Gallery
+            <Link to="/demo" className="text-gray-700 hover:text-primary transition-colors font-medium">
+              Demo
             </Link>
-            <Link to="/reviews" className="text-gray-700 hover:text-primary transition-colors font-medium">
-              Reviews
+            <Link to="/testimonials" className="text-gray-700 hover:text-primary transition-colors font-medium">
+              Testimonials
             </Link>
             <Link to="/about" className="text-gray-700 hover:text-primary transition-colors font-medium">
               About
@@ -113,14 +113,14 @@ const Header = () => {
       {isMenuOpen && (
         <div className="lg:hidden bg-white border-t border-gray-100">
           <nav className="container mx-auto px-4 py-4 space-y-4">
-            <Link to="/services" className="block text-gray-700 hover:text-primary transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
-              Services
+            <Link to="/features" className="block text-gray-700 hover:text-primary transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
+              Features
             </Link>
-            <Link to="/gallery" className="block text-gray-700 hover:text-primary transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
-              Gallery
+            <Link to="/demo" className="block text-gray-700 hover:text-primary transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
+              Demo
             </Link>
-            <Link to="/reviews" className="block text-gray-700 hover:text-primary transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
-              Reviews
+            <Link to="/testimonials" className="block text-gray-700 hover:text-primary transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
+              Testimonials
             </Link>
             <Link to="/about" className="block text-gray-700 hover:text-primary transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
               About
@@ -128,7 +128,7 @@ const Header = () => {
             <Link to="/contact" className="block text-gray-700 hover:text-primary transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
               Contact
             </Link>
-            
+
             <div className="flex flex-col gap-2 pt-4 border-t border-gray-100">
               {user ? (
                 <>

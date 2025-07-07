@@ -44,7 +44,7 @@ export function AccessibleTooltip({
   const hideTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Position the tooltip relative to the trigger element
-  const updatePosition = () => {
+  const updatePosition = React.useCallback(() => {
     if (!triggerRef.current || !tooltipRef.current) return;
 
     const triggerRect = triggerRef.current.getBoundingClientRect();
@@ -74,7 +74,7 @@ export function AccessibleTooltip({
 
     tooltipRef.current.style.top = `${top}px`;
     tooltipRef.current.style.left = `${left}px`;
-  };
+  }, [position]);
 
   const showTooltip = () => {
     clearTimeout(hideTimeoutRef.current);
@@ -114,9 +114,9 @@ export function AccessibleTooltip({
   // Update position when content changes
   useEffect(() => {
     if (isVisible) {
-      updatePosition();
+      updatePosition(); // eslint-disable-line react-hooks/exhaustive-deps
     }
-  }, [content, isVisible]);
+  }, [content, isVisible, updatePosition]);
 
   // Clone the trigger element and add necessary props
   const trigger = React.cloneElement(children, {

@@ -19,7 +19,7 @@ serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    console.log('🔧 Starting RBAC Policy Fix...');
+    // console.log('🔧 Starting RBAC Policy Fix...');
 
     // SQL statements to execute
     const statements = [
@@ -147,7 +147,7 @@ serve(async (req) => {
     // Execute each statement
     for (let i = 0; i < statements.length; i++) {
       const statement = statements[i];
-      console.log(`Executing statement ${i + 1}/${statements.length}`);
+      // console.log(`Executing statement ${i + 1}/${statements.length}`);
 
       try {
         const { error } = await supabaseAdmin.rpc('exec_sql', {
@@ -155,7 +155,7 @@ serve(async (req) => {
         });
 
         if (error) {
-          console.error(`Statement ${i + 1} failed:`, error);
+          // console.error(`Statement ${i + 1} failed:`, error);
           results.push({
             statement: i + 1,
             success: false,
@@ -164,7 +164,7 @@ serve(async (req) => {
           });
           errorCount++;
         } else {
-          console.log(`Statement ${i + 1} executed successfully`);
+          // console.log(`Statement ${i + 1} executed successfully`);
           results.push({
             statement: i + 1,
             success: true,
@@ -173,7 +173,7 @@ serve(async (req) => {
           successCount++;
         }
       } catch (err) {
-        console.error(`Statement ${i + 1} exception:`, err);
+        // console.error(`Statement ${i + 1} exception:`, err);
         results.push({
           statement: i + 1,
           success: false,
@@ -202,7 +202,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Edge function error:', error);
+    // console.error('Edge function error:', error);
 
     return new Response(JSON.stringify({
       success: false,

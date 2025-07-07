@@ -1,7 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContextExports';
 import { useToast } from '@/hooks/use-toast';
 import { useAuditTrail } from '@/hooks/useAuditTrail';
+import { SecurityError } from '@/lib/errors';
+import { handleSupabaseError } from '@/lib/error-handlers';
+import { enforcePolicy } from '@/lib/rbac';
+import type { PostgrestFilterBuilder } from '@supabase/postgrest-js';
+
+export interface Job {
+  id: string;
+  title: string;
+  customer_id: string;
+  total_amount: number;
+}
+
+export interface Profile {
+  id: string;
+  email: string;
+}
 
 export interface ChangeOrder {
   id: string;
@@ -24,21 +41,9 @@ export interface ChangeOrder {
   material_cost_change?: number;
   created_at: string;
   updated_at: string;
-  // Relations
-  job?: {
-    id: string;
-    title: string;
-    customer_id: string;
-    total_amount?: number;
-  };
-  requester?: {
-    id: string;
-    email: string;
-  };
-  approver?: {
-    id: string;
-    email: string;
-  };
+  job?: Job;
+  requester?: Profile;
+  approver?: Profile;
 }
 
 export interface CreateChangeOrderData {
@@ -69,83 +74,72 @@ export interface UpdateChangeOrderData {
 }
 
 export interface ChangeOrderFilters {
+  status?: ChangeOrder['status'];
+  change_type?: ChangeOrder['change_type'];
   job_id?: string;
-  change_type?: 'addition' | 'removal' | 'modification' | 'scope_change';
-  status?: 'draft' | 'pending_approval' | 'approved' | 'rejected' | 'completed';
-  requested_by?: string;
-  approved_by?: string;
-  date_from?: string;
-  date_to?: string;
+  from_date?: string;
+  to_date?: string;
 }
 
-export function useChangeOrders() {
+export const useChangeOrders = () => {
   const [changeOrders, setChangeOrders] = useState<ChangeOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
+  const { user } = useAuth();
   const { toast } = useToast();
-  const { logUserActivity } = useAuditTrail();
+  const { logActivity } = useAuditTrail();
 
-  // Fetch change orders with optional filters
-  const fetchChangeOrders = async (filters?: ChangeOrderFilters) => {
+  const fetchChangeOrders = useCallback(async (filters?: ChangeOrderFilters) => {
+    if (!user) return;
+
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      setError(null);
-
       let query = supabase
         .from('change_orders')
-        .select(`
-          *,
-          job:jobs(id, title, customer_id, total_amount),
-          requester:profiles!requested_by(id, email),
-          approver:profiles!approved_by(id, email)
-        `)
-        .order('requested_at', { ascending: false });
+        .select('*, job:jobs(id, title, customer_id, total_amount), requester:profiles!requested_by(id, email), approver:profiles!approved_by(id, email)');
 
       // Apply filters
-      if (filters?.job_id) {
-        query = query.eq('job_id', filters.job_id);
-      }
-      if (filters?.change_type) {
-        query = query.eq('change_type', filters.change_type);
-      }
-      if (filters?.status) {
-        query = query.eq('status', filters.status);
-      }
-      if (filters?.requested_by) {
-        query = query.eq('requested_by', filters.requested_by);
-      }
-      if (filters?.approved_by) {
-        query = query.eq('approved_by', filters.approved_by);
-      }
-      if (filters?.date_from) {
-        query = query.gte('requested_at', filters.date_from);
-      }
-      if (filters?.date_to) {
-        query = query.lte('requested_at', filters.date_to);
+      if (filters) {
+        if (filters.status) {
+          query = query.eq('status', filters.status);
+        }
+        if (filters.change_type) {
+          query = query.eq('change_type', filters.change_type);
+        }
+        if (filters.job_id) {
+          query = query.eq('job_id', filters.job_id);
+        }
+        if (filters.from_date) {
+          query = query.gte('requested_at', filters.from_date);
+        }
+        if (filters.to_date) {
+          query = query.lte('requested_at', filters.to_date);
+        }
       }
 
-      const { data, error: fetchError } = await query;
+      const { data, error: queryError } = await query.order('requested_at', { ascending: false });
 
-      if (fetchError) {
-        throw new Error(`Failed to fetch change orders: ${fetchError.message}`);
-      }
-
-      setChangeOrders(data || []);
+      if (queryError) throw queryError;
+      setChangeOrders(data as ChangeOrder[] || []);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-      setError(errorMessage);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch change orders';
+      setError(new Error(errorMessage));
       toast({
-        title: "Error",
-        description: errorMessage,
         variant: "destructive",
+        title: "Error",
+        description: errorMessage
       });
+      setChangeOrders([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, toast]);
 
   // Create change order with optimistic update
   const createChangeOrder = async (changeOrderData: CreateChangeOrderData): Promise<ChangeOrder | null> => {
+    if (!user) return;
+
     try {
       // Validation
       if (!changeOrderData.job_id || !changeOrderData.title || !changeOrderData.requested_by) {
@@ -180,12 +174,7 @@ export function useChangeOrders() {
       const { data, error: createError } = await supabase
         .from('change_orders')
         .insert([fullData])
-        .select(`
-          *,
-          job:jobs(id, title, customer_id, total_amount),
-          requester:profiles!requested_by(id, email),
-          approver:profiles!approved_by(id, email)
-        `)
+        .select(`*, job:jobs(id, title, customer_id, total_amount), requester:profiles!requested_by(id, email), approver:profiles!approved_by(id, email)`)
         .single();
 
       if (createError) {
@@ -200,7 +189,7 @@ export function useChangeOrders() {
       );
 
       // Log activity
-      await logUserActivity(
+      await logActivity(
         'create',
         'change_order',
         data.id,
@@ -220,7 +209,7 @@ export function useChangeOrders() {
       return data;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create change order';
-      setError(errorMessage);
+      setError(err);
       toast({
         title: "Error",
         description: errorMessage,
@@ -263,12 +252,7 @@ export function useChangeOrders() {
         .from('change_orders')
         .update(calculatedData)
         .eq('id', updateData.id)
-        .select(`
-          *,
-          job:jobs(id, title, customer_id, total_amount),
-          requester:profiles!requested_by(id, email),
-          approver:profiles!approved_by(id, email)
-        `)
+        .select(`*, job:jobs(id, title, customer_id, total_amount), requester:profiles!requested_by(id, email), approver:profiles!approved_by(id, email)`)
         .single();
 
       if (updateError) {
@@ -283,7 +267,7 @@ export function useChangeOrders() {
       );
 
       // Log activity
-      await logUserActivity(
+      await logActivity(
         'update',
         'change_order',
         data.id,
@@ -299,7 +283,7 @@ export function useChangeOrders() {
       return data;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update change order';
-      setError(errorMessage);
+      setError(err);
       toast({
         title: "Error",
         description: errorMessage,
@@ -336,7 +320,7 @@ export function useChangeOrders() {
       }
 
       // Log activity
-      await logUserActivity(
+      await logActivity(
         'delete',
         'change_order',
         id,
@@ -352,7 +336,7 @@ export function useChangeOrders() {
       return true;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete change order';
-      setError(errorMessage);
+      setError(err);
       toast({
         title: "Error",
         description: errorMessage,
@@ -421,10 +405,23 @@ export function useChangeOrders() {
     });
   };
 
+  // Real-time subscription for change_orders
+  useEffect(() => {
+    const channel = supabase.channel('public:change_orders')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'change_orders' }, payload => {
+        // Refetch change orders for current filters
+        fetchChangeOrders();
+      });
+    channel.subscribe();
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [fetchChangeOrders]);
+
   // Initialize
   useEffect(() => {
     fetchChangeOrders();
-  }, []);
+  }, [fetchChangeOrders]);
 
   return {
     changeOrders,

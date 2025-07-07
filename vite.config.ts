@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
+
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -13,8 +13,6 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
@@ -48,7 +46,7 @@ export default defineConfig(({ mode }) => ({
             '@radix-ui/react-toast',
             '@radix-ui/react-tooltip'
           ],
-          'vendor-charts': ['recharts', '@nivo/core', '@nivo/line', '@nivo/pie'],
+          'vendor-charts': ['recharts'],
           'vendor-forms': ['react-hook-form', 'zod'],
           'vendor-auth': ['@supabase/supabase-js'],
           'vendor-utils': ['date-fns', 'lodash-es']
@@ -88,9 +86,6 @@ export default defineConfig(({ mode }) => ({
       '@radix-ui/react-toast',
       '@radix-ui/react-tooltip',
       'recharts',
-      '@nivo/core',
-      '@nivo/line',
-      '@nivo/pie',
       'react-hook-form',
       'zod',
       '@supabase/supabase-js',

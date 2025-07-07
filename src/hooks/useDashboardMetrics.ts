@@ -1,14 +1,14 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useErrorHandler } from './useErrorHandler';
 import { ApiError } from '@/types/app-types';
 
 export type DashboardMetric = Tables<'dashboard_metrics_cache'>;
 type DashboardMetricInsert = TablesInsert<'dashboard_metrics_cache'>;
-type Period = 'today' | 'week' | 'month' | 'quarter' | 'year';
+export type Period = 'today' | 'week' | 'month' | 'quarter' | 'year';
 
 // Type guard function
 const isValidPeriod = (period: string): period is Period => {
@@ -37,6 +37,24 @@ const isSupabaseError = (error: unknown): error is ApiError => {
   return typeof error === 'object' && error !== null && 'error' in error && typeof (error as ApiError).error === 'object';
 };
 
+export interface DashboardMetrics {
+  totalRevenue: number;
+  totalJobs: number;
+  averageJobValue: number;
+  completionRate: number;
+  customerSatisfaction: number;
+  activeProjects: number;
+  upcomingDeadlines: number;
+  recentPayments: Payment[];
+}
+
+interface Payment {
+  id: string;
+  amount: number;
+  date: string;
+  customer: string;
+}
+
 export const useDashboardMetrics = (): UseDashboardMetricsReturn => {
   const { user, session } = useAuth();
   const [metrics, setMetrics] = useState<DashboardMetric[]>([]);
@@ -54,48 +72,7 @@ export const useDashboardMetrics = (): UseDashboardMetricsReturn => {
     return true;
   };
 
-  const fetchMetrics = async (period: Period = 'month') => {
-    if (!validateUserAndSession()) return;
-
-    setLoading(true);
-    setError(null);
-    try {
-      const { data, error } = await supabase
-        .from('dashboard_metrics_cache')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('period', period)
-        .gt('expires_at', new Date().toISOString());
-
-      if (error) throw error;
-
-      const convertedMetrics = data ? data.map(convertToDashboardMetric) : [];
-      setMetrics(convertedMetrics);
-
-      // If no cached metrics or they're expired, calculate fresh ones
-      if (!data || data.length === 0) {
-        await calculateMetrics(period);
-      }
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        setError(error);
-        handleError(error, { title: 'Failed to fetch dashboard metrics' });
-      } else if (isSupabaseError(error)) {
-        const supabaseError = new Error(error.error.message);
-        setError(supabaseError);
-        handleError(supabaseError, { title: 'Failed to fetch dashboard metrics' });
-      } else {
-        const fallbackError = new Error('An unexpected error occurred while fetching dashboard metrics');
-        setError(fallbackError);
-        handleError(fallbackError, { title: 'Failed to fetch dashboard metrics' });
-      }
-      setMetrics([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const calculateMetrics = async (period: Period) => {
+  const calculateMetrics = useCallback(async (period: Period) => {
     if (!validateUserAndSession()) return;
 
     setLoading(true);
@@ -224,7 +201,7 @@ export const useDashboardMetrics = (): UseDashboardMetricsReturn => {
 
       if (errors.length > 0) {
         // Log errors but continue - we'll still try to fetch metrics
-        console.error('Some metrics failed to cache:', errors);
+        // console.error('Some metrics failed to cache:', errors);
       }
 
       // Fetch the updated metrics
@@ -245,7 +222,48 @@ export const useDashboardMetrics = (): UseDashboardMetricsReturn => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, session, validateUserAndSession, setLoading, setError, setMetrics, handleError, calculateMetrics, supabase]);
+
+  const fetchMetrics = useCallback(async (period: Period = 'month') => {
+    if (!validateUserAndSession()) return;
+
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from('dashboard_metrics_cache')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('period', period)
+        .gt('expires_at', new Date().toISOString());
+
+      if (error) throw error;
+
+      const convertedMetrics = data ? data.map(convertToDashboardMetric) : [];
+      setMetrics(convertedMetrics);
+
+      // If no cached metrics or they're expired, calculate fresh ones
+      if (!data || data.length === 0) {
+        await calculateMetrics(period);
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error);
+        handleError(error, { title: 'Failed to fetch dashboard metrics' });
+      } else if (isSupabaseError(error)) {
+        const supabaseError = new Error(error.error.message);
+        setError(supabaseError);
+        handleError(supabaseError, { title: 'Failed to fetch dashboard metrics' });
+      } else {
+        const fallbackError = new Error('An unexpected error occurred while fetching dashboard metrics');
+        setError(fallbackError);
+        handleError(fallbackError, { title: 'Failed to fetch dashboard metrics' });
+      }
+      setMetrics([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, session, validateUserAndSession, setLoading, setError, setMetrics, handleError, calculateMetrics, supabase]);
 
   const getMetricValue = (metricType: string) => {
     const metric = metrics.find(m => m.metric_type === metricType);
@@ -260,7 +278,7 @@ export const useDashboardMetrics = (): UseDashboardMetricsReturn => {
     if (user && session) {
       fetchMetrics();
     }
-  }, [user, session]);
+  }, [user, session, fetchMetrics]);
 
   return {
     metrics,

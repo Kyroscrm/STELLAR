@@ -30,13 +30,7 @@ const UserProfile = () => {
     company_name: ''
   });
 
-  useEffect(() => {
-    if (user) {
-      loadProfile();
-    }
-  }, [user]);
-
-  const loadProfile = async () => {
+  const loadProfile = React.useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -73,7 +67,13 @@ const UserProfile = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user, toast]);
+
+  useEffect(() => {
+    if (user) {
+      loadProfile();
+    }
+  }, [user, loadProfile]);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<ProfileData> = {};
@@ -86,7 +86,7 @@ const UserProfile = () => {
       newErrors.last_name = 'Last name is required';
     }
 
-    if (formData.phone && !/^[\+]?[1-9][\d]{0,15}$/.test(formData.phone)) {
+    if (formData.phone && !/^[+]?[1-9][\d]{0,15}$/.test(formData.phone)) {
       newErrors.phone = 'Please enter a valid phone number';
     }
 

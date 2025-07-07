@@ -33,6 +33,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 const getStatusColor = (status: string) => {
   return LEAD_STATUS_COLORS[status as keyof typeof LEAD_STATUS_COLORS] || 'bg-gray-100 text-gray-800';
@@ -169,6 +170,7 @@ const LeadsPage = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const { startTour, isFirstVisit } = useTour();
   const location = useLocation();
+  const [deleteLeadId, setDeleteLeadId] = useState<string | null>(null);
 
   // Start tour when first visiting the leads page
   useEffect(() => {
@@ -205,8 +207,13 @@ const LeadsPage = () => {
   };
 
   const handleDeleteLead = async (leadId: string) => {
-    if (window.confirm('Are you sure you want to delete this lead?')) {
-      await deleteLead(leadId);
+    setDeleteLeadId(leadId);
+  };
+
+  const confirmDeleteLead = async () => {
+    if (deleteLeadId) {
+      await deleteLead(deleteLeadId);
+      setDeleteLeadId(null);
     }
   };
 
@@ -416,6 +423,17 @@ const LeadsPage = () => {
           }}
         />
       )}
+
+      <ConfirmDialog
+        open={!!deleteLeadId}
+        onOpenChange={() => setDeleteLeadId(null)}
+        title="Delete Lead"
+        description="Are you sure you want to delete this lead? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
+        onConfirm={confirmDeleteLead}
+      />
     </div>
   );
 };

@@ -9,47 +9,47 @@ import { Shield, Star, CheckCircle, ArrowRight } from 'lucide-react';
 const ServicesPage = () => {
   const services = [
     {
-      title: "Complete Roof Replacement",
-      description: "Full roof replacement with premium materials and expert craftsmanship. We use only the highest quality materials with comprehensive warranties.",
-      features: ["25-year warranty", "Energy efficient materials", "Professional installation", "Free inspection", "Insurance claim assistance"],
-      image: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=600&h=300&fit=crop",
-      price: "Starting at $8,500",
+      title: "Lead & Customer Management",
+      description: "Efficiently manage your leads and customer relationships from initial contact to long-term engagement. Track interactions, history, and preferences.",
+      features: ["Centralized customer database", "Lead scoring & nurturing", "Communication tracking", "Customizable fields", "Segmentation & targeting"],
+      image: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=600&h=300&fit=crop",
+      price: "Essential Plan",
       popular: true
     },
     {
-      title: "Roof Repairs & Maintenance",
-      description: "Fast, reliable repairs to extend your roof's lifespan. Emergency services available 24/7 for urgent issues.",
-      features: ["Emergency repairs", "Preventive maintenance", "Storm damage restoration", "Leak detection", "Gutter cleaning"],
-      image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=600&h=300&fit=crop",
-      price: "Starting at $350"
+      title: "Project & Task Management",
+      description: "Keep your projects on track with robust task management tools. Assign tasks, set deadlines, and monitor progress in real-time.",
+      features: ["Task assignment & tracking", "Gantt charts & timelines", "Resource allocation", "Progress monitoring", "Collaboration tools"],
+      image: "https://images.unsplash.com/photo-1522071820081-009f0129c7ce?w=600&h=300&fit=crop",
+      price: "Pro Plan"
     },
     {
-      title: "Energy Retrofit Solutions",
-      description: "Improve your home's efficiency with modern retrofit solutions that reduce energy costs and increase comfort.",
-      features: ["Insulation upgrades", "Ventilation systems", "Cool roof technology", "Energy audits", "Rebate assistance"],
-      image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&h=300&fit=crop",
-      price: "Starting at $2,500"
+      title: "Invoicing & Billing",
+      description: "Generate professional invoices, track payments, and manage your billing cycles with ease. Automate reminders and recurring invoices.",
+      features: ["Customizable invoice templates", "Automated payment reminders", "Expense tracking", "Multi-currency support", "Payment gateway integrations"],
+      image: "https://images.unsplash.com/photo-1557804506-669a67965da0?w=600&h=300&fit=crop",
+      price: "Pro Plan"
     },
     {
-      title: "Solar Integration",
-      description: "Seamless solar panel integration with roofing systems. Maximize your energy savings with professional installation.",
-      features: ["Solar-ready roofing", "Panel installation", "Energy monitoring", "Net metering setup", "Financing options"],
-      image: "https://images.unsplash.com/photo-1509391366360-2e959784a276?w=600&h=300&fit=crop",
-      price: "Custom pricing"
+      title: "Reporting & Analytics",
+      description: "Gain valuable insights into your business performance with comprehensive reports and analytics. Make data-driven decisions.",
+      features: ["Customizable dashboards", "Sales pipeline analysis", "Customer behavior reports", "Performance metrics", "Exportable data"],
+      image: "https://images.unsplash.com/photo-1550522600-08777929b720?w=600&h=300&fit=crop",
+      price: "Enterprise Plan"
     },
     {
-      title: "Gutter Systems",
-      description: "Complete gutter installation and maintenance services to protect your home's foundation and landscaping.",
-      features: ["Seamless gutters", "Gutter guards", "Downspout systems", "Drainage solutions", "Regular maintenance"],
-      image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=300&fit=crop",
-      price: "Starting at $1,200"
+      title: "Automation & Workflows",
+      description: "Automate repetitive tasks and streamline your workflows to save time and reduce manual errors. Create custom automation rules.",
+      features: ["Automated email sequences", "Task automation", "Workflow triggers", "Integration with third-party apps", "Customizable rules"],
+      image: "https://images.unsplash.com/photo-1556157382-97eda2d13296?w=600&h=300&fit=crop",
+      price: "Enterprise Plan"
     },
     {
-      title: "Commercial Roofing",
-      description: "Professional commercial roofing solutions for businesses. Minimize downtime with efficient project management.",
-      features: ["Flat roof systems", "Metal roofing", "Maintenance contracts", "Emergency services", "Warranty programs"],
-      image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&h=300&fit=crop",
-      price: "Custom pricing"
+      title: "Security & Access Control",
+      description: "Protect your sensitive data with robust security features and granular access control. Define roles and permissions for your team.",
+      features: ["Role-based access control", "Data encryption", "Audit trails", "Secure login (2FA)", "Compliance readiness"],
+      image: "https://images.unsplash.com/photo-1550522600-08777929b720?w=600&h=300&fit=crop",
+      price: "Enterprise Plan"
     }
   ];
 
@@ -62,10 +62,10 @@ const ServicesPage = () => {
         <div className="container mx-auto px-4">
           <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-4xl md:text-6xl font-heading font-bold text-primary mb-6">
-              Professional <span className="text-secondary">Roofing</span> Services
+              Comprehensive <span className="text-secondary">CRM</span> Features
             </h1>
             <p className="text-xl text-gray-600 mb-8">
-              From complete roof replacements to energy-efficient retrofits, we deliver premium solutions tailored to your needs. Licensed, insured, and backed by our satisfaction guarantee.
+              Explore the powerful features of CAPTION designed to streamline your business operations, enhance customer relationships, and boost productivity.
             </p>
             <div className="flex justify-center items-center gap-8">
               <div className="flex items-center gap-2">
@@ -139,7 +139,7 @@ const ServicesPage = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-heading font-bold text-primary mb-4">
-              Why Choose Final Roofing & Retro-Fit?
+              Why Choose CAPTION?
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               We're committed to delivering exceptional service and quality workmanship on every project.
@@ -149,19 +149,19 @@ const ServicesPage = () => {
           <div className="grid md:grid-cols-3 gap-8">
             {[
               {
-                title: "Expert Craftsmanship",
-                description: "Our team brings decades of combined experience to every project",
-                icon: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=200&fit=crop"
+                title: "Boost Productivity",
+                description: "Automate tasks, streamline workflows, and manage your time effectively to get more done.",
+                icon: "https://images.unsplash.com/photo-1517245386807-bb43f82c33d3?w=300&h=200&fit=crop"
               },
               {
-                title: "Premium Materials",
-                description: "We use only the highest quality materials from trusted manufacturers",
-                icon: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=300&h=200&fit=crop"
+                title: "Enhance Relationships",
+                description: "Centralize customer data, track interactions, and personalize communication for stronger connections.",
+                icon: "https://images.unsplash.com/photo-1552664730-d307ca884994?w=300&h=200&fit=crop"
               },
               {
-                title: "Customer Satisfaction",
-                description: "100% satisfaction guarantee with comprehensive warranties",
-                icon: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=200&fit=crop"
+                title: "Data-Driven Decisions",
+                description: "Gain valuable insights with comprehensive reports and analytics to make informed business choices.",
+                icon: "https://images.unsplash.com/photo-1551288259-cd7c81741d52?w=300&h=200&fit=crop"
               }
             ].map((item, index) => (
               <Card key={index} className="text-center hover:shadow-lg transition-shadow">
@@ -189,7 +189,7 @@ const ServicesPage = () => {
             Ready to Start Your Project?
           </h2>
           <p className="text-xl mb-8 opacity-90">
-            Get your free estimate today and discover why homeowners trust Final Roofing & Retro-Fit.
+            Get your free estimate today and discover why homeowners trust CAPTION.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" className="bg-secondary text-primary hover:bg-secondary/90 font-semibold">

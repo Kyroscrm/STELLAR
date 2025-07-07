@@ -44,32 +44,31 @@ const ActivityLogViewer: React.FC = () => {
   const [filterEntity, setFilterEntity] = useState('all');
 
   useEffect(() => {
-    loadActivityLogs();
-  }, []);
+    const loadActivityLogs = async () => {
+      if (!user) return;
 
-  const loadActivityLogs = async () => {
-    if (!user) return;
+      try {
+        const { data, error } = await supabase
+          .from('activity_logs')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(100);
 
-    try {
-      const { data, error } = await supabase
-        .from('activity_logs')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(100);
-
-      if (error) throw error;
-      setLogs(data as ActivityLog[] || []);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        toast.error(`Failed to load activity logs: ${error.message}`);
-      } else {
-        toast.error('Failed to load activity logs');
+        if (error) throw error;
+        setLogs(data as ActivityLog[] || []);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          toast.error(`Failed to load activity logs: ${error.message}`);
+        } else {
+          toast.error('Failed to load activity logs');
+        }
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+    loadActivityLogs();
+  }, [user]);
 
   const filteredLogs = logs.filter(log => {
     const matchesSearch = log.description.toLowerCase().includes(searchTerm.toLowerCase()) ||

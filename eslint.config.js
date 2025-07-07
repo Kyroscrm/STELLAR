@@ -27,5 +27,15 @@ export default tseslint.config(
       "no-console": "error",
       "no-debugger": "error",
     },
+  },
+  {
+    files: ["cypress/**/*.{ts,tsx,js}"],
+    rules: {
+      "no-console": "off",
+      "@typescript-eslint/no-namespace": "off",
+      "@typescript-eslint/triple-slash-reference": "off",
+      "@typescript-eslint/ban-ts-comment": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+    },
   }
 );
